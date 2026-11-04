@@ -4,7 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-No code yet: no package.json, README, or lint/test config. Build/lint/test commands do not exist; add them here once the Vite scaffold is created. Current work is the Figma design phase. The user owns the **frontend**; a separate person ("Buddy") owns the Supabase backend. The user is designing first, so the architecture below may still change.
+Vite + React + TS app, implemented from `docs/superpowers/plans/2026-11-04-frontend-fake-layer.md`. The frontend runs on a browser-only fake backend in `src/api/fake/`, seeded into localStorage (key `fake-db-v1`); Buddy's Supabase backend is not connected yet. File upload is disabled until R2 exists, so all media is seeded rows with no real file. Notifications, dark mode and animation are not built.
+
+Commands: `npm run dev`, `npm test` (Vitest, logic and fake API only), `npm run lint`, `npm run build`.
+
+Fake logins: `owner@example.com` / `owner1234`, `creator@example.com` / `creator1234`. The session is in sessionStorage; run `localStorage.clear(); sessionStorage.clear()` in the console to reseed (seed dates are relative to the first load).
+
+All data access goes through `src/api/index.ts`; screens must not import `src/api/fake/`. To connect Supabase, replace `src/api/index.ts` and delete `src/api/fake/`. Assumed columns not in Buddy's spec yet: `categories.color`, `clips.status`, `clips.revision_note`, `clips.deleted_at`, `clip_media.file_name`; also a way to read user emails, and an owner password reset. See the "Handoff to Buddy" list at the end of the plan.
+
+Later plans: connect Supabase; upload and playback (Uppy, presigned R2, video player, download-all, lightbox, upload error states); polish (dark mode, animation, drag reorder); notifications if the client confirms.
 
 ## What this is
 
@@ -18,7 +26,7 @@ The user's own Excalidraw lists four pain points and a solution for each: (1) me
 
 Buddy's spec (`system-design.md` Draft v2, 2026-11-03, sent to the user; not in this repo) is the source of truth for the backend. Summary:
 
-Frontend: React + Vite + TS + Tailwind + shadcn/ui, TanStack Query, React Router, date-fns, Uppy (uploads). Backend: Supabase Free (Postgres + RLS + Auth + Edge Functions `create-creator`, `media-upload`, `media-view`). Files go to a private Cloudflare R2 bucket, not Supabase Storage. The browser uploads and views directly through presigned URLs; files never pass through our server.
+Frontend: React + Vite + TS + Tailwind + shadcn/ui, TanStack Query, React Router, date-fns, Uppy (uploads). Backend: Supabase Free (Postgres + RLS + Auth + Edge Functions `create-creator`, `media-upload`, `media-view`). Files go to a private Cloudflare R2 bucket, not Supabase Storage. The browser uploads and views directly through presigned URLs; files never pass through our server. Installed so far: React, Vite, TS, Tailwind v4, shadcn/ui (base-nova, built on @base-ui/react: no `asChild`, use `render` and `nativeButton={false}`), TanStack Query, React Router, date-fns, sonner, lucide-react, Vitest. Uppy is not installed yet.
 
 ## Domain model
 
