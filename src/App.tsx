@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { useMe } from '@/api/queries'
 import { AppShell } from '@/components/AppShell'
 import { Calendar } from '@/pages/Calendar'
@@ -11,8 +11,9 @@ import { Users } from '@/pages/Users'
 
 function RequireAuth() {
   const { data: me, isPending } = useMe()
+  const location = useLocation()
   if (isPending) return null
-  return me ? <Outlet /> : <Navigate to="/login" replace />
+  return me ? <Outlet /> : <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
 }
 
 function RequireOwner() {

@@ -5,7 +5,7 @@ import type { ClipCardRow } from '@/lib/types'
 
 export function ClipCard({ clip }: { clip: ClipCardRow }) {
   return (
-    <Link to={`/clips/${clip.id}`} className="flex flex-col gap-1 rounded-card border border-line bg-white p-2 hover:bg-surface">
+    <Link to={`/clips/${clip.id}`} className="flex min-w-0 flex-col gap-1 overflow-hidden rounded-card border border-line bg-white p-2 hover:bg-surface">
       <div className="flex flex-wrap items-center gap-1">
         <CategoryBadge categoryId={clip.category_id} />
         <StatusChip status={clip.status} />

@@ -29,7 +29,7 @@ function CreatorDetail({ id }: { id: string }) {
   const { data: me } = useMe()
   const { data: clip, isPending } = useClip(id)
   const { data: media = [] } = useMedia(id)
-  const { data: day = [] } = useClips(clip?.date ?? '', clip?.date ?? '')
+  const { data: day = [] } = useClips(clip?.date ?? '', clip?.date ?? '', !!clip)
   const withdraw = useAct(api.withdrawMedia)
 
   if (isPending) return <p className="text-sm text-sub">กำลังโหลด...</p>
@@ -44,7 +44,7 @@ function CreatorDetail({ id }: { id: string }) {
       <div className="flex items-center justify-between">
         <Button variant="outline" nativeButton={false} render={<Link to={`/calendar?date=${clip.date}`} />}><ChevronLeft />ปฏิทิน</Button>
         <div className="flex items-center gap-2 text-xs text-sub">
-          คลิป {i + 1} จาก {day.length} ของวันนี้
+          {i >= 0 && <span>คลิป {i + 1} จาก {day.length} ของวันนั้น</span>}
           <Button variant="outline" size="icon" aria-label="คลิปก่อนหน้า" disabled={i <= 0} onClick={() => nav(`/clips/${day[i - 1].id}`)}><ChevronLeft /></Button>
           <Button variant="outline" size="icon" aria-label="คลิปถัดไป" disabled={i >= day.length - 1} onClick={() => nav(`/clips/${day[i + 1].id}`)}><ChevronRight /></Button>
         </div>

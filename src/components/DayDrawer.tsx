@@ -24,14 +24,14 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
   const shown = filter ? clips.filter((c) => c.category_id === filter) : clips
 
   const chip = (id: string | null, label: string, n: number) => (
-    <button key={id ?? 'all'} onClick={() => setFilter(id)} className={`rounded-full border border-line px-3 py-1 text-xs ${filter === id ? 'bg-brand text-white' : ''}`}>
+    <button key={id ?? 'all'} onClick={() => setFilter(id)} aria-pressed={filter === id} className={`rounded-full border border-line px-3 py-1 text-xs ${filter === id ? 'bg-brand text-white' : ''}`}>
       {label} {n}
     </button>
   )
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="flex w-full flex-col gap-3 p-4 sm:max-w-[420px]">
+      <SheetContent className="flex w-full flex-col gap-3 p-4 sm:max-w-[420px] data-[side=right]:w-full data-[side=right]:sm:max-w-[420px]">
         <SheetTitle>{fullDate(fromIso(date))}</SheetTitle>
         <SheetDescription>{clips.length} คลิป</SheetDescription>
         <div className="flex flex-wrap gap-2">
@@ -50,8 +50,12 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
                   <DropdownMenuContent>
                     <DropdownMenuItem onClick={() => nav(`/clips/${c.id}`)}><Pencil />แก้ไข</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setCopying(c)}><Copy />คัดลอก</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => move.mutate({ id: c.id, dir: -1 })}><ArrowUp />ย้ายขึ้น</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => move.mutate({ id: c.id, dir: 1 })}><ArrowDown />ย้ายลง</DropdownMenuItem>
+                    {filter === null && (
+                      <>
+                        <DropdownMenuItem onClick={() => move.mutate({ id: c.id, dir: -1 })}><ArrowUp />ย้ายขึ้น</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => move.mutate({ id: c.id, dir: 1 })}><ArrowDown />ย้ายลง</DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuItem className="text-danger" onClick={() => void del(c.id)}><Trash2 />ลบ</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { addDays, addMonths, isSameMonth } from 'date-fns'
+import { addDays, addMonths, isSameMonth, isValid } from 'date-fns'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useCategories, useClips, useMe } from '@/api/queries'
 import { ClipCard } from '@/components/ClipCard'
@@ -14,8 +14,9 @@ const MAX_CARDS = 4
 export function Calendar() {
   const [params, setParams] = useSearchParams()
   const view = params.get('view') === 'month' ? 'month' : 'week'
-  const dateIso = params.get('date') ?? todayIso()
-  const date = fromIso(dateIso)
+  const parsed = fromIso(params.get('date') ?? '')
+  const date = isValid(parsed) ? parsed : fromIso(todayIso())
+  const dateIso = toIso(date)
   const days = view === 'week' ? weekDays(date) : monthGrid(date)
   const { data: me } = useMe()
   const owner = me?.role === 'owner'

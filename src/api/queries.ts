@@ -3,8 +3,8 @@ import { toast } from 'sonner'
 import * as api from './index'
 
 export const useMe = () => useQuery({ queryKey: ['me'], queryFn: async () => api.me() })
-export const useClips = (from: string, to: string) =>
-  useQuery({ queryKey: ['clips', from, to], queryFn: () => api.listClips(from, to) })
+export const useClips = (from: string, to: string, enabled = true) =>
+  useQuery({ queryKey: ['clips', from, to], queryFn: () => api.listClips(from, to), enabled })
 export const useRecent = (limit: number) => useQuery({ queryKey: ['recent', limit], queryFn: () => api.listRecent(limit) })
 export const useClip = (id: string) => useQuery({ queryKey: ['clip', id], queryFn: () => api.getClip(id) })
 export const useMedia = (clipId: string) => useQuery({ queryKey: ['media', clipId], queryFn: () => api.listMedia(clipId) })
@@ -27,15 +27,28 @@ export function useAct<A, R>(fn: (arg: A) => Promise<R>) {
 
 export function useDeleteClip() {
   const qc = useQueryClient()
-  return async (id: string) => {
-    await api.softDeleteClip(id)
+  return async (id: string): Promise<boolean> => {
+    try {
+      await api.softDeleteClip(id)
+    } catch (e) {
+      toast.error((e as Error).message)
+      return false
+    }
     await qc.invalidateQueries()
     toast('ลบคลิปแล้ว', {
       duration: 10_000,
       action: {
         label: 'เลิกทำ',
-        onClick: () => void api.restoreClip(id).then(() => qc.invalidateQueries()),
+        onClick: async () => {
+          try {
+            await api.restoreClip(id)
+            await qc.invalidateQueries()
+          } catch (e) {
+            toast.error((e as Error).message)
+          }
+        },
       },
     })
+    return true
   }
 }

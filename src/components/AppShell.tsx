@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Calendar, Globe, Home, Menu, Moon, Search, Tag, User, Users } from 'lucide-react'
+import { Calendar, Globe, Home, LogOut, Menu, Moon, Search, Tag, User, Users } from 'lucide-react'
 import * as api from '@/api/index'
 import { useMe } from '@/api/queries'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
@@ -57,7 +57,7 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
         <form onSubmit={submit} className="flex items-center gap-2 rounded-card border border-line bg-[#e6e6e6] px-2 py-1.5">
           <Search size={16} />
           <input ref={input} name="q" defaultValue={params.get('q') ?? ''} placeholder="ค้นหาคลิป..." aria-label="ค้นหาคลิป" className="w-full bg-transparent text-sm outline-none" />
-          <kbd className="rounded bg-white px-1 text-xs text-sub">Ctrl K</kbd>
+          <kbd className="hidden rounded bg-white px-1 text-xs text-sub lg:inline">Ctrl K</kbd>
         </form>
       )}
       <nav className="flex flex-col gap-1">
@@ -68,8 +68,9 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
           </NavLink>
         ))}
       </nav>
-      <div className="mt-auto flex items-center gap-2 px-2">
+      <div className={`mt-auto flex items-center gap-2 px-2 ${rail ? 'flex-col' : ''}`}>
         <span className="flex size-8 items-center justify-center rounded-full bg-ink text-white"><User size={16} /></span>
+        {rail && <button onClick={logout} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center text-sub"><LogOut size={16} /></button>}
         {!rail && (
           <div className="text-sm">
             <b>{me?.display_name}</b>
