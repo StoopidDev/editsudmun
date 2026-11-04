@@ -25,7 +25,7 @@ export function Users() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">ผู้ใช้งาน</h1>
-        <Button onClick={() => setCreating(true)}><Plus />สร้างบัญชีครีเอเตอร์</Button>
+        <Button className="min-h-11 md:min-h-0" onClick={() => setCreating(true)}><Plus />สร้างบัญชีครีเอเตอร์</Button>
       </div>
       <div className="overflow-hidden rounded-card border border-line">
         {users.map((u) => (

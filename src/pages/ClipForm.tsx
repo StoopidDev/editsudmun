@@ -50,7 +50,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   const removeFile = useAct(api.deleteMedia)
   const save = useAct((input: ClipInput) => (clipId ? api.updateClip(clipId, input) : api.createClip(input)))
 
-  const categoryId = form.category_id || cats[0]?.id || ''
+  const categoryId = cats.some((c) => c.id === form.category_id) ? form.category_id : (cats[0]?.id ?? '')
   const set = (patch: Partial<ClipInput>) => setForm((f) => ({ ...f, ...patch }))
 
   useEffect(() => {
@@ -113,7 +113,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1">

@@ -31,6 +31,9 @@ const toCard = (c: Clip): ClipCardRow => ({
   ...c,
   imageCount: db().media.filter((m) => m.clip_id === c.id && m.purpose === 'reference' && m.kind === 'image').length,
 })
+const checkCategory = (id: string) => {
+  if (!db().categories.some((c) => c.id === id)) throw new Error('ไม่พบประเภทคลิป')
+}
 const clipOf = (id: string) => {
   const c = db().clips.find((x) => x.id === id)
   if (!c) throw new Error('ไม่พบคลิป')
@@ -75,6 +78,7 @@ export async function createClip(input: ClipInput) {
   await wait()
   const u = need('owner')
   if (!isIsoDate(input.date)) throw new Error('วันที่ไม่ถูกต้อง')
+  checkCategory(input.category_id)
   const clip: Clip = {
     ...input, id: uid(), position: nextPosition(input.date), created_by: u.id, updated_at: stamp(),
     status: 'todo', revision_note: '', deleted_at: null,
@@ -90,6 +94,7 @@ export async function updateClip(id: string, patch: Partial<ClipInput>) {
   await wait()
   need('owner')
   if (patch.date !== undefined && !isIsoDate(patch.date)) throw new Error('วันที่ไม่ถูกต้อง')
+  if (patch.category_id !== undefined) checkCategory(patch.category_id)
   const c = clipOf(id)
   const changes = Object.fromEntries(EDITABLE.filter((k) => patch[k] !== undefined).map((k) => [k, patch[k]]))
   if (patch.date && patch.date !== c.date) c.position = nextPosition(patch.date)
@@ -220,8 +225,10 @@ export async function categoryCounts() {
 export async function createCategory(name: string, color: string) {
   await wait()
   need('owner')
+  const trimmed = name.trim()
+  if (!trimmed) throw new Error('กรุณากรอกชื่อประเภท')
   const position = Math.max(-1, ...db().categories.map((c) => c.position)) + 1
-  const cat: Category = { id: uid(), name, color, position }
+  const cat: Category = { id: uid(), name: trimmed, color, position }
   db().categories.push(cat)
   save()
   return out(cat)
@@ -232,7 +239,9 @@ export async function updateCategory(id: string, patch: Pick<Category, 'name' | 
   need('owner')
   const cat = db().categories.find((c) => c.id === id)
   if (!cat) throw new Error('ไม่พบประเภท')
-  Object.assign(cat, patch)
+  const name = patch.name.trim()
+  if (!name) throw new Error('กรุณากรอกชื่อประเภท')
+  Object.assign(cat, { ...patch, name })
   save()
 }
 
@@ -256,9 +265,11 @@ export async function listUsers() {
 export async function createCreator(display_name: string, rawEmail: string) {
   await wait()
   need('owner')
+  const name = display_name.trim()
+  if (!name) throw new Error('กรุณากรอกชื่อ')
   const email = rawEmail.trim().toLowerCase()
   if (db().profiles.some((p) => p.email === email)) throw new Error('อีเมลนี้มีบัญชีอยู่แล้ว')
-  const user: Profile = { id: uid(), role: 'creator', display_name, email, created_at: stamp() }
+  const user: Profile = { id: uid(), role: 'creator', display_name: name, email, created_at: stamp() }
   const password = tempPassword()
   db().profiles.push(user)
   db().passwords[email] = password
@@ -282,6 +293,7 @@ export async function deleteUser(id: string) {
   need('owner')
   const user = db().profiles.find((p) => p.id === id)
   if (user?.role === 'owner') throw new Error('ลบบัญชีเจ้าของไม่ได้')
+  if (user) delete db().passwords[user.email]
   db().profiles = db().profiles.filter((p) => p.id !== id)
   save()
 }

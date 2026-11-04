@@ -42,7 +42,7 @@ export function Home() {
                 <p className="line-clamp-2 text-xs text-sub">{c.script}</p>
               </Link>
             ))}
-            {todays.length === 0 && !owner && <p className="text-sm text-sub">วันนี้ไม่มีคลิป</p>}
+            {todays.length === 0 && !owner && !week.isError && <p className="text-sm text-sub">วันนี้ไม่มีคลิป</p>}
             {owner && (
               <Link to={`/clips/new?date=${today}`} className="flex min-h-24 flex-col items-center justify-center rounded-card border border-dashed border-line text-sm text-sub">
                 <Plus size={16} />เพิ่มคลิปวันนี้
@@ -67,7 +67,7 @@ export function Home() {
                 {list.slice(0, 3).map((c) => (
                   <span key={c.id} className="truncate rounded px-1 text-xs font-bold text-white" style={{ background: color(c.category_id) }}>{c.title}</span>
                 ))}
-                <span className="text-xs text-sub">{list.length ? `${list.length} คลิป` : 'ไม่มีคลิป'}</span>
+                <span className="text-xs text-sub">{list.length ? `${list.length} คลิป` : week.isError ? '' : 'ไม่มีคลิป'}</span>
               </Link>
             )
           })}

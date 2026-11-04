@@ -45,12 +45,12 @@ function CreatorDetail({ id }: { id: string }) {
         <Button variant="outline" nativeButton={false} render={<Link to={`/calendar?date=${clip.date}`} />}><ChevronLeft />ปฏิทิน</Button>
         <div className="flex items-center gap-2 text-xs text-sub">
           {i >= 0 && <span>คลิป {i + 1} จาก {day.length} ของวันนั้น</span>}
-          <Button variant="outline" size="icon" aria-label="คลิปก่อนหน้า" disabled={i <= 0} onClick={() => nav(`/clips/${day[i - 1].id}`)}><ChevronLeft /></Button>
-          <Button variant="outline" size="icon" aria-label="คลิปถัดไป" disabled={i >= day.length - 1} onClick={() => nav(`/clips/${day[i + 1].id}`)}><ChevronRight /></Button>
+          <Button variant="outline" size="icon" className="min-h-11 min-w-11 md:min-h-0 md:min-w-0" aria-label="คลิปก่อนหน้า" disabled={i <= 0} onClick={() => nav(`/clips/${day[i - 1].id}`)}><ChevronLeft /></Button>
+          <Button variant="outline" size="icon" className="min-h-11 min-w-11 md:min-h-0 md:min-w-0" aria-label="คลิปถัดไป" disabled={i >= day.length - 1} onClick={() => nav(`/clips/${day[i + 1].id}`)}><ChevronRight /></Button>
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2 text-sm text-sub">
             <CategoryBadge categoryId={clip.category_id} />{fullDate(fromIso(clip.date))}<StatusChip status={clip.status} />
@@ -87,7 +87,7 @@ function CreatorDetail({ id }: { id: string }) {
                   </div>
                 </div>
                 {me && canWithdraw(m, me.id) && (
-                  <Button variant="outline" className="border-danger text-danger" disabled={withdraw.isPending} onClick={() => withdraw.mutate(m.id)}>
+                  <Button variant="outline" className="min-h-11 border-danger text-danger md:min-h-0" disabled={withdraw.isPending} onClick={() => withdraw.mutate(m.id)}>
                     ถอนไฟล์นี้ (เหลือ {withdrawMinutesLeft(m)} นาที)
                   </Button>
                 )}

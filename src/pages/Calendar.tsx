@@ -48,7 +48,7 @@ export function Calendar() {
       {view === 'week'
         ? (
           <>
-            <MobileDay days={days} selected={date} loading={clips.isPending} forDay={forDay} owner={owner} onPick={(iso) => go({ date: iso })} />
+            <MobileDay days={days} selected={date} loading={clips.isPending} failed={clips.isError} forDay={forDay} owner={owner} onPick={(iso) => go({ date: iso })} />
             <div className="hidden md:block"><Week days={days} loading={clips.isPending} forDay={forDay} owner={owner} onOpen={setDrawer} /></div>
           </>
         )
@@ -64,7 +64,7 @@ export function Calendar() {
   )
 }
 
-function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; forDay: (iso: string) => ClipCardRow[]; owner: boolean; onPick: (iso: string) => void }) {
+function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: boolean; forDay: (iso: string) => ClipCardRow[]; owner: boolean; onPick: (iso: string) => void }) {
   const today = todayIso()
   const selIso = toIso(p.selected)
   const list = p.forDay(selIso)
@@ -88,7 +88,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; forDay: 
       <h2 className="text-sm font-bold">{dayLabel(p.selected)} {shortDate(p.selected)} · {list.length} คลิป</h2>
       {p.loading && <div className="h-20 rounded-card bg-grid" aria-label="กำลังโหลด" />}
       {list.map((c) => <ClipCard key={c.id} clip={c} />)}
-      {!p.loading && list.length === 0 && <p className="py-2 text-center text-sm text-sub">ไม่มีคลิป</p>}
+      {!p.loading && !p.failed && list.length === 0 && <p className="py-2 text-center text-sm text-sub">ไม่มีคลิป</p>}
       {p.owner && (
         <Link to={`/clips/new?date=${selIso}`} className="rounded-card border border-dashed border-line py-3 text-center text-sm text-sub">+ เพิ่มคลิป</Link>
       )}

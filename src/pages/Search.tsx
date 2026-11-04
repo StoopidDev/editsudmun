@@ -8,13 +8,13 @@ import { snippet } from '@/lib/search'
 export function Search() {
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
-  const { data = [], isFetching } = useSearch(q)
+  const { data = [], isFetching, isError } = useSearch(q)
 
   return (
     <div className="flex flex-col gap-3">
       {/* The sidebar is hidden on phones, so this input is the only search box there. */}
       <Input key={q} className="md:hidden" aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
-      {q && <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isFetching && <span className="text-sm font-normal text-sub">{data.length} คลิป</span>}</h1>}
+      {q && <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isFetching && !isError && <span className="text-sm font-normal text-sub">{data.length} คลิป</span>}</h1>}
       {data.map((c) => {
         const hay = [c.script, c.note, c.title].find((t) => t.toLowerCase().includes(q.trim().toLowerCase())) ?? c.script
         const s = snippet(hay, q)
@@ -27,7 +27,7 @@ export function Search() {
           </Link>
         )
       })}
-      {q && !isFetching && data.length === 0 && (
+      {q && !isFetching && !isError && data.length === 0 && (
         <div className="py-16 text-center">
           <p className="font-bold">ไม่พบคลิปที่ตรงกับ “{q}”</p>
           <p className="text-sm text-sub">ลองคำอื่น หรือเช็กการสะกด</p>

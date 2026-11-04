@@ -84,6 +84,12 @@ describe('clips', () => {
     await expect(api.updateClip('c1', { date: '2026-13-40' })).rejects.toThrow('วันที่ไม่ถูกต้อง')
     await expect(api.copyClip('c1', 'abc')).rejects.toThrow('วันที่ไม่ถูกต้อง')
   })
+  it('rejects an unknown category on create and update', async () => {
+    await asOwner()
+    const input = { date: todayIso(), category_id: 'cat-missing', title: 'x', script: '', note: '' }
+    await expect(api.createClip(input)).rejects.toThrow('ไม่พบประเภทคลิป')
+    await expect(api.updateClip('c1', { category_id: 'cat-missing' })).rejects.toThrow('ไม่พบประเภทคลิป')
+  })
   it('searches clips and skips deleted ones', async () => {
     await asOwner()
     expect((await api.search('Casio')).map((c) => c.id)).toEqual(['c5'])
@@ -133,6 +139,11 @@ describe('categories and users', () => {
     const c = await api.createCategory('ไลฟ์', '#ff9500')
     await api.deleteCategory(c.id)
     expect((await api.listCategories()).map((x) => x.id)).not.toContain(c.id)
+  })
+  it('rejects a blank category name and a blank creator name', async () => {
+    await asOwner()
+    await expect(api.createCategory('  ', '#000000')).rejects.toThrow('กรุณากรอกชื่อประเภท')
+    await expect(api.createCreator('  ', 'blank@example.com')).rejects.toThrow('กรุณากรอกชื่อ')
   })
   it('creates a creator who can log in with the temporary password', async () => {
     await asOwner()

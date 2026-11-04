@@ -24,7 +24,7 @@ export function Categories() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold">ประเภทคลิป</h1>
-        <Button onClick={() => setEditing('new')}><Plus />เพิ่มประเภท</Button>
+        <Button className="min-h-11 md:min-h-0" onClick={() => setEditing('new')}><Plus />เพิ่มประเภท</Button>
       </div>
       {!isPending && cats.length === 0 && <p className="py-16 text-center text-sub">ยังไม่มีประเภทคลิป</p>}
       {cats.length > 0 && (
