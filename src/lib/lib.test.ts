@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayLabel, monthGrid, rangeLabel, weekDays } from './dates'
+import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
 import { canWithdraw, daysLeft, formatSize, isPlayable, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import type { Clip, ClipMedia } from './types'
@@ -15,6 +15,12 @@ describe('dates', () => {
     const days = weekDays(new Date(2026, 10, 1))
     expect(days[0].getDate()).toBe(26)
     expect(days).toHaveLength(7)
+  })
+  it('accepts only real yyyy-MM-dd dates', () => {
+    expect(isIsoDate('2026-10-29')).toBe(true)
+    expect(isIsoDate('2026-13-40')).toBe(false)
+    expect(isIsoDate('abc')).toBe(false)
+    expect(isIsoDate('12345-01-01')).toBe(false)
   })
   it('labels days and ranges in Thai', () => {
     expect(dayLabel(new Date(2026, 9, 29))).toBe('พฤหัส')

@@ -30,6 +30,7 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         input.current?.focus()
+        input.current?.select()
       }
     }
     window.addEventListener('keydown', onKey)

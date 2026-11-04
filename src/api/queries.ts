@@ -25,7 +25,7 @@ export function useAct<A, R>(fn: (arg: A) => Promise<R>) {
   })
 }
 
-export function useDeleteClip() {
+export function useDeleteClip(onDeleted?: () => void) {
   const qc = useQueryClient()
   return async (id: string): Promise<boolean> => {
     try {
@@ -34,6 +34,7 @@ export function useDeleteClip() {
       toast.error((e as Error).message)
       return false
     }
+    onDeleted?.()
     await qc.invalidateQueries()
     toast('ลบคลิปแล้ว', {
       duration: 10_000,

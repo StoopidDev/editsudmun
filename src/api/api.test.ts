@@ -77,6 +77,13 @@ describe('clips', () => {
     expect(media.every((m) => m.purpose === 'reference')).toBe(true)
     expect(media).toHaveLength(3)
   })
+  it('rejects an invalid date on create, update and copy', async () => {
+    await asOwner()
+    const input = { category_id: 'cat-review', title: 'x', script: '', note: '' }
+    await expect(api.createClip({ ...input, date: 'abc' })).rejects.toThrow('วันที่ไม่ถูกต้อง')
+    await expect(api.updateClip('c1', { date: '2026-13-40' })).rejects.toThrow('วันที่ไม่ถูกต้อง')
+    await expect(api.copyClip('c1', 'abc')).rejects.toThrow('วันที่ไม่ถูกต้อง')
+  })
   it('searches clips and skips deleted ones', async () => {
     await asOwner()
     expect((await api.search('Casio')).map((c) => c.id)).toEqual(['c5'])

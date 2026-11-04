@@ -1,4 +1,4 @@
-import { addDays, eachDayOfInterval, endOfMonth, endOfWeek, format, parseISO, startOfMonth, startOfWeek } from 'date-fns'
+import { addDays, eachDayOfInterval, endOfMonth, endOfWeek, format, isValid, parseISO, startOfMonth, startOfWeek } from 'date-fns'
 import { th } from 'date-fns/locale'
 
 const DAYS = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์', 'อาทิตย์']
@@ -6,6 +6,7 @@ const opts = { weekStartsOn: 1 } as const
 
 export const toIso = (d: Date) => format(d, 'yyyy-MM-dd')
 export const fromIso = (s: string) => parseISO(s)
+export const isIsoDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) && isValid(parseISO(s))
 export const todayIso = () => toIso(new Date())
 export const weekStart = (d: Date) => startOfWeek(d, opts)
 export const weekDays = (d: Date) => eachDayOfInterval({ start: weekStart(d), end: addDays(weekStart(d), 6) })

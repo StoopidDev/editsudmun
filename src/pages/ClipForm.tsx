@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { todayIso } from '@/lib/dates'
+import { isIsoDate, todayIso } from '@/lib/dates'
 import { daysLeft, WARN_DAYS } from '@/lib/media'
 import type { ClipInput } from '@/lib/types'
 import { Review } from './Review'
@@ -35,16 +35,18 @@ export function ClipForm({ clipId }: { clipId?: string }) {
 function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   const nav = useNavigate()
   const [params] = useSearchParams()
+  const urlDate = params.get('date')
+  const explicitDate = urlDate && isIsoDate(urlDate) ? urlDate : null
   const { data: cats = [] } = useCategories()
   const { data: media = [] } = useMedia(clipId ?? '')
   const [form, setForm] = useState<ClipInput>(initial
     ? { date: initial.date, category_id: initial.category_id, title: initial.title, script: initial.script, note: initial.note }
-    : { date: params.get('date') ?? todayIso(), category_id: '', title: '', script: '', note: '' })
+    : { date: explicitDate ?? todayIso(), category_id: '', title: '', script: '', note: '' })
   const [titleError, setTitleError] = useState(false)
   const [draft, setDraft] = useState(() => (clipId ? null : readDraft()))
   const [draftSaved, setDraftSaved] = useState(false)
   const [copying, setCopying] = useState(false)
-  const del = useDeleteClip()
+  const del = useDeleteClip(() => nav(`/calendar?date=${form.date}`))
   const removeFile = useAct(api.deleteMedia)
   const save = useAct((input: ClipInput) => (clipId ? api.updateClip(clipId, input) : api.createClip(input)))
 
@@ -61,6 +63,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   }, [form, clipId, draft])
 
   const submit = () => {
+    if (!isIsoDate(form.date)) { toast.error('วันที่ไม่ถูกต้อง'); return }
     if (!form.title.trim()) return setTitleError(true)
     const { date, script, note } = form
     save.mutate({ date, script, note, category_id: categoryId, title: form.title.trim() }, {
@@ -84,12 +87,12 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           {clipId ? (
             <>
               <Button variant="outline" onClick={() => setCopying(true)}><Copy />คัดลอกไปวันอื่น</Button>
-              <Button variant="outline" className="border-danger text-danger" onClick={() => void del(clipId).then((ok) => { if (ok) nav(`/calendar?date=${form.date}`) })}><Trash2 />ลบคลิป</Button>
+              <Button variant="outline" className="border-danger text-danger" onClick={() => void del(clipId)}><Trash2 />ลบคลิป</Button>
             </>
           ) : (
             <Button variant="outline" onClick={() => nav(-1)}>ยกเลิก</Button>
           )}
-          <Button onClick={submit} disabled={save.isPending}>บันทึก</Button>
+          <Button onClick={submit} disabled={save.isPending || cats.length === 0}>บันทึก</Button>
         </div>
       </div>
 
@@ -98,7 +101,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           พบร่างที่ยังไม่ได้บันทึก: {draft.title || 'ไม่มีหัวข้อ'}
           <span className="flex gap-2">
             <Button variant="outline" onClick={() => { localStorage.removeItem(DRAFT_KEY); setDraft(null) }}>ทิ้งร่าง</Button>
-            <Button onClick={() => { setForm(draft); setDraft(null) }}>กู้คืนร่าง</Button>
+            <Button onClick={() => { setForm((f) => ({ ...draft, date: explicitDate ?? (isIsoDate(draft.date) ? draft.date : f.date) })); setDraft(null) }}>กู้คืนร่าง</Button>
           </span>
         </div>
       )}

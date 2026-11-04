@@ -13,8 +13,8 @@ export function Search() {
   return (
     <div className="flex flex-col gap-3">
       {/* The sidebar is hidden on phones, so this input is the only search box there. */}
-      <Input className="md:hidden" aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
-      {q && <h1 className="text-lg font-bold">ผลการค้นหา “{q}” <span className="text-sm font-normal text-sub">{data.length} คลิป</span></h1>}
+      <Input key={q} className="md:hidden" aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
+      {q && <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isFetching && <span className="text-sm font-normal text-sub">{data.length} คลิป</span>}</h1>}
       {data.map((c) => {
         const hay = [c.script, c.note, c.title].find((t) => t.toLowerCase().includes(q.trim().toLowerCase())) ?? c.script
         const s = snippet(hay, q)

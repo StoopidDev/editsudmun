@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { Category } from '@/lib/types'
+import { useLast } from '@/lib/useLast'
 
 type Editing = Category | 'new' | null
 
@@ -17,6 +18,7 @@ export function Categories() {
   const [editing, setEditing] = useState<Editing>(null)
   const [deleting, setDeleting] = useState<Category | null>(null)
   const remove = useAct(api.deleteCategory)
+  const lastDeleting = useLast(deleting)
 
   return (
     <div className="flex flex-col gap-4">
@@ -44,7 +46,7 @@ export function Categories() {
         </div>
       )}
       {editing && <CategoryDialog editing={editing} onClose={() => setEditing(null)} />}
-      <ConfirmDialog open={!!deleting} title={`ลบประเภท “${deleting?.name}”?`} body="ลบได้เฉพาะประเภทที่ไม่มีคลิปอยู่" confirm="ลบ"
+      <ConfirmDialog open={!!deleting} title={`ลบประเภท “${lastDeleting?.name}”?`} body="ลบได้เฉพาะประเภทที่ไม่มีคลิปอยู่" confirm="ลบ"
         onConfirm={() => deleting && remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
     </div>
   )
@@ -58,7 +60,9 @@ function CategoryDialog({ editing, onClose }: { editing: Category | 'new'; onClo
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
-    save.mutate({ name: String(f.get('name')).trim(), color: String(f.get('color')) }, { onSuccess: onClose })
+    const name = String(f.get('name')).trim()
+    if (!name) return
+    save.mutate({ name, color: String(f.get('color')) }, { onSuccess: onClose })
   }
 
   return (
@@ -66,7 +70,7 @@ function CategoryDialog({ editing, onClose }: { editing: Category | 'new'; onClo
       <DialogContent>
         <DialogHeader><DialogTitle>{current ? 'แก้ไขประเภท' : 'เพิ่มประเภท'}</DialogTitle></DialogHeader>
         <form onSubmit={submit} className="flex flex-col gap-3">
-          <div className="grid gap-1"><Label htmlFor="name">ชื่อประเภท</Label><Input id="name" name="name" required defaultValue={current?.name} /></div>
+          <div className="grid gap-1"><Label htmlFor="name">ชื่อประเภท</Label><Input id="name" name="name" required pattern="\S.*" title="ต้องไม่เป็นช่องว่างล้วน" defaultValue={current?.name} /></div>
           <div className="grid gap-1"><Label htmlFor="color">สี</Label><input id="color" name="color" type="color" defaultValue={current?.color ?? '#6155f5'} className="h-9 w-16" /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>ยกเลิก</Button>

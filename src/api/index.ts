@@ -1,5 +1,6 @@
 // Everything the UI may do to data. Replace this file and ./fake with Supabase calls later;
 // the checks below mimic RLS for realistic behaviour and are not real security.
+import { isIsoDate } from '@/lib/dates'
 import { canWithdraw } from '@/lib/media'
 import { searchClips } from '@/lib/search'
 import type { Category, Clip, ClipCardRow, ClipInput, Profile, Role } from '@/lib/types'
@@ -73,6 +74,7 @@ export async function getClip(id: string) {
 export async function createClip(input: ClipInput) {
   await wait()
   const u = need('owner')
+  if (!isIsoDate(input.date)) throw new Error('วันที่ไม่ถูกต้อง')
   const clip: Clip = {
     ...input, id: uid(), position: nextPosition(input.date), created_by: u.id, updated_at: stamp(),
     status: 'todo', revision_note: '', deleted_at: null,
@@ -87,6 +89,7 @@ const EDITABLE = ['date', 'category_id', 'title', 'script', 'note'] as const
 export async function updateClip(id: string, patch: Partial<ClipInput>) {
   await wait()
   need('owner')
+  if (patch.date !== undefined && !isIsoDate(patch.date)) throw new Error('วันที่ไม่ถูกต้อง')
   const c = clipOf(id)
   const changes = Object.fromEntries(EDITABLE.filter((k) => patch[k] !== undefined).map((k) => [k, patch[k]]))
   if (patch.date && patch.date !== c.date) c.position = nextPosition(patch.date)
@@ -127,6 +130,7 @@ export async function moveClip(id: string, dir: -1 | 1) {
 export async function copyClip(id: string, date: string) {
   await wait()
   const u = need('owner')
+  if (!isIsoDate(date)) throw new Error('วันที่ไม่ถูกต้อง')
   const src = clipOf(id)
   const copy: Clip = {
     ...src, id: uid(), date, position: nextPosition(date), created_by: u.id, updated_at: stamp(),

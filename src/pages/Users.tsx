@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { Profile } from '@/lib/types'
+import { useLast } from '@/lib/useLast'
 
 export function Users() {
   const { data: users = [] } = useUsers()
@@ -18,6 +19,7 @@ export function Users() {
   const [temp, setTemp] = useState<{ email: string; password: string } | null>(null)
   const reset = useAct(api.resetPassword)
   const remove = useAct(api.deleteUser)
+  const lastDeleting = useLast(deleting)
 
   return (
     <div className="flex flex-col gap-4">
@@ -33,8 +35,8 @@ export function Users() {
             <span className={`w-fit rounded-full px-2 py-0.5 text-xs font-bold ${u.role === 'owner' ? 'bg-today text-[#0066cc]' : 'bg-surface text-sub'}`}>{u.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</span>
             <span className="text-sm text-sub">{format(parseISO(u.created_at), 'd MMM yyyy', { locale: th })}</span>
             <span className="flex gap-1">
-              <Button variant="ghost" className="min-h-11 md:min-h-0" onClick={() => reset.mutate(u.id, { onSuccess: (password) => setTemp({ email: u.email, password }) })}><KeyRound />รีเซ็ตรหัสผ่าน</Button>
-              <Button variant="ghost" className="min-h-11 text-danger md:min-h-0" disabled={u.role === 'owner'} onClick={() => setDeleting(u)}><Trash2 />ลบ</Button>
+              <Button variant="ghost" className="min-h-11 md:min-h-0" disabled={u.role === 'owner'} aria-label={`รีเซ็ตรหัสผ่าน ${u.display_name}`} onClick={() => reset.mutate(u.id, { onSuccess: (password) => setTemp({ email: u.email, password }) })}><KeyRound />รีเซ็ตรหัสผ่าน</Button>
+              <Button variant="ghost" className="min-h-11 text-danger md:min-h-0" disabled={u.role === 'owner'} aria-label={`ลบ ${u.display_name}`} onClick={() => setDeleting(u)}><Trash2 />ลบ</Button>
             </span>
           </div>
         ))}
@@ -58,7 +60,7 @@ export function Users() {
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog open={!!deleting} title={`ลบบัญชี ${deleting?.display_name}?`} body="ผู้ใช้นี้จะเข้าสู่ระบบไม่ได้อีก" confirm="ลบบัญชี"
+      <ConfirmDialog open={!!deleting} title={`ลบบัญชี ${lastDeleting?.display_name}?`} body="ผู้ใช้นี้จะเข้าสู่ระบบไม่ได้อีก" confirm="ลบบัญชี"
         onConfirm={() => deleting && remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
     </div>
   )
@@ -69,7 +71,9 @@ function CreateDialog({ onClose, onDone }: { onClose: () => void; onDone: (email
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
-    create.mutate({ name: String(f.get('name')).trim(), email: String(f.get('email')) }, {
+    const name = String(f.get('name')).trim()
+    if (!name) return
+    create.mutate({ name, email: String(f.get('email')) }, {
       onSuccess: (r) => onDone(r.user.email, r.tempPassword),
     })
   }
@@ -78,7 +82,7 @@ function CreateDialog({ onClose, onDone }: { onClose: () => void; onDone: (email
       <DialogContent>
         <DialogHeader><DialogTitle>สร้างบัญชีครีเอเตอร์</DialogTitle></DialogHeader>
         <form onSubmit={submit} className="flex flex-col gap-3">
-          <div className="grid gap-1"><Label htmlFor="name">ชื่อ</Label><Input id="name" name="name" required /></div>
+          <div className="grid gap-1"><Label htmlFor="name">ชื่อ</Label><Input id="name" name="name" required pattern="\S.*" title="ต้องไม่เป็นช่องว่างล้วน" /></div>
           <div className="grid gap-1"><Label htmlFor="email">อีเมล</Label><Input id="email" name="email" type="email" required /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>ยกเลิก</Button>
