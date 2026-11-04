@@ -11,6 +11,7 @@ export function ClipCard({ clip }: { clip: ClipCardRow }) {
         <StatusChip status={clip.status} />
       </div>
       <b className="text-sm">{clip.title}</b>
+      <p className="line-clamp-2 text-sm text-sub md:hidden">{clip.script}</p>
       <div className="flex gap-2 text-xs text-sub">
         {clip.imageCount > 0 && <span className="flex items-center gap-1"><ImageIcon size={12} />{clip.imageCount}</span>}
         {clip.note && <span className="flex items-center gap-1"><FileText size={12} />หมายเหตุ</span>}

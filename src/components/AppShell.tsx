@@ -13,6 +13,12 @@ const NAV = [
   { to: '/users', label: 'ผู้ใช้งาน', icon: Users, owner: true },
 ]
 
+const TABS = [
+  { to: '/', label: 'หน้าแรก', icon: Home },
+  { to: '/calendar', label: 'ปฏิทิน', icon: Calendar },
+  { to: '/search', label: 'ค้นหา', icon: Search },
+]
+
 const TITLES: [string, string][] = [
   ['/calendar', 'ปฏิทิน'], ['/clips/new', 'เพิ่มคลิป'], ['/clips', 'รายละเอียดคลิป'],
   ['/categories', 'ประเภทคลิป'], ['/users', 'ผู้ใช้งาน'], ['/search', 'ค้นหา'],
@@ -109,8 +115,16 @@ export function AppShell() {
             <button disabled aria-label="โหมดมืด (ยังไม่เปิดใช้)"><Moon size={18} /></button>
           </div>
         </header>
-        <main className="flex-1 p-4 md:p-6"><Outlet /></main>
+        <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6"><Outlet /></main>
       </div>
+      <nav aria-label="เมนูหลัก" className="fixed inset-x-0 bottom-0 z-20 flex h-16 border-t border-line bg-white md:hidden">
+        {TABS.map(({ to, label, icon: Icon }) => (
+          <NavLink key={to} to={to} end={to === '/'}
+            className={({ isActive }) => `flex flex-1 flex-col items-center justify-center gap-0.5 text-xs ${isActive ? 'font-bold text-brand' : 'text-sub'}`}>
+            <Icon size={20} />{label}
+          </NavLink>
+        ))}
+      </nav>
     </div>
   )
 }

@@ -6,10 +6,11 @@ import { useCategories, useClips, useMe } from '@/api/queries'
 import { ClipCard } from '@/components/ClipCard'
 import { DayDrawer } from '@/components/DayDrawer'
 import { Button } from '@/components/ui/button'
-import { dayLabel, fromIso, monthGrid, monthLabel, rangeLabel, toIso, todayIso, weekDays } from '@/lib/dates'
+import { dayLabel, fromIso, fullDate, monthGrid, monthLabel, rangeLabel, shortDate, toIso, todayIso, weekDays } from '@/lib/dates'
 import type { ClipCardRow } from '@/lib/types'
 
 const MAX_CARDS = 4
+const SHORT_DAYS = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา']
 
 export function Calendar() {
   const [params, setParams] = useSearchParams()
@@ -41,14 +42,56 @@ export function Calendar() {
             </button>
           ))}
         </div>
-        {owner && <Button nativeButton={false} render={<Link to={`/clips/new?date=${dateIso}`} />} className="ml-auto"><Plus />เพิ่มคลิป</Button>}
+        {owner && <Button nativeButton={false} render={<Link to={`/clips/new?date=${dateIso}`} />} className="ml-auto max-md:hidden"><Plus />เพิ่มคลิป</Button>}
       </div>
 
       {view === 'week'
-        ? <Week days={days} loading={clips.isPending} forDay={forDay} owner={owner} onOpen={setDrawer} />
+        ? (
+          <>
+            <MobileDay days={days} selected={date} loading={clips.isPending} forDay={forDay} owner={owner} onPick={(iso) => go({ date: iso })} />
+            <div className="hidden md:block"><Week days={days} loading={clips.isPending} forDay={forDay} owner={owner} onOpen={setDrawer} /></div>
+          </>
+        )
         : <Month days={days} anchor={date} forDay={forDay} onPick={(iso) => go({ view: 'week', date: iso })} />}
 
       {drawer && <DayDrawer date={drawer} onClose={() => setDrawer(null)} />}
+      {owner && (
+        <Link to={`/clips/new?date=${dateIso}`} aria-label="เพิ่มคลิป" className="fixed right-4 bottom-20 z-10 flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-md md:hidden">
+          <Plus />
+        </Link>
+      )}
+    </div>
+  )
+}
+
+function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; forDay: (iso: string) => ClipCardRow[]; owner: boolean; onPick: (iso: string) => void }) {
+  const today = todayIso()
+  const selIso = toIso(p.selected)
+  const list = p.forDay(selIso)
+  return (
+    <div className="flex min-w-0 flex-col gap-3 md:hidden">
+      <div className="grid grid-cols-7 gap-1">
+        {p.days.map((d) => {
+          const iso = toIso(d)
+          const sel = iso === selIso
+          const hasClips = p.forDay(iso).length > 0
+          return (
+            <button key={iso} type="button" aria-pressed={sel} aria-label={fullDate(d)} onClick={() => p.onPick(iso)}
+              className={`flex h-[62px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-card ${sel ? 'bg-brand text-white' : 'bg-surface'} ${iso === today && !sel ? 'ring-1 ring-brand' : ''}`}>
+              <span className="text-xs">{SHORT_DAYS[(d.getDay() + 6) % 7]}</span>
+              <b className="text-base">{d.getDate()}</b>
+              <span className={`size-[5px] rounded-full ${hasClips ? (sel ? 'bg-white' : 'bg-brand') : ''}`} />
+            </button>
+          )
+        })}
+      </div>
+      <h2 className="text-sm font-bold">{dayLabel(p.selected)} {shortDate(p.selected)} · {list.length} คลิป</h2>
+      {p.loading && <div className="h-20 rounded-card bg-grid" aria-label="กำลังโหลด" />}
+      {list.map((c) => <ClipCard key={c.id} clip={c} />)}
+      {!p.loading && list.length === 0 && <p className="py-2 text-center text-sm text-sub">ไม่มีคลิป</p>}
+      {p.owner && (
+        <Link to={`/clips/new?date=${selIso}`} className="rounded-card border border-dashed border-line py-3 text-center text-sm text-sub">+ เพิ่มคลิป</Link>
+      )}
     </div>
   )
 }
