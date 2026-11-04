@@ -7,9 +7,11 @@ import { db, save } from './fake/db'
 
 const SESSION = 'fake-session'
 const wait = () => new Promise((r) => setTimeout(r, import.meta.env.MODE === 'test' ? 0 : 150))
+// Callers get copies, so editing a returned object cannot change the cache.
+const out = <T>(x: T): T => structuredClone(x)
 
 export function me(): Profile | null {
-  const id = localStorage.getItem(SESSION)
+  const id = sessionStorage.getItem(SESSION)
   return db().profiles.find((p) => p.id === id) ?? null
 }
 
@@ -39,31 +41,33 @@ export async function login(email: string, password: string) {
   await wait()
   const user = db().profiles.find((p) => p.email === email.trim().toLowerCase())
   if (!user || db().passwords[user.email] !== password) throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
-  localStorage.setItem(SESSION, user.id)
+  sessionStorage.setItem(SESSION, user.id)
   return user
 }
-export const logout = () => localStorage.removeItem(SESSION)
+export const logout = () => sessionStorage.removeItem(SESSION)
 
 // Clips
 export async function listClips(from: string, to: string) {
   await wait()
   need()
-  return live()
-    .filter((c) => c.date >= from && c.date <= to)
-    .sort((a, b) => a.date.localeCompare(b.date) || a.position - b.position)
-    .map(toCard)
+  return out(
+    live()
+      .filter((c) => c.date >= from && c.date <= to)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.position - b.position)
+      .map(toCard),
+  )
 }
 
 export async function listRecent(limit: number) {
   await wait()
   need()
-  return [...live()].sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, limit)
+  return out(live().sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, limit))
 }
 
 export async function getClip(id: string) {
   await wait()
   need()
-  return live().find((c) => c.id === id) ?? null
+  return out(live().find((c) => c.id === id) ?? null)
 }
 
 export async function createClip(input: ClipInput) {
@@ -75,17 +79,20 @@ export async function createClip(input: ClipInput) {
   }
   db().clips.push(clip)
   save()
-  return clip
+  return out(clip)
 }
 
+// Only brief fields are editable; a status or deleted_at key in the patch is ignored.
+const EDITABLE = ['date', 'category_id', 'title', 'script', 'note'] as const
 export async function updateClip(id: string, patch: Partial<ClipInput>) {
   await wait()
   need('owner')
   const c = clipOf(id)
+  const changes = Object.fromEntries(EDITABLE.filter((k) => patch[k] !== undefined).map((k) => [k, patch[k]]))
   if (patch.date && patch.date !== c.date) c.position = nextPosition(patch.date)
-  Object.assign(c, patch, { updated_at: stamp() })
+  Object.assign(c, changes, { updated_at: stamp() })
   save()
-  return c
+  return out(c)
 }
 
 export async function softDeleteClip(id: string) {
@@ -107,9 +114,13 @@ export async function moveClip(id: string, dir: -1 | 1) {
   need('owner')
   const c = clipOf(id)
   const day = live().filter((x) => x.date === c.date).sort((a, b) => a.position - b.position)
-  const other = day[day.findIndex((x) => x.id === id) + dir]
-  if (!other) return
-  ;[c.position, other.position] = [other.position, c.position]
+  const i = day.findIndex((x) => x.id === id)
+  if (i < 0) return
+  const t = i + dir
+  if (t < 0 || t >= day.length) return
+  // Restored clips can share a position with another clip; renumber the day before swapping.
+  day.forEach((x, k) => { x.position = k })
+  ;[day[i].position, day[t].position] = [day[t].position, day[i].position]
   save()
 }
 
@@ -119,13 +130,13 @@ export async function copyClip(id: string, date: string) {
   const src = clipOf(id)
   const copy: Clip = {
     ...src, id: uid(), date, position: nextPosition(date), created_by: u.id, updated_at: stamp(),
-    status: 'todo', revision_note: '',
+    status: 'todo', revision_note: '', deleted_at: null,
   }
   db().clips.push(copy)
   const refs = db().media.filter((m) => m.clip_id === id && m.purpose === 'reference')
   db().media.push(...refs.map((m) => ({ ...m, id: uid(), clip_id: copy.id })))
   save()
-  return copy
+  return out(copy)
 }
 
 export async function reviewClip(id: string, status: 'approved' | 'revision', note = '') {
@@ -137,20 +148,20 @@ export async function reviewClip(id: string, status: 'approved' | 'revision', no
   c.revision_note = status === 'revision' ? note.trim() : ''
   c.updated_at = stamp()
   save()
-  return c
+  return out(c)
 }
 
 export async function search(q: string) {
   await wait()
   need()
-  return searchClips(live(), q).sort((a, b) => b.date.localeCompare(a.date))
+  return out(searchClips(live(), q).sort((a, b) => b.date.localeCompare(a.date)))
 }
 
 // Media
 export async function listMedia(clipId: string) {
   await wait()
   need()
-  return db().media.filter((m) => m.clip_id === clipId)
+  return out(db().media.filter((m) => m.clip_id === clipId))
 }
 
 function dropMedia(id: string) {
@@ -159,7 +170,11 @@ function dropMedia(id: string) {
   if (!m) return
   d.media = d.media.filter((x) => x.id !== id)
   const left = d.media.some((x) => x.clip_id === m.clip_id && x.purpose === 'submission')
-  if (m.purpose === 'submission' && !left) clipOf(m.clip_id).status = 'todo'
+  if (m.purpose === 'submission' && !left) {
+    const c = clipOf(m.clip_id)
+    c.status = 'todo'
+    c.revision_note = ''
+  }
   save()
 }
 
@@ -187,7 +202,7 @@ export async function storageUsedBytes() {
 export async function listCategories() {
   await wait()
   need()
-  return [...db().categories].sort((a, b) => a.position - b.position)
+  return out([...db().categories].sort((a, b) => a.position - b.position))
 }
 
 export async function categoryCounts() {
@@ -201,16 +216,19 @@ export async function categoryCounts() {
 export async function createCategory(name: string, color: string) {
   await wait()
   need('owner')
-  const cat: Category = { id: uid(), name, color, position: db().categories.length }
+  const position = Math.max(-1, ...db().categories.map((c) => c.position)) + 1
+  const cat: Category = { id: uid(), name, color, position }
   db().categories.push(cat)
   save()
-  return cat
+  return out(cat)
 }
 
 export async function updateCategory(id: string, patch: Pick<Category, 'name' | 'color'>) {
   await wait()
   need('owner')
-  Object.assign(db().categories.find((c) => c.id === id) ?? {}, patch)
+  const cat = db().categories.find((c) => c.id === id)
+  if (!cat) throw new Error('ไม่พบประเภท')
+  Object.assign(cat, patch)
   save()
 }
 
@@ -228,7 +246,7 @@ const tempPassword = () => Math.random().toString(36).slice(2, 10)
 export async function listUsers() {
   await wait()
   need('owner')
-  return db().profiles
+  return out(db().profiles)
 }
 
 export async function createCreator(display_name: string, rawEmail: string) {
@@ -241,7 +259,7 @@ export async function createCreator(display_name: string, rawEmail: string) {
   db().profiles.push(user)
   db().passwords[email] = password
   save()
-  return { user, tempPassword: password }
+  return { user: out(user), tempPassword: password }
 }
 
 export async function resetPassword(id: string) {

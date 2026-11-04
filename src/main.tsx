@@ -1,5 +1,4 @@
 import { createRoot } from 'react-dom/client'
-import '@fontsource-variable/geist'
 import '@fontsource-variable/noto-sans-thai'
 import './index.css'
 

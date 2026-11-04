@@ -24,6 +24,8 @@ export const withRounds = (subs: ClipMedia[]) =>
     .reverse()
 
 export const formatSize = (bytes: number) => {
-  const gb = bytes / 1024 ** 3
-  return gb >= 1 ? `${+gb.toFixed(1)} GB` : `${Math.round(bytes / 1024 ** 2)} MB`
+  if (bytes < 1024 ** 2) return `${Math.max(1, Math.round(bytes / 1024))} KB`
+  if (bytes >= 1024 ** 3) return `${+(bytes / 1024 ** 3).toFixed(1)} GB`
+  const mb = Math.round(bytes / 1024 ** 2)
+  return mb >= 1024 ? '1 GB' : `${mb} MB` // rounding up to 1024 MB reads better as 1 GB
 }

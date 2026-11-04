@@ -3,10 +3,21 @@ import { seed, type DB } from './seed'
 const KEY = 'fake-db-v1'
 let cache: DB | null = null
 
+// Another tab wrote the store: drop the cache so the next read reloads it.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEY) cache = null
+  })
+}
+
 export function db(): DB {
   if (cache) return cache
   const raw = localStorage.getItem(KEY)
-  cache = raw ? (JSON.parse(raw) as DB) : seed()
+  try {
+    cache = raw ? (JSON.parse(raw) as DB) : seed()
+  } catch {
+    cache = seed()
+  }
   return cache
 }
 

@@ -54,6 +54,8 @@ describe('media', () => {
   it('formats sizes', () => {
     expect(formatSize(820 * 1024 ** 2)).toBe('820 MB')
     expect(formatSize(1.8 * 1024 ** 3)).toBe('1.8 GB')
+    expect(formatSize(500 * 1024)).toBe('500 KB')
+    expect(formatSize(1024 ** 3 - 1)).toBe('1 GB')
   })
 })
 

@@ -11,6 +11,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date(2026, 9, 29, 10))
   localStorage.clear()
+  sessionStorage.clear()
   resetDb()
 })
 
@@ -136,5 +137,71 @@ describe('categories and users', () => {
     await asOwner()
     await expect(api.createCreator('X', 'creator@example.com')).rejects.toThrow('อีเมลนี้')
     await expect(api.deleteUser('u-owner')).rejects.toThrow('ลบบัญชีเจ้าของไม่ได้')
+  })
+})
+
+describe('owner-only calls reject a creator', () => {
+  it('blocks every owner action', async () => {
+    await asCreator()
+    const day = todayIso()
+    const calls = [
+      () => api.createClip({ date: day, category_id: 'cat-review', title: 'x', script: '', note: '' }),
+      () => api.restoreClip('c1'),
+      () => api.moveClip('c1', 1),
+      () => api.copyClip('c1', day),
+      () => api.updateCategory('cat-review', { name: 'x', color: '#000000' }),
+      () => api.deleteCategory('cat-review'),
+      () => api.listUsers(),
+      () => api.createCreator('X', 'x@example.com'),
+      () => api.resetPassword('u-creator'),
+      () => api.deleteUser('u-creator'),
+      () => api.storageUsedBytes(),
+      () => api.deleteMedia('m1'),
+    ]
+    for (const call of calls) await expect(call()).rejects.toThrow('ไม่มีสิทธิ์')
+  })
+  it('refuses to withdraw a reference file', async () => {
+    await asCreator()
+    await expect(api.withdrawMedia('m1')).rejects.toThrow('หมดเวลาถอนไฟล์')
+  })
+})
+
+describe('ordering and reads', () => {
+  it('keeps positions unique after restoring a clip and moving it', async () => {
+    await asOwner()
+    await api.softDeleteClip('c2')
+    const made = await api.createClip({ date: todayIso(), category_id: 'cat-review', title: 'ใหม่', script: '', note: '' })
+    await api.restoreClip('c2')
+    await api.moveClip('c2', -1)
+    const rows = await api.listClips(todayIso(), todayIso())
+    expect(rows.map((c) => c.id)).toEqual(['c2', 'c1', made.id])
+    expect(new Set(rows.map((c) => c.position)).size).toBe(rows.length)
+  })
+  it('lists recent clips newest first, up to the limit', async () => {
+    await asOwner()
+    const recent = await api.listRecent(3)
+    expect(recent).toHaveLength(3)
+    for (let i = 1; i < recent.length; i++) {
+      expect(recent[i - 1].updated_at >= recent[i].updated_at).toBe(true)
+    }
+  })
+  it('counts live clips per category', async () => {
+    await asOwner()
+    expect(await api.categoryCounts()).toEqual({ 'cat-review': 3, 'cat-content': 3 })
+  })
+  it('sums storage across media', async () => {
+    await asOwner()
+    const total = await api.storageUsedBytes()
+    const listed = (await api.listMedia('c1')).reduce((sum, m) => sum + m.size_bytes, 0)
+    expect(total).toBeGreaterThan(0)
+    expect(total).toBe(listed)
+  })
+  it('returns copies, so editing a result does not change the store', async () => {
+    await asOwner()
+    const first = await api.getClip('c1')
+    if (!first) throw new Error('seed clip missing')
+    first.title = 'changed locally'
+    const second = await api.getClip('c1')
+    expect(second?.title).not.toBe('changed locally')
   })
 })
