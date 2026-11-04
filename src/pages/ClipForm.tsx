@@ -1,3 +1,155 @@
-export function ClipForm(_props: { clipId?: string }) {
-  return null
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { ChevronLeft, Copy, Trash2 } from 'lucide-react'
+import * as api from '@/api/index'
+import { useAct, useCategories, useClip, useDeleteClip, useMedia } from '@/api/queries'
+import { CopyDialog } from '@/components/CopyDialog'
+import { FileTile, UploadDisabled } from '@/components/bits'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { todayIso } from '@/lib/dates'
+import { daysLeft, WARN_DAYS } from '@/lib/media'
+import type { ClipInput } from '@/lib/types'
+import { Review } from './Review'
+import { toast } from 'sonner'
+
+const DRAFT_KEY = 'clip-draft'
+
+function readDraft(): ClipInput | null {
+  try {
+    return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null')
+  } catch {
+    return null
+  }
+}
+
+export function ClipForm({ clipId }: { clipId?: string }) {
+  const { data: clip, isPending } = useClip(clipId ?? '')
+  if (clipId && isPending) return <p className="text-sm text-sub">กำลังโหลด...</p>
+  if (clipId && !clip) return <p>ไม่พบคลิป <Link to="/calendar" className="text-brand">กลับปฏิทิน</Link></p>
+  return <Form key={clipId ?? 'new'} clipId={clipId} initial={clip ?? undefined} />
+}
+
+function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
+  const nav = useNavigate()
+  const [params] = useSearchParams()
+  const { data: cats = [] } = useCategories()
+  const { data: media = [] } = useMedia(clipId ?? '')
+  const [form, setForm] = useState<ClipInput>(initial
+    ? { date: initial.date, category_id: initial.category_id, title: initial.title, script: initial.script, note: initial.note }
+    : { date: params.get('date') ?? todayIso(), category_id: '', title: '', script: '', note: '' })
+  const [titleError, setTitleError] = useState(false)
+  const [draft, setDraft] = useState(() => (clipId ? null : readDraft()))
+  const [draftSaved, setDraftSaved] = useState(false)
+  const [copying, setCopying] = useState(false)
+  const del = useDeleteClip()
+  const removeFile = useAct(api.deleteMedia)
+  const save = useAct((input: ClipInput) => (clipId ? api.updateClip(clipId, input) : api.createClip(input)))
+
+  const categoryId = form.category_id || cats[0]?.id || ''
+  const set = (patch: Partial<ClipInput>) => setForm((f) => ({ ...f, ...patch }))
+
+  useEffect(() => {
+    if (clipId || draft || !(form.title || form.script || form.note)) return
+    const t = setTimeout(() => {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(form))
+      setDraftSaved(true)
+    }, 1000)
+    return () => clearTimeout(t)
+  }, [form, clipId, draft])
+
+  const submit = () => {
+    if (!form.title.trim()) return setTitleError(true)
+    const { date, script, note } = form
+    save.mutate({ date, script, note, category_id: categoryId, title: form.title.trim() }, {
+      onSuccess: (c) => {
+        localStorage.removeItem(DRAFT_KEY)
+        toast.success('บันทึกแล้ว')
+        if (!clipId) nav(`/clips/${c.id}`, { replace: true })
+      },
+    })
+  }
+
+  const refs = media.filter((m) => m.purpose === 'reference')
+  const expiring = media.filter((m) => daysLeft(m.expires_at) <= WARN_DAYS)
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Button variant="outline" nativeButton={false} render={<Link to={`/calendar?date=${form.date}`} />}><ChevronLeft />ปฏิทิน</Button>
+        {draftSaved && <span className="text-xs text-sub">✓ บันทึกร่างอัตโนมัติแล้ว</span>}
+        <div className="flex gap-2">
+          {clipId ? (
+            <>
+              <Button variant="outline" onClick={() => setCopying(true)}><Copy />คัดลอกไปวันอื่น</Button>
+              <Button variant="outline" className="border-danger text-danger" onClick={() => void del(clipId).then((ok) => { if (ok) nav(`/calendar?date=${form.date}`) })}><Trash2 />ลบคลิป</Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={() => nav(-1)}>ยกเลิก</Button>
+          )}
+          <Button onClick={submit} disabled={save.isPending}>บันทึก</Button>
+        </div>
+      </div>
+
+      {draft && (
+        <div className="flex items-center justify-between rounded-card border border-note-line bg-note p-3 text-sm">
+          พบร่างที่ยังไม่ได้บันทึก: {draft.title || 'ไม่มีหัวข้อ'}
+          <span className="flex gap-2">
+            <Button variant="outline" onClick={() => { localStorage.removeItem(DRAFT_KEY); setDraft(null) }}>ทิ้งร่าง</Button>
+            <Button onClick={() => { setForm(draft); setDraft(null) }}>กู้คืนร่าง</Button>
+          </span>
+        </div>
+      )}
+
+      {expiring.length > 0 && (
+        <div role="status" className="rounded-card border border-[#ffb04d] bg-[#fff0e0] p-3 text-sm">
+          มี {expiring.length} ไฟล์จะถูกลบใน {Math.min(...expiring.map((m) => daysLeft(m.expires_at)))} วัน
+          <Button variant="link" disabled className="ml-2 h-auto p-0">ดาวน์โหลดทั้งหมด</Button>
+        </div>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1">
+              <Label htmlFor="cat">ประเภท</Label>
+              <select id="cat" value={categoryId} onChange={(e) => set({ category_id: e.target.value })} className="h-9 rounded-md border border-line bg-white px-2 text-sm">
+                {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="grid gap-1">
+              <Label htmlFor="date">วัน</Label>
+              <Input id="date" type="date" value={form.date} onChange={(e) => e.target.value && set({ date: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="title">หัวข้อ</Label>
+            <Input id="title" aria-invalid={titleError} value={form.title} className="font-bold" onChange={(e) => { set({ title: e.target.value }); setTitleError(false) }} />
+            {titleError && <p role="alert" className="text-xs text-danger">กรุณากรอกหัวข้อ</p>}
+          </div>
+          <div className="grid gap-1">
+            <Label htmlFor="script">สคริปต์</Label>
+            <Textarea id="script" rows={clipId ? 10 : 18} value={form.script} onChange={(e) => set({ script: e.target.value })} />
+          </div>
+          {clipId && <Review clipId={clipId} />}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <section className="rounded-card border border-note-line bg-note p-3">
+            <Label htmlFor="note" className="mb-1">หมายเหตุ</Label>
+            <Textarea id="note" rows={5} placeholder="หนึ่งบรรทัดต่อหนึ่งข้อ" className="bg-white" value={form.note} onChange={(e) => set({ note: e.target.value })} />
+          </section>
+          <section className="flex flex-col gap-2 rounded-card border border-line p-3">
+            <h2 className="text-sm font-bold">ไฟล์อ้างอิง ({refs.length})</h2>
+            <div className="grid grid-cols-2 gap-2">{refs.map((f) => <FileTile key={f.id} file={f} onDelete={() => removeFile.mutate(f.id)} />)}</div>
+            <UploadDisabled label="ลากรูปมาวางหรือคลิกเพื่ออัปโหลด" />
+          </section>
+        </div>
+      </div>
+
+      {copying && clipId && <CopyDialog clip={{ id: clipId, title: form.title, date: form.date }} onClose={() => setCopying(false)} />}
+    </div>
+  )
 }
