@@ -24,7 +24,7 @@ The user's own Excalidraw lists four pain points and a solution for each: (1) me
 
 ## Stack
 
-Buddy's spec (`system-design.md` Draft v2, 2026-11-03, sent to the user; not in this repo) is the source of truth for the backend. Summary:
+Buddy's spec (`system-design.md` Draft v2, 2026-11-03, copied to `docs/system-design.md`) is the source of truth for the backend. Summary:
 
 Frontend: React + Vite + TS + Tailwind + shadcn/ui, TanStack Query, React Router, date-fns, Uppy (uploads). Backend: Supabase Free (Postgres + RLS + Auth + Edge Functions `create-creator`, `media-upload`, `media-view`). Files go to a private Cloudflare R2 bucket, not Supabase Storage. The browser uploads and views directly through presigned URLs; files never pass through our server. Installed so far: React, Vite, TS, Tailwind v4, shadcn/ui (base-nova, built on @base-ui/react: no `asChild`, use `render` and `nativeButton={false}`), TanStack Query, React Router, date-fns, sonner, lucide-react, Vitest. Uppy is not installed yet.
 
