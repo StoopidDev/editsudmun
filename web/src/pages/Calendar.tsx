@@ -32,13 +32,13 @@ export function Calendar() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="outline" size="icon" aria-label="ก่อนหน้า" onClick={() => step(-1)}><ChevronLeft /></Button>
+        <Button variant="outline" size="icon" className="max-md:size-11" aria-label="ก่อนหน้า" onClick={() => step(-1)}><ChevronLeft /></Button>
         <b className="text-lg">{view === 'week' ? rangeLabel(date) : monthLabel(date)}</b>
-        <Button variant="outline" size="icon" aria-label="ถัดไป" onClick={() => step(1)}><ChevronRight /></Button>
+        <Button variant="outline" size="icon" className="max-md:size-11" aria-label="ถัดไป" onClick={() => step(1)}><ChevronRight /></Button>
         <Button variant="outline" onClick={() => go({ date: todayIso() })}>วันนี้</Button>
         <div className="flex rounded-card border border-line p-0.5">
           {(['week', 'month'] as const).map((v) => (
-            <button key={v} aria-pressed={view === v} onClick={() => go({ view: v })} className={`rounded-md px-3 py-1 text-sm ${view === v ? 'bg-brand text-white' : ''}`}>
+            <button key={v} aria-pressed={view === v} onClick={() => go({ view: v })} className={`rounded-md px-3 py-1 text-sm max-md:min-h-11 ${view === v ? 'bg-brand text-white' : ''}`}>
               {v === 'week' ? 'สัปดาห์' : 'เดือน'}
             </button>
           ))}
@@ -49,8 +49,8 @@ export function Calendar() {
       {view === 'week'
         ? (
           <>
-            <MobileDay days={days} selected={date} loading={clips.isPending} failed={clips.isError} forDay={forDay} owner={owner} onPick={(iso) => go({ date: iso })} />
-            <div className="hidden md:block"><Week days={days} loading={clips.isPending} forDay={forDay} owner={owner} onOpen={setDrawer} /></div>
+            <MobileDay days={days} selected={date} loading={clips.isPending} failed={clips.isError} forDay={forDay} owner={owner} onPick={(iso) => go({ date: iso })} onOpen={setDrawer} />
+            <div className="hidden xl:block"><Week days={days} loading={clips.isPending} forDay={forDay} owner={owner} onOpen={setDrawer} /></div>
           </>
         )
         : <Month days={days} anchor={date} forDay={forDay} onPick={(iso) => go({ view: 'week', date: iso })} />}
@@ -65,12 +65,12 @@ export function Calendar() {
   )
 }
 
-function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: boolean; forDay: (iso: string) => ClipCardRow[]; owner: boolean; onPick: (iso: string) => void }) {
+function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: boolean; forDay: (iso: string) => ClipCardRow[]; owner: boolean; onPick: (iso: string) => void; onOpen: (iso: string) => void }) {
   const today = todayIso()
   const selIso = toIso(p.selected)
   const list = p.forDay(selIso)
   return (
-    <div className="flex min-w-0 flex-col gap-3 md:hidden">
+    <div className="flex min-w-0 flex-col gap-3 xl:hidden">
       <div className="grid grid-cols-7 gap-1">
         {p.days.map((d) => {
           const iso = toIso(d)
@@ -86,7 +86,10 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
           )
         })}
       </div>
-      <h2 className="text-sm font-bold">{dayLabel(p.selected)} {shortDate(p.selected)} · {list.length} คลิป</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold">{dayLabel(p.selected)} {shortDate(p.selected)} · {list.length} คลิป</h2>
+        <button type="button" onClick={() => p.onOpen(selIso)} className="min-h-11 px-2 text-sm text-brand">ดูทั้งวัน</button>
+      </div>
       {p.loading && <div className="h-20 rounded-card bg-grid" aria-label="กำลังโหลด" />}
       {list.map((c) => <ClipCard key={c.id} clip={c} />)}
       {!p.loading && !p.failed && list.length === 0 && <p className="py-2 text-center text-sm text-sub">ไม่มีคลิป</p>}
@@ -100,13 +103,13 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
 function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => ClipCardRow[]; owner: boolean; onOpen: (iso: string) => void }) {
   const today = todayIso()
   return (
-    <div className="grid grid-cols-1 gap-2 md:grid-cols-7">
+    <div className="grid grid-cols-7 gap-2">
       {p.days.map((d) => {
         const iso = toIso(d)
         const list = p.forDay(iso)
         const isToday = iso === today
         return (
-          <section key={iso} className={`flex flex-col gap-2 rounded-card p-2 md:min-h-[70vh] ${isToday ? 'border border-brand bg-today' : 'bg-surface'}`}>
+          <section key={iso} className={`flex flex-col gap-2 rounded-card p-2 min-h-[70vh] ${isToday ? 'border border-brand bg-today' : 'bg-surface'}`}>
             <button onClick={() => p.onOpen(iso)} className={`rounded-card py-1 text-center ${isToday ? 'bg-brand text-white' : ''}`}>
               <span className="text-xs">{dayLabel(d)}</span><br /><b className="text-xl">{d.getDate()}</b><br />
               <span className="text-xs">{list.length} คลิป</span>
@@ -130,6 +133,7 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipCar
   const { data: cats = [] } = useCategories()
   const today = todayIso()
   return (
+    <>
     <div className="grid grid-cols-7 overflow-hidden rounded-card border border-line">
       {p.days.slice(0, 7).map((d) => <div key={d.getDay()} className="border-b border-grid py-1 text-center text-xs text-sub">{dayLabel(d)}</div>)}
       {p.days.map((d) => {
@@ -143,7 +147,9 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipCar
               const n = list.filter((x) => x.category_id === c.id).length
               return n > 0 && (
                 <span key={c.id} className="flex justify-between rounded px-1 text-xs font-bold" style={{ background: c.color, color: readableOn(c.color) }}>
-                  <span className="hidden truncate sm:inline">{c.name}</span><span>{n}</span>
+                  <span className="hidden truncate sm:inline">{c.name}</span>
+                  <span className="sm:hidden">{c.name.slice(0, 1)}</span>
+                  <span>{n}</span>
                 </span>
               )
             })}
@@ -151,5 +157,13 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipCar
         )
       })}
     </div>
+    <div className="flex flex-wrap gap-3 text-xs text-sub sm:hidden">
+      {cats.map((c) => (
+        <span key={c.id} className="flex items-center gap-1">
+          <span className="size-3 rounded-full" style={{ background: c.color }} />{c.name}
+        </span>
+      ))}
+    </div>
+    </>
   )
 }
