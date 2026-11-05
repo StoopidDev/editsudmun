@@ -21,7 +21,7 @@
 
   --popover-foreground: oklch(0.145 0 0);
 
-  --primary: #0088ff;
+  --primary: #0066cc;
 
   --primary-foreground: #fff;
 
@@ -123,7 +123,7 @@
 
 @theme {
   --font-sans: "Geist Variable", "Noto Sans Thai Variable", sans-serif;
-  --color-brand: #0088ff;
+  --color-brand: #0066cc;
   --color-ink: #1e1e1e;
   --color-sub: #5f5f5f;
   --color-line: #757575;
@@ -132,7 +132,7 @@
   --color-today: #eaf4ff;
   --color-note: #fff4d6;
   --color-note-line: #ffcc00;
-  --color-danger: #ff383c;
+  --color-danger: #d70015;
   --radius-card: 10px;
 }
 

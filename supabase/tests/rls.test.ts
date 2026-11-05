@@ -136,11 +136,37 @@ describe('clips (owner)', () => {
     const { data } = await owner.from('clips').select('id').eq('date', '2030-02-05').is('deleted_at', null).order('position')
     expect(data!.map((r) => r.id)).toEqual([b.id, a.id])
   })
-  it('revision needs a note and starts a new round', async () => {
+  it('revision needs a note and starts a new round only after files were sent', async () => {
     const clip = await newClip()
     expect((await owner.from('clips').update({ status: 'revision', revision_note: ' ' }).eq('id', clip.id)).error).not.toBeNull()
-    expect((await owner.from('clips').update({ status: 'revision', revision_note: 'เสียงเบาไป' }).eq('id', clip.id)).error).toBeNull()
+    expect((await owner.from('clips').update({ status: 'revision', revision_note: 'ยังไม่ส่งเลย' }).eq('id', clip.id)).error).toBeNull()
+    expect(await clipStatus(clip.id)).toMatchObject({ status: 'revision', round: 1 })
+    await addMedia(creator, clip.id, 'submission')
+    await owner.from('clips').update({ status: 'revision', revision_note: 'เสียงเบาไป' }).eq('id', clip.id)
     expect(await clipStatus(clip.id)).toMatchObject({ status: 'revision', round: 2 })
+  })
+  it('review undo keeps rounds right', async () => {
+    const clip = await newClip()
+    await addMedia(creator, clip.id, 'submission')
+    // request changes, then undo it before the creator sends anything: back to round 1
+    await owner.from('clips').update({ status: 'revision', revision_note: 'แก้สี' }).eq('id', clip.id)
+    await owner.from('clips').update({ status: 'submitted', revision_note: '' }).eq('id', clip.id)
+    expect(await clipStatus(clip.id)).toMatchObject({ status: 'submitted', round: 1 })
+    // approve from revision, then undo back to revision: no extra round
+    await owner.from('clips').update({ status: 'revision', revision_note: 'แก้สี' }).eq('id', clip.id)
+    await owner.from('clips').update({ status: 'approved', revision_note: '' }).eq('id', clip.id)
+    await owner.from('clips').update({ status: 'revision', revision_note: 'แก้สี' }).eq('id', clip.id)
+    expect(await clipStatus(clip.id)).toMatchObject({ status: 'revision', round: 2 })
+  })
+  it('brief_updated_at moves on brief edits only', async () => {
+    const clip = await newClip()
+    const first = (await admin.from('clips').select('brief_updated_at').eq('id', clip.id).single()).data!.brief_updated_at
+    await addMedia(creator, clip.id, 'submission')
+    await owner.from('clips').update({ status: 'approved' }).eq('id', clip.id)
+    await owner.from('clips').update({ title: clip.title }).eq('id', clip.id)
+    expect((await admin.from('clips').select('brief_updated_at').eq('id', clip.id).single()).data!.brief_updated_at).toBe(first)
+    await owner.from('clips').update({ script: 'สคริปต์ใหม่' }).eq('id', clip.id)
+    expect((await admin.from('clips').select('brief_updated_at').eq('id', clip.id).single()).data!.brief_updated_at).not.toBe(first)
   })
   it('search finds a Thai word inside a script, ignores deleted clips and escapes wildcards', async () => {
     const word = `นาฬิกา${tag}`

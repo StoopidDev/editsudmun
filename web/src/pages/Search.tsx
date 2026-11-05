@@ -12,8 +12,9 @@ export function Search() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* The sidebar is hidden on phones, so this input is the only search box there. */}
-      <Input key={q} className="md:hidden" aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
+      {/* The full sidebar starts at lg, so this input is the only search box below it. */}
+      <Input key={q} className="lg:hidden" aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
+      {!q && <p className="py-16 text-center text-sm text-sub">พิมพ์ชื่อคลิปหรือคำในสคริปต์ แล้วกด Enter</p>}
       {q && <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isFetching && !isError && <span className="text-sm font-normal text-sub">{data.length} คลิป</span>}</h1>}
       {data.map((c) => {
         const hay = [c.script, c.note, c.title].find((t) => t.toLowerCase().includes(q.trim().toLowerCase())) ?? c.script

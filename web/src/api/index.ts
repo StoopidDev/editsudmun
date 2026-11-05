@@ -1,8 +1,11 @@
 // Everything the UI may do to data, on Supabase. Permissions are enforced by RLS, triggers and
 // RPCs in supabase/migrations; checks here only give friendlier Thai errors.
 import { FunctionsHttpError, type PostgrestError } from '@supabase/supabase-js'
-import { isIsoDate } from '@/lib/dates'
-import type { Category, Clip, ClipCardRow, ClipInput, ClipMedia, Profile } from '@/lib/types'
+import { addDays } from 'date-fns'
+import { attentionOf, type Attention } from '@/lib/attention'
+import { isIsoDate, todayIso } from '@/lib/dates'
+import { daysLeft, WARN_DAYS } from '@/lib/media'
+import type { Category, Clip, ClipCardRow, ClipInput, ClipMedia, ClipStatus, Profile } from '@/lib/types'
 import { supabase } from './supabase'
 
 // Postgres errors raised by our functions are already Thai; map the rest.
@@ -50,6 +53,19 @@ export async function logout() {
   await supabase.auth.signOut()
 }
 
+// Re-checks the current password by signing in with it, so a borrowed open session cannot
+// change it. Minimum length must match Auth > Password settings in the dashboard.
+export async function changePassword(current: string, next: string) {
+  const { data } = await supabase.auth.getUser()
+  const email = data.user?.email
+  if (!email) throw new Error('กรุณาเข้าสู่ระบบ')
+  if (next.length < 8) throw new Error('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร')
+  const check = await supabase.auth.signInWithPassword({ email, password: current })
+  if (check.error) throw new Error('รหัสผ่านปัจจุบันไม่ถูกต้อง')
+  const { error } = await supabase.auth.updateUser({ password: next })
+  if (error) throw new Error(error.code === 'same_password' ? 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสเดิม' : 'เปลี่ยนรหัสผ่านไม่สำเร็จ')
+}
+
 // Clips
 // Cards show the number of reference images; counted in the same request.
 const CARD = '*, images:clip_media(count)'
@@ -72,10 +88,26 @@ export async function listClips(from: string, to: string): Promise<ClipCardRow[]
   return (rows as CardRow[]).map(toCard)
 }
 
+// brief_updated_at moves only when the brief itself changes, not on review or reorder.
 export async function listRecent(limit: number): Promise<Clip[]> {
   return ok(
-    await supabase.from('clips').select('*').is('deleted_at', null).order('updated_at', { ascending: false }).limit(limit),
+    await supabase.from('clips').select('*').is('deleted_at', null).order('brief_updated_at', { ascending: false }).limit(limit),
   ) as Clip[]
+}
+
+// Owner: work waiting for review. Creator: changes requested, or todo past its date.
+const RANK: Record<Attention, number> = { revision: 0, review: 1, overdue: 2 }
+export async function listAttention(): Promise<(ClipCardRow & { attention: Attention })[]> {
+  const user = await me()
+  if (!user) throw new Error('กรุณาเข้าสู่ระบบ')
+  const today = todayIso()
+  let q = supabase.from('clips').select(CARD).is('deleted_at', null).eq('images.purpose', 'reference').eq('images.kind', 'image')
+  q = user.role === 'owner' ? q.eq('status', 'submitted') : q.or(`status.eq.revision,and(status.eq.todo,date.lt.${today})`)
+  const rows = (ok(await q) as CardRow[]).flatMap((c) => {
+    const attention = attentionOf(c as Clip, user.role, today)
+    return attention ? [{ ...toCard(c), attention }] : []
+  })
+  return rows.sort((a, b) => RANK[a.attention] - RANK[b.attention] || a.date.localeCompare(b.date) || a.position - b.position)
 }
 
 export async function getClip(id: string): Promise<Clip | null> {
@@ -118,6 +150,12 @@ export async function reviewClip(id: string, status: 'approved' | 'revision', no
   return one(await supabase.from('clips').update({ status, revision_note }).eq('id', id).select()) as Clip
 }
 
+// Undo of a review: put back the earlier status and note (owner, plain update; the round
+// trigger keeps rounds right).
+export async function restoreReview(id: string, status: ClipStatus, note: string) {
+  one(await supabase.from('clips').update({ status, revision_note: note }).eq('id', id).select('id'))
+}
+
 export async function search(q: string): Promise<Clip[]> {
   if (!q.trim()) return []
   return ok(await supabase.rpc('search_clips', { p_q: q })) as Clip[]
@@ -135,6 +173,20 @@ export async function deleteMedia(id: string) {
 // RLS allows it only for the uploader, while pending or within 10 minutes of finishing.
 export async function withdrawMedia(id: string) {
   one(await supabase.from('clip_media').delete().eq('id', id).select('id'), 'หมดเวลาถอนไฟล์นี้แล้ว')
+}
+
+// Owner: files R2 will delete within WARN_DAYS, on live clips, soonest first.
+export async function listExpiring() {
+  const until = addDays(new Date(), WARN_DAYS).toISOString()
+  const rows = ok(
+    await supabase
+      .from('clip_media')
+      .select('id, file_name, expires_at, clip:clips!inner(id, title, deleted_at)')
+      .lte('expires_at', until)
+      .is('clip.deleted_at', null)
+      .order('expires_at'),
+  ) as { id: string; file_name: string; expires_at: string; clip: { id: string; title: string } }[]
+  return rows.map((m) => ({ id: m.id, file_name: m.file_name, clip_id: m.clip.id, clip_title: m.clip.title, days: daysLeft(m.expires_at) }))
 }
 
 export async function storageUsedBytes(): Promise<number> {

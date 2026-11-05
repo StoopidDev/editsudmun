@@ -106,6 +106,7 @@ export type Database = {
       }
       clips: {
         Row: {
+          brief_updated_at: string
           category_id: string
           created_by: string | null
           date: string
@@ -121,6 +122,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brief_updated_at?: string
           category_id: string
           created_by?: string | null
           date: string
@@ -136,6 +138,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brief_updated_at?: string
           category_id?: string
           created_by?: string | null
           date?: string
@@ -205,6 +208,7 @@ export type Database = {
       copy_clip: {
         Args: { p_date: string; p_id: string }
         Returns: {
+          brief_updated_at: string
           category_id: string
           created_by: string | null
           date: string
@@ -238,6 +242,7 @@ export type Database = {
       search_clips: {
         Args: { p_q: string }
         Returns: {
+          brief_updated_at: string
           category_id: string
           created_by: string | null
           date: string

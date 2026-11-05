@@ -6,6 +6,7 @@ import { Categories } from '@/pages/Categories'
 import { ClipDetail } from '@/pages/ClipDetail'
 import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
+import { NotFound } from '@/pages/NotFound'
 import { Search } from '@/pages/Search'
 import { Users } from '@/pages/Users'
 
@@ -36,6 +37,7 @@ export function App() {
               <Route path="categories" element={<Categories />} />
               <Route path="users" element={<Users />} />
             </Route>
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Route>
       </Routes>
