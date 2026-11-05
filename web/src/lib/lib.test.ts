@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
 import { canWithdraw, daysLeft, formatSize, isPlayable, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
+import { contrast, nextColor, readableOn } from './color'
 import type { Clip, ClipMedia } from './types'
 
 const media = (over: Partial<ClipMedia>): ClipMedia => ({
@@ -83,5 +84,19 @@ describe('search', () => {
   it('falls back to the text start when nothing matches', () => {
     const s = snippet('abc', 'zzz', 10)
     expect(s).toEqual({ before: 'abc', match: '', after: '' })
+  })
+})
+
+describe('color', () => {
+  it('measures contrast', () => {
+    expect(contrast('#ffffff', '#000000')).toBeCloseTo(21, 0)
+  })
+  it('picks the readable text colour', () => {
+    expect(readableOn('#34c759')).toBe('#1e1e1e')
+    expect(readableOn('#6155f5')).toBe('#ffffff')
+  })
+  it('offers the first unused colour', () => {
+    expect(nextColor(['#6155f5', '#34c759'])).toBe('#ff9500')
+    expect(nextColor(['#6155F5'])).toBe('#34c759')
   })
 })

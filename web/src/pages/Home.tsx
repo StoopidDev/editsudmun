@@ -6,6 +6,7 @@ import { useCategories, useClips, useMe, useRecent, useStorage } from '@/api/que
 import { CategoryBadge } from '@/components/bits'
 import { Button } from '@/components/ui/button'
 import { dayLabel, fromIso, fullDate, rangeLabel, toIso, todayIso, weekDays } from '@/lib/dates'
+import { readableOn } from '@/lib/color'
 import { formatSize } from '@/lib/media'
 
 export function Home() {
@@ -64,9 +65,10 @@ export function Home() {
             return (
               <Link key={iso} to={`/calendar?date=${iso}`} className={`flex min-h-24 flex-col gap-1 border-grid p-2 sm:border-r ${iso === today ? 'bg-today' : ''}`}>
                 <span className={`rounded-card text-center text-xs ${iso === today ? 'bg-brand text-white' : ''}`}>{dayLabel(d)}<br /><b className="text-base">{d.getDate()}</b></span>
-                {list.slice(0, 3).map((c) => (
-                  <span key={c.id} className="truncate rounded px-1 text-xs font-bold text-white" style={{ background: color(c.category_id) }}>{c.title}</span>
-                ))}
+                {list.slice(0, 3).map((c) => {
+                  const bg = color(c.category_id) ?? '#5f5f5f'
+                  return <span key={c.id} className="truncate rounded px-1 text-xs font-bold" style={{ background: bg, color: readableOn(bg) }}>{c.title}</span>
+                })}
                 <span className="text-xs text-sub">{list.length ? `${list.length} คลิป` : week.isError ? '' : 'ไม่มีคลิป'}</span>
               </Link>
             )

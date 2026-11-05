@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight, Image as ImageIcon, Play, Upload } from 'lucide-react'
 import { useCategories } from '@/api/queries'
 import { Button } from '@/components/ui/button'
+import { readableOn } from '@/lib/color'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { dayLabel, fromIso, toIso, todayIso, weekDays } from '@/lib/dates'
 import { daysLeft } from '@/lib/media'
@@ -14,7 +15,7 @@ export function CategoryBadge({ categoryId }: { categoryId: string }) {
   const cat = data?.find((c) => c.id === categoryId)
   if (!cat) return null
   return (
-    <span className="inline-block rounded-md border bg-white px-2 py-0.5 text-xs font-bold" style={{ color: cat.color, borderColor: cat.color }}>
+    <span className="inline-block rounded-md px-2 py-0.5 text-xs font-bold" style={{ background: cat.color, color: readableOn(cat.color) }}>
       {cat.name}
     </span>
   )

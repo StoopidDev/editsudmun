@@ -6,6 +6,7 @@ import { useCategories, useClips, useMe } from '@/api/queries'
 import { ClipCard } from '@/components/ClipCard'
 import { DayDrawer } from '@/components/DayDrawer'
 import { Button } from '@/components/ui/button'
+import { readableOn } from '@/lib/color'
 import { dayLabel, fromIso, fullDate, monthGrid, monthLabel, rangeLabel, shortDate, toIso, todayIso, weekDays } from '@/lib/dates'
 import type { ClipCardRow } from '@/lib/types'
 
@@ -141,7 +142,7 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipCar
             {cats.map((c) => {
               const n = list.filter((x) => x.category_id === c.id).length
               return n > 0 && (
-                <span key={c.id} className="flex justify-between rounded px-1 text-xs font-bold text-white" style={{ background: c.color }}>
+                <span key={c.id} className="flex justify-between rounded px-1 text-xs font-bold" style={{ background: c.color, color: readableOn(c.color) }}>
                   <span className="hidden truncate sm:inline">{c.name}</span><span>{n}</span>
                 </span>
               )

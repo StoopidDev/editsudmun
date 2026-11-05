@@ -55,7 +55,7 @@ export function Review({ clipId }: { clipId: string }) {
         <span className="text-xs">สถานะ: <StatusChip status={clip.status} /></span>
         <span className="flex gap-2">
           <Button variant="outline" className="border-[#ff9500] text-[#b35c00]" disabled={review.isPending || rounds.length === 0} onClick={() => review.mutate({ status: 'revision', note: reason }, { onSuccess: () => setReason('') })}>ขอแก้ไข</Button>
-          <Button className="bg-[#34c759] text-white hover:bg-[#34c759]/90" disabled={review.isPending || rounds.length === 0} onClick={() => review.mutate({ status: 'approved' }, { onSuccess: () => setReason('') })}>อนุมัติ</Button>
+          <Button className="bg-[#1a7f3c] text-white hover:bg-[#1a7f3c]/90" disabled={review.isPending || rounds.length === 0} onClick={() => review.mutate({ status: 'approved' }, { onSuccess: () => setReason('') })}>อนุมัติ</Button>
         </span>
       </div>
       <Input aria-label="เหตุผลที่ขอแก้ไข" placeholder="เหตุผลที่ขอแก้ไข (ครีเอเตอร์จะเห็นข้อความนี้)" value={reason} onChange={(e) => setReason(e.target.value)} />
