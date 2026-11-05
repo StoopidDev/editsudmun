@@ -10,20 +10,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { isIsoDate, todayIso } from '@/lib/dates'
+import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from '@/lib/draft'
 import { daysLeft, WARN_DAYS } from '@/lib/media'
 import type { ClipInput } from '@/lib/types'
 import { Review } from './Review'
 import { toast } from 'sonner'
-
-const DRAFT_KEY = 'clip-draft'
-
-function readDraft(): ClipInput | null {
-  try {
-    return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? 'null')
-  } catch {
-    return null
-  }
-}
 
 export function ClipForm({ clipId }: { clipId?: string }) {
   const { data: clip, isPending } = useClip(clipId ?? '')
@@ -43,8 +34,10 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     ? { date: initial.date, category_id: initial.category_id, title: initial.title, script: initial.script, note: initial.note }
     : { date: explicitDate ?? todayIso(), category_id: '', title: '', script: '', note: '' })
   const [titleError, setTitleError] = useState(false)
-  const [draft, setDraft] = useState(() => (clipId ? null : readDraft()))
-  const [draftSaved, setDraftSaved] = useState(false)
+  const [draft, setDraft] = useState(() => {
+    const saved = readDraft(clipId)
+    return saved && initial && sameBrief(saved, initial) ? null : saved
+  })
   const [copying, setCopying] = useState(false)
   const del = useDeleteClip(() => nav(`/calendar?date=${form.date}`))
   const removeFile = useAct(api.deleteMedia)
@@ -53,14 +46,14 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   const categoryId = cats.some((c) => c.id === form.category_id) ? form.category_id : (cats[0]?.id ?? '')
   const set = (patch: Partial<ClipInput>) => setForm((f) => ({ ...f, ...patch }))
 
+  const pristine = initial ? sameBrief(form, initial) : isBlank(form)
+
+  // Written on every change, not debounced: leaving right after typing must not lose the text.
   useEffect(() => {
-    if (clipId || draft || !(form.title || form.script || form.note)) return
-    const t = setTimeout(() => {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(form))
-      setDraftSaved(true)
-    }, 1000)
-    return () => clearTimeout(t)
-  }, [form, clipId, draft])
+    if (draft) return
+    if (pristine) clearDraft(clipId)
+    else writeDraft(form, clipId)
+  }, [form, pristine, clipId, draft])
 
   const submit = () => {
     if (!isIsoDate(form.date)) { toast.error('วันที่ไม่ถูกต้อง'); return }
@@ -68,7 +61,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     const { date, script, note } = form
     save.mutate({ date, script, note, category_id: categoryId, title: form.title.trim() }, {
       onSuccess: (c) => {
-        localStorage.removeItem(DRAFT_KEY)
+        clearDraft(clipId)
         toast.success('บันทึกแล้ว')
         if (!clipId) nav(`/clips/${c.id}`, { replace: true })
       },
@@ -82,7 +75,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Button variant="outline" nativeButton={false} render={<Link to={`/calendar?date=${form.date}`} />}><ChevronLeft />ปฏิทิน</Button>
-        {draftSaved && <span className="text-xs text-sub">✓ บันทึกร่างอัตโนมัติแล้ว</span>}
+        {!pristine && !draft && <span className="text-xs text-sub">✓ บันทึกร่างอัตโนมัติแล้ว</span>}
         <div className="flex gap-2">
           {clipId ? (
             <>
@@ -92,7 +85,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           ) : (
             <Button variant="outline" onClick={() => nav(-1)}>ยกเลิก</Button>
           )}
-          <Button onClick={submit} disabled={save.isPending || cats.length === 0}>บันทึก</Button>
+          <Button onClick={submit} disabled={save.isPending || cats.length === 0 || !!draft}>บันทึก</Button>
         </div>
       </div>
 
@@ -100,7 +93,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         <div className="flex items-center justify-between rounded-card border border-note-line bg-note p-3 text-sm">
           พบร่างที่ยังไม่ได้บันทึก: {draft.title || 'ไม่มีหัวข้อ'}
           <span className="flex gap-2">
-            <Button variant="outline" onClick={() => { localStorage.removeItem(DRAFT_KEY); setDraft(null) }}>ทิ้งร่าง</Button>
+            <Button variant="outline" onClick={() => { clearDraft(clipId); setDraft(null) }}>ทิ้งร่าง</Button>
             <Button onClick={() => { setForm((f) => ({ ...draft, date: explicitDate ?? (isIsoDate(draft.date) ? draft.date : f.date) })); setDraft(null) }}>กู้คืนร่าง</Button>
           </span>
         </div>
@@ -113,6 +106,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         </div>
       )}
 
+      <fieldset disabled={!!draft} className="contents">
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 gap-3">
@@ -151,6 +145,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           </section>
         </div>
       </div>
+      </fieldset>
 
       {copying && clipId && <CopyDialog clip={{ id: clipId, title: form.title, date: form.date }} onClose={() => setCopying(false)} />}
     </div>
