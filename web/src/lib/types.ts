@@ -27,6 +27,7 @@ export interface Clip {
   note: string
   created_by: string
   updated_at: string
+  brief_updated_at: string // assumption: not in spec, see plan 2026-11-05 Part C
   status: ClipStatus // assumption: not in spec, confirm with client
   revision_note: string // assumption: not in spec
   deleted_at: string | null // agreed with Buddy (D3), not yet in spec

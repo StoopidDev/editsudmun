@@ -200,7 +200,7 @@ describe('ordering and reads', () => {
     const recent = await api.listRecent(3)
     expect(recent).toHaveLength(3)
     for (let i = 1; i < recent.length; i++) {
-      expect(recent[i - 1].updated_at >= recent[i].updated_at).toBe(true)
+      expect(recent[i - 1].brief_updated_at >= recent[i].brief_updated_at).toBe(true)
     }
   })
   it('counts live clips per category', async () => {
@@ -221,5 +221,30 @@ describe('ordering and reads', () => {
     first.title = 'changed locally'
     const second = await api.getClip('c1')
     expect(second?.title).not.toBe('changed locally')
+  })
+})
+
+describe('brief_updated_at', () => {
+  const later = () => vi.setSystemTime(new Date(2026, 9, 29, 12))
+  it('moves on a real brief change', async () => {
+    await asOwner()
+    const before = (await api.getClip('c1'))!.brief_updated_at
+    later()
+    await api.updateClip('c1', { script: 'ใหม่' })
+    expect((await api.getClip('c1'))!.brief_updated_at).not.toBe(before)
+  })
+  it('stays put on a save with no change', async () => {
+    await asOwner()
+    const c = (await api.getClip('c1'))!
+    later()
+    await api.updateClip('c1', { title: c.title, script: c.script, note: c.note, date: c.date, category_id: c.category_id })
+    expect((await api.getClip('c1'))!.brief_updated_at).toBe(c.brief_updated_at)
+  })
+  it('stays put on a review', async () => {
+    await asOwner()
+    const before = (await api.getClip('c1'))!.brief_updated_at
+    later()
+    await api.reviewClip('c1', 'approved')
+    expect((await api.getClip('c1'))!.brief_updated_at).toBe(before)
   })
 })

@@ -83,7 +83,7 @@ export function Home() {
             <Link key={c.id} to={`/clips/${c.id}`} className="flex flex-col gap-1 rounded-card border border-line p-3 hover:bg-surface">
               <div className="flex justify-between text-xs text-sub">
                 <CategoryBadge categoryId={c.category_id} />
-                {formatDistanceToNow(parseISO(c.updated_at), { locale: th, addSuffix: true })}
+                {formatDistanceToNow(parseISO(c.brief_updated_at), { locale: th, addSuffix: true })}
               </div>
               <b className="text-sm">{c.title}</b>
               <span className="text-xs text-sub">อัปเดตล่าสุด</span>

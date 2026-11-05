@@ -65,7 +65,7 @@ export async function listClips(from: string, to: string) {
 export async function listRecent(limit: number) {
   await wait()
   need()
-  return out(live().sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, limit))
+  return out(live().sort((a, b) => b.brief_updated_at.localeCompare(a.brief_updated_at)).slice(0, limit))
 }
 
 export async function getClip(id: string) {
@@ -80,7 +80,7 @@ export async function createClip(input: ClipInput) {
   if (!isIsoDate(input.date)) throw new Error('วันที่ไม่ถูกต้อง')
   checkCategory(input.category_id)
   const clip: Clip = {
-    ...input, id: uid(), position: nextPosition(input.date), created_by: u.id, updated_at: stamp(),
+    ...input, id: uid(), position: nextPosition(input.date), created_by: u.id, updated_at: stamp(), brief_updated_at: stamp(),
     status: 'todo', revision_note: '', deleted_at: null,
   }
   db().clips.push(clip)
@@ -97,8 +97,9 @@ export async function updateClip(id: string, patch: Partial<ClipInput>) {
   if (patch.category_id !== undefined) checkCategory(patch.category_id)
   const c = clipOf(id)
   const changes = Object.fromEntries(EDITABLE.filter((k) => patch[k] !== undefined).map((k) => [k, patch[k]]))
+  const briefChanged = EDITABLE.some((k) => patch[k] !== undefined && patch[k] !== c[k])
   if (patch.date && patch.date !== c.date) c.position = nextPosition(patch.date)
-  Object.assign(c, changes, { updated_at: stamp() })
+  Object.assign(c, changes, { updated_at: stamp() }, briefChanged ? { brief_updated_at: stamp() } : {})
   save()
   return out(c)
 }
@@ -138,7 +139,7 @@ export async function copyClip(id: string, date: string) {
   if (!isIsoDate(date)) throw new Error('วันที่ไม่ถูกต้อง')
   const src = clipOf(id)
   const copy: Clip = {
-    ...src, id: uid(), date, position: nextPosition(date), created_by: u.id, updated_at: stamp(),
+    ...src, id: uid(), date, position: nextPosition(date), created_by: u.id, updated_at: stamp(), brief_updated_at: stamp(),
     status: 'todo', revision_note: '', deleted_at: null,
   }
   db().clips.push(copy)
