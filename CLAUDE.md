@@ -4,13 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-Vite + React + TS app, implemented from `docs/superpowers/plans/2026-11-04-frontend-fake-layer.md`. The frontend runs on a browser-only fake backend in `src/api/fake/`, seeded into localStorage (key `fake-db-v1`); Buddy's Supabase backend is not connected yet. File upload is disabled until R2 exists, so all media is seeded rows with no real file. Notifications, dark mode and animation are not built.
+Monorepo: the Vite + React + TS app is in `web/`, the Supabase backend in `supabase/`. Backend milestone M1 (data, auth, users; no files) is done and the app runs on the dev project `webapp-clip-dev` (ref `hjitoifpfbiodoiyuoqm`, ap-southeast-1). M2 (R2 uploads/playback: `media-upload`, `media-view`) and M3 (prod project, nightly `pg_dump`, large-upload tests) are next. Notifications, dark mode and animation are not built.
 
-The app lives in `web/` (monorepo layout from the spec; `supabase/` goes beside it). Run commands from `web/`: `npm run dev`, `npm test` (Vitest, logic and fake API only), `npm run lint`, `npm run build`.
+`web/`: `npm run dev`, `npm test` (Vitest, pure logic only), `npm run lint`, `npm run build`. Needs `web/.env.local` with `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (see `web/.env.example`; publishable key only).
 
-Fake logins: `owner@example.com` / `owner1234`, `creator@example.com` / `creator1234`. The session is in sessionStorage; run `localStorage.clear(); sessionStorage.clear()` in the console to reseed (seed dates are relative to the first load).
+`supabase/`: `npm run link -- --project-ref <ref>`, `npm run db:push`, `npm run functions:deploy`, `npm run types` (writes `web/src/types/database.ts`; never edit it by hand), `npm test` (RLS/API tests against the dev project; they create and delete their own users). `supabase/.env` holds `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` and is gitignored. Create the owner with `node --env-file=.env scripts/create-user.mjs owner <email> "<name>"`; creators are created in the app. Migrations are pushed with the CLI, not the Supabase MCP (its apply step is declined for SQL with delete/revoke).
 
-All data access goes through `src/api/index.ts`; screens must not import `src/api/fake/`. To connect Supabase, replace `src/api/index.ts` and delete `src/api/fake/`. Assumed columns not in Buddy's spec yet: `categories.color`, `clips.status`, `clips.revision_note`, `clips.deleted_at`, `clip_media.file_name`; also a way to read user emails, and an owner password reset. See the "Handoff to Buddy" list at the end of the plan.
+All data access goes through `web/src/api/index.ts` (supabase-js); screens never call Supabase directly. `web/src/lib/types.ts` narrows the generated row types. Backend decisions that go beyond `docs/system-design.md` (agreed 2026-11-05):
+- Extra columns: `categories.color`, `clips.status/revision_note/round/deleted_at`, `clip_media.file_name/round/uploader_name/ready_at`, `profiles.email`.
+- Roles come from `auth.users.app_metadata.role` (service role only) and are synced into `profiles` by triggers; clients cannot write `profiles`.
+- Creators have no UPDATE on `clips` or `clip_media`. Triggers set clip status (`submitted` when a submission becomes ready, `todo` when the last one is removed) and `round` (+1 on each revision request). Only the server marks media `ready` (M2 `complete` after HeadObject).
+- A `BEFORE INSERT` trigger on `clip_media` sets `id`, `status`, `uploaded_by`, `round`, dates and `r2_key`, so clients cannot forge a key. `copy_clip` shares the source `r2_key`/`expires_at`; `storage_usage` counts each `r2_key` once.
+- Soft delete: creators cannot see deleted clips or their media; pg_cron purges them after 7 days. Owner queries must filter `deleted_at is null` themselves.
+- Withdraw: a creator may delete an own submission while pending or within 10 minutes of `ready_at`.
+- Deleting a user is a real delete; `uploaded_by`/`created_by` become null and `uploader_name` keeps the name. `manage-users` Edge Function: create, reset_password, delete (refuses owners).
+- Search: RPC `search_clips` (substring `ILIKE` with trigram indexes, because Postgres full-text search cannot split Thai words).
 
 Later plans: connect Supabase; upload and playback (Uppy, presigned R2, video player, download-all, lightbox, upload error states); polish (dark mode, animation, drag reorder); notifications if the client confirms.
 
