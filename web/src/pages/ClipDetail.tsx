@@ -1,7 +1,9 @@
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import { Play } from 'lucide-react'
 import * as api from '@/api/index'
-import { useAct, useClip, useClips, useMe, useMedia } from '@/api/queries'
+import { useAct, useClip, useMe, useMedia } from '@/api/queries'
+import { BackButton } from '@/components/BackButton'
+import { ClipPager } from '@/components/ClipPager'
 import { CategoryBadge, FileTile, StatusChip, UploadDisabled } from '@/components/bits'
 import { Button } from '@/components/ui/button'
 import { fromIso, fullDate } from '@/lib/dates'
@@ -25,11 +27,9 @@ function NoteBox({ note }: { note: string }) {
 }
 
 function CreatorDetail({ id }: { id: string }) {
-  const nav = useNavigate()
   const { data: me } = useMe()
   const { data: clip, isPending } = useClip(id)
   const { data: media = [] } = useMedia(id)
-  const { data: day = [] } = useClips(clip?.date ?? '', clip?.date ?? '', !!clip)
   const withdraw = useAct(api.withdrawMedia)
 
   if (isPending) return <p className="text-sm text-sub">กำลังโหลด...</p>
@@ -37,17 +37,12 @@ function CreatorDetail({ id }: { id: string }) {
 
   const refs = media.filter((m) => m.purpose === 'reference')
   const rounds = withRounds(media.filter((m) => m.purpose === 'submission'))
-  const i = day.findIndex((c) => c.id === id)
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <Button variant="outline" nativeButton={false} render={<Link to={`/calendar?date=${clip.date}`} />}><ChevronLeft />ปฏิทิน</Button>
-        <div className="flex items-center gap-2 text-xs text-sub">
-          {i >= 0 && <span>คลิป {i + 1} จาก {day.length} ของวันนั้น</span>}
-          <Button variant="outline" size="icon" className="min-h-11 min-w-11 md:min-h-0 md:min-w-0" aria-label="คลิปก่อนหน้า" disabled={i <= 0} onClick={() => nav(`/clips/${day[i - 1].id}`)}><ChevronLeft /></Button>
-          <Button variant="outline" size="icon" className="min-h-11 min-w-11 md:min-h-0 md:min-w-0" aria-label="คลิปถัดไป" disabled={i >= day.length - 1} onClick={() => nav(`/clips/${day[i + 1].id}`)}><ChevronRight /></Button>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <BackButton fallback={`/calendar?date=${clip.date}`} />
+        <ClipPager clipId={id} date={clip.date} />
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_360px]">
