@@ -24,11 +24,14 @@ export function seed(): DB {
   const mon = weekStart(now)
   const day = (n: number) => toIso(addDays(mon, n))
 
-  const clip = (id: string, date: string, position: number, category_id: string, title: string, over: Partial<Clip> = {}): Clip => ({
-    id, date, position, category_id, title, script: SCRIPT, note: NOTE, created_by: 'u-owner',
-    updated_at: subMinutes(now, 20 + position * 90).toISOString(),
-    status: 'todo', revision_note: '', deleted_at: null, ...over,
-  })
+  const clip = (id: string, date: string, position: number, category_id: string, title: string, over: Partial<Clip> = {}): Clip => {
+    const at = subMinutes(now, 20 + position * 90).toISOString()
+    return {
+      id, date, position, category_id, title, script: SCRIPT, note: NOTE, created_by: 'u-owner',
+      updated_at: at, brief_updated_at: at,
+      status: 'todo', revision_note: '', deleted_at: null, ...over,
+    }
+  }
 
   const file = (id: string, clip_id: string, purpose: ClipMedia['purpose'], file_name: string, mime: string, size_bytes: number, created: Date, leftDays: number): ClipMedia => ({
     id, clip_id, purpose, file_name, mime, size_bytes, created_at: created.toISOString(),

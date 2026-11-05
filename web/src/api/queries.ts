@@ -9,6 +9,8 @@ export const useRecent = (limit: number) => useQuery({ queryKey: ['recent', limi
 export const useClip = (id: string) => useQuery({ queryKey: ['clip', id], queryFn: () => api.getClip(id) })
 export const useMedia = (clipId: string) => useQuery({ queryKey: ['media', clipId], queryFn: () => api.listMedia(clipId) })
 export const useSearch = (q: string) => useQuery({ queryKey: ['search', q], queryFn: () => api.search(q), enabled: !!q.trim() })
+export const useAttention = () => useQuery({ queryKey: ['attention'], queryFn: api.listAttention })
+export const useExpiring = (enabled: boolean) => useQuery({ queryKey: ['expiring'], queryFn: api.listExpiring, enabled })
 export const useCategories = () => useQuery({ queryKey: ['categories'], queryFn: api.listCategories })
 export const useCategoryCounts = () => useQuery({ queryKey: ['categoryCounts'], queryFn: api.categoryCounts })
 export const useUsers = () => useQuery({ queryKey: ['users'], queryFn: api.listUsers })

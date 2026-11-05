@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Calendar, Globe, Home, LogOut, Menu, Moon, Search, Tag, User, Users } from 'lucide-react'
+import { Calendar, Home, KeyRound, LogOut, Menu, Search, Tag, User, Users } from 'lucide-react'
 import * as api from '@/api/index'
 import { useMe } from '@/api/queries'
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 
 const NAV = [
@@ -30,6 +31,7 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
   const nav = useNavigate()
   const [params] = useSearchParams()
   const input = useRef<HTMLInputElement>(null)
+  const [changing, setChanging] = useState(false)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -77,15 +79,18 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
       </nav>
       <div className={`mt-auto flex items-center gap-2 px-2 ${rail ? 'flex-col' : ''}`}>
         <span className="flex size-8 items-center justify-center rounded-full bg-ink text-white"><User size={16} /></span>
+        {rail && <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 items-center justify-center text-sub"><KeyRound size={16} /></button>}
         {rail && <button onClick={logout} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center text-sub"><LogOut size={16} /></button>}
         {!rail && (
           <div className="text-sm">
             <b>{me?.display_name}</b>
             <div className="text-xs text-sub">{me?.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</div>
+            <button onClick={() => setChanging(true)} className="block text-xs text-sub underline">เปลี่ยนรหัสผ่าน</button>
             <button onClick={logout} className="text-xs text-sub underline">ออกจากระบบ</button>
           </div>
         )}
       </div>
+      {changing && <ChangePasswordDialog onClose={() => setChanging(false)} />}
     </div>
   )
 }
@@ -93,7 +98,7 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
 export function AppShell() {
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
-  const title = TITLES.find(([p]) => pathname.startsWith(p))?.[1] ?? 'หน้าแรก'
+  const title = pathname === '/' ? 'หน้าแรก' : TITLES.find(([p]) => pathname.startsWith(p))?.[1] ?? 'ไม่พบหน้า'
   return (
     <div className="flex min-h-dvh">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 lg:block"><Sidebar /></aside>
@@ -105,14 +110,10 @@ export function AppShell() {
         </SheetContent>
       </Sheet>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-line px-4">
+        <header className="flex h-16 items-center border-b border-line px-4">
           <div className="flex items-center gap-2">
             <button className="flex min-h-11 min-w-11 items-center justify-center md:hidden" aria-label="เปิดเมนู" onClick={() => setOpen(true)}><Menu /></button>
             <span className="text-lg">{title}</span>
-          </div>
-          <div className="flex gap-1 text-sub">
-            <button disabled className="flex min-h-11 min-w-11 items-center justify-center" aria-label="ภาษา (ยังไม่เปิดใช้)"><Globe size={18} /></button>
-            <button disabled className="flex min-h-11 min-w-11 items-center justify-center" aria-label="โหมดมืด (ยังไม่เปิดใช้)"><Moon size={18} /></button>
           </div>
         </header>
         <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6"><Outlet /></main>

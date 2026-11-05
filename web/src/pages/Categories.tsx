@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { nextColor } from '@/lib/color'
 import type { Category } from '@/lib/types'
 import { useLast } from '@/lib/useLast'
 
@@ -28,6 +29,7 @@ export function Categories() {
       </div>
       {!isPending && cats.length === 0 && <p className="py-16 text-center text-sub">ยังไม่มีประเภทคลิป</p>}
       {cats.length > 0 && (
+        <>
         <div className="overflow-hidden rounded-card border border-line">
           <div className="hidden grid-cols-[40px_1fr_120px_140px] bg-surface p-3 text-xs text-sub md:grid">
             <span>สี</span><span>ชื่อประเภท</span><span>จำนวนคลิป</span><span className="text-right">การจัดการ</span>
@@ -39,20 +41,22 @@ export function Categories() {
               <span className="text-sm max-md:hidden">{counts[c.id] ?? 0}</span>
               <span className="flex justify-end gap-1">
                 <Button variant="ghost" className="size-11 md:size-auto" aria-label={`แก้ไข ${c.name}`} onClick={() => setEditing(c)}><Pencil /><span className="max-md:hidden">แก้ไข</span></Button>
-                <Button variant="ghost" className="size-11 text-danger md:size-auto" aria-label={`ลบ ${c.name}`} onClick={() => setDeleting(c)}><Trash2 /><span className="max-md:hidden">ลบ</span></Button>
+                <Button variant="ghost" className="size-11 text-danger md:size-auto" disabled={(counts[c.id] ?? 0) > 0} aria-label={`ลบ ${c.name}`} onClick={() => setDeleting(c)}><Trash2 /><span className="max-md:hidden">ลบ</span></Button>
               </span>
             </div>
           ))}
         </div>
+        <p className="text-xs text-sub">ลบได้เฉพาะประเภทที่ไม่มีคลิป</p>
+        </>
       )}
-      {editing && <CategoryDialog editing={editing} onClose={() => setEditing(null)} />}
-      <ConfirmDialog open={!!deleting} title={`ลบประเภท “${lastDeleting?.name}”?`} body="ลบได้เฉพาะประเภทที่ไม่มีคลิปอยู่" confirm="ลบ"
+      {editing && <CategoryDialog editing={editing} used={cats.map((c) => c.color)} onClose={() => setEditing(null)} />}
+      <ConfirmDialog open={!!deleting} title={`ลบประเภท “${lastDeleting?.name}”?`} body="ลบแล้วกู้คืนไม่ได้" confirm="ลบ"
         onConfirm={() => deleting && remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
     </div>
   )
 }
 
-function CategoryDialog({ editing, onClose }: { editing: Category | 'new'; onClose: () => void }) {
+function CategoryDialog({ editing, used, onClose }: { editing: Category | 'new'; used: string[]; onClose: () => void }) {
   const current = editing === 'new' ? null : editing
   const save = useAct(({ name, color }: { name: string; color: string }) =>
     current ? api.updateCategory(current.id, { name, color }) : api.createCategory(name, color).then(() => undefined))
@@ -71,7 +75,7 @@ function CategoryDialog({ editing, onClose }: { editing: Category | 'new'; onClo
         <DialogHeader><DialogTitle>{current ? 'แก้ไขประเภท' : 'เพิ่มประเภท'}</DialogTitle></DialogHeader>
         <form onSubmit={submit} className="flex flex-col gap-3">
           <div className="grid gap-1"><Label htmlFor="name">ชื่อประเภท</Label><Input id="name" name="name" required pattern="\S.*" title="ต้องไม่เป็นช่องว่างล้วน" defaultValue={current?.name} /></div>
-          <div className="grid gap-1"><Label htmlFor="color">สี</Label><input id="color" name="color" type="color" defaultValue={current?.color ?? '#6155f5'} className="h-9 w-16" /></div>
+          <div className="grid gap-1"><Label htmlFor="color">สี</Label><input id="color" name="color" type="color" defaultValue={current?.color ?? nextColor(used)} className="h-9 w-16" /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>ยกเลิก</Button>
             <Button type="submit" disabled={save.isPending}>บันทึก</Button>

@@ -1,6 +1,6 @@
 import { seed, type DB } from './seed'
 
-const KEY = 'fake-db-v1'
+const KEY = 'fake-db-v2'
 let cache: DB | null = null
 
 // Another tab wrote the store: drop the cache so the next read reloads it.

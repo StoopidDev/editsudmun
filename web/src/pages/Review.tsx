@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Play } from 'lucide-react'
+import { toast } from 'sonner'
 import * as api from '@/api/index'
 import { useAct, useClip, useMedia } from '@/api/queries'
 import { ConfirmDialog, StatusChip } from '@/components/bits'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { daysLeft, formatSize, isPlayable, withRounds } from '@/lib/media'
-import type { ClipMedia } from '@/lib/types'
+import type { ClipMedia, ClipStatus } from '@/lib/types'
 import { useLast } from '@/lib/useLast'
 
 export function Review({ clipId }: { clipId: string }) {
@@ -15,13 +16,31 @@ export function Review({ clipId }: { clipId: string }) {
   const rounds = withRounds(media.filter((m) => m.purpose === 'submission'))
   const [selected, setSelected] = useState<string | null>(null)
   const [reason, setReason] = useState('')
+  const [asking, setAsking] = useState(false)
   const [deleting, setDeleting] = useState<ClipMedia | null>(null)
   const lastDeleting = useLast(deleting)
   const remove = useAct(api.deleteMedia)
   const review = useAct(({ status, note }: { status: 'approved' | 'revision'; note?: string }) => api.reviewClip(clipId, status, note))
+  const undo = useAct(({ status, note }: { status: ClipStatus; note: string }) => api.restoreReview(clipId, status, note))
   const current = rounds.find((m) => m.id === selected) ?? rounds[0]
 
   if (!clip) return null
+
+  const approve = () => {
+    const before = { status: clip.status, note: clip.revision_note }
+    review.mutate({ status: 'approved' }, {
+      onSuccess: () => toast('อนุมัติแล้ว', { duration: 10_000, action: { label: 'เลิกทำ', onClick: () => undo.mutate(before) } }),
+    })
+  }
+
+  const requestChanges = () => review.mutate({ status: 'revision', note: reason }, {
+    onSuccess: () => {
+      toast.success('ส่งคำขอแก้ไขแล้ว')
+      setReason('')
+      setAsking(false)
+    },
+  })
+
   return (
     <section className="flex flex-col gap-3 rounded-card border border-line p-3">
       <h2 className="flex justify-between text-sm font-bold">งานที่ครีเอเตอร์ส่ง ({rounds.length} ไฟล์)</h2>
@@ -51,14 +70,23 @@ export function Review({ clipId }: { clipId: string }) {
           </div>
         </div>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-xs">สถานะ: <StatusChip status={clip.status} /></span>
-        <span className="flex gap-2">
-          <Button variant="outline" className="border-[#ff9500] text-[#b35c00]" disabled={review.isPending || rounds.length === 0} onClick={() => review.mutate({ status: 'revision', note: reason }, { onSuccess: () => setReason('') })}>ขอแก้ไข</Button>
-          <Button className="bg-[#34c759] text-white hover:bg-[#34c759]/90" disabled={review.isPending || rounds.length === 0} onClick={() => review.mutate({ status: 'approved' }, { onSuccess: () => setReason('') })}>อนุมัติ</Button>
-        </span>
-      </div>
-      <Input aria-label="เหตุผลที่ขอแก้ไข" placeholder="เหตุผลที่ขอแก้ไข (ครีเอเตอร์จะเห็นข้อความนี้)" value={reason} onChange={(e) => setReason(e.target.value)} />
+      {asking ? (
+        <div className="flex flex-col gap-2">
+          <Textarea autoFocus rows={3} aria-label="เหตุผลที่ขอแก้ไข" placeholder="เหตุผลที่ขอแก้ไข (ครีเอเตอร์จะเห็นข้อความนี้)" value={reason} onChange={(e) => setReason(e.target.value)} />
+          <span className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setAsking(false)}>ยกเลิก</Button>
+            <Button disabled={review.isPending || !reason.trim()} onClick={requestChanges}>ส่งคำขอแก้ไข</Button>
+          </span>
+        </div>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs">สถานะ: <StatusChip status={clip.status} /></span>
+          <span className="flex gap-2">
+            <Button variant="outline" className="border-[#ff9500] text-[#b35c00]" disabled={rounds.length === 0} onClick={() => setAsking(true)}>ขอแก้ไข</Button>
+            <Button className="bg-[#1a7f3c] text-white hover:bg-[#1a7f3c]/90" disabled={review.isPending || rounds.length === 0 || clip.status === 'approved'} onClick={approve}>อนุมัติ</Button>
+          </span>
+        </div>
+      )}
       <ConfirmDialog open={!!deleting} title={`ลบไฟล์ “${lastDeleting?.file_name}”?`} body="ไฟล์ที่ครีเอเตอร์ส่งเป็นหลักฐาน ลบแล้วกู้คืนไม่ได้" confirm="ลบ"
         onConfirm={() => deleting && remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
     </section>
