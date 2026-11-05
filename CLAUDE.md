@@ -4,13 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-Vite + React + TS app, implemented from `docs/superpowers/plans/2026-11-04-frontend-fake-layer.md`. The frontend runs on a browser-only fake backend in `src/api/fake/`, seeded into localStorage (key `fake-db-v1`); Buddy's Supabase backend is not connected yet. File upload is disabled until R2 exists, so all media is seeded rows with no real file. Notifications, dark mode and animation are not built.
+Vite + React + TS app, implemented from `docs/superpowers/plans/2026-11-04-frontend-fake-layer.md`. The frontend runs on a browser-only fake backend in `src/api/fake/`, seeded into localStorage (key `fake-db-v2`); Buddy's Supabase backend is not connected yet. File upload is disabled until R2 exists, so all media is seeded rows with no real file. Notifications, dark mode and animation are not built.
 
 The app lives in `web/` (monorepo layout from the spec; `supabase/` goes beside it). Run commands from `web/`: `npm run dev`, `npm test` (Vitest, logic and fake API only), `npm run lint`, `npm run build`.
 
 Fake logins: `owner@example.com` / `owner1234`, `creator@example.com` / `creator1234`. The session is in sessionStorage; run `localStorage.clear(); sessionStorage.clear()` in the console to reseed (seed dates are relative to the first load).
 
-All data access goes through `src/api/index.ts`; screens must not import `src/api/fake/`. To connect Supabase, replace `src/api/index.ts` and delete `src/api/fake/`. Assumed columns not in Buddy's spec yet: `categories.color`, `clips.status`, `clips.revision_note`, `clips.deleted_at`, `clip_media.file_name`; also a way to read user emails, and an owner password reset. See the "Handoff to Buddy" list at the end of the plan.
+All data access goes through `src/api/index.ts`; screens must not import `src/api/fake/`. To connect Supabase, replace `src/api/index.ts` and delete `src/api/fake/`. Assumed columns not in Buddy's spec yet: `categories.color`, `clips.status`, `clips.revision_note`, `clips.deleted_at`, `clips.brief_updated_at`, `clip_media.file_name`; also a way to read user emails, and an owner password reset. See the "Handoff to Buddy" list at the end of the plan.
+
+Code now differs from Figma until the Figma tasks in `docs/superpowers/plans/2026-11-05-ux-audit-fixes.md` (Part B) are done: brand `#0066cc`, danger `#d70015`, success `#1a7f3c` (contrast fixes); category text colour is computed with `readableOn` (`src/lib/color.ts`); status labels are รอทำ, ส่งแล้ว, อนุมัติแล้ว, รอแก้ไข; the week view is 7 columns only from `xl` (1280 px), below that it is the one-day view; the clip form autosaves a draft on every change (`src/lib/draft.ts`); Home shows `งานของฉัน` and an expiring-files warning. Backend asks from this round are Part C of that plan.
 
 Later plans: connect Supabase; upload and playback (Uppy, presigned R2, video player, download-all, lightbox, upload error states); polish (dark mode, animation, drag reorder); notifications if the client confirms.
 
