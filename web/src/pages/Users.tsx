@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { format, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { KeyRound, Plus, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import * as api from '@/api/index'
 import { useAct, useUsers } from '@/api/queries'
 import { ConfirmDialog } from '@/components/bits'
@@ -16,10 +17,12 @@ export function Users() {
   const { data: users = [] } = useUsers()
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Profile | null>(null)
+  const [resetting, setResetting] = useState<Profile | null>(null)
   const [temp, setTemp] = useState<{ email: string; password: string } | null>(null)
   const reset = useAct(api.resetPassword)
   const remove = useAct(api.deleteUser)
   const lastDeleting = useLast(deleting)
+  const lastResetting = useLast(resetting)
 
   return (
     <div className="flex flex-col gap-4">
@@ -35,7 +38,7 @@ export function Users() {
             <span className={`w-fit rounded-full px-2 py-0.5 text-xs font-bold ${u.role === 'owner' ? 'bg-today text-[#0066cc]' : 'bg-surface text-sub'}`}>{u.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</span>
             <span className="text-sm text-sub">{format(parseISO(u.created_at), 'd MMM yyyy', { locale: th })}</span>
             <span className="flex gap-1">
-              <Button variant="ghost" className="min-h-11 md:min-h-0" disabled={u.role === 'owner'} aria-label={`รีเซ็ตรหัสผ่าน ${u.display_name}`} onClick={() => reset.mutate(u.id, { onSuccess: (password) => setTemp({ email: u.email, password }) })}><KeyRound />รีเซ็ตรหัสผ่าน</Button>
+              <Button variant="ghost" className="min-h-11 md:min-h-0" disabled={u.role === 'owner'} aria-label={`รีเซ็ตรหัสผ่าน ${u.display_name}`} onClick={() => setResetting(u)}><KeyRound />รีเซ็ตรหัสผ่าน</Button>
               <Button variant="ghost" className="min-h-11 text-danger md:min-h-0" disabled={u.role === 'owner'} aria-label={`ลบ ${u.display_name}`} onClick={() => setDeleting(u)}><Trash2 />ลบ</Button>
             </span>
           </div>
@@ -45,20 +48,10 @@ export function Users() {
 
       {creating && <CreateDialog onClose={() => setCreating(false)} onDone={(email, password) => { setCreating(false); setTemp({ email, password }) }} />}
 
-      <Dialog open={!!temp} onOpenChange={(o) => !o && setTemp(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>รหัสผ่านชั่วคราว</DialogTitle>
-            <DialogDescription>รหัสนี้จะไม่แสดงอีก คัดลอกเก็บไว้ก่อนปิด</DialogDescription>
-          </DialogHeader>
-          <p className="text-sm">{temp?.email}</p>
-          <code className="rounded-card bg-surface p-3 text-lg">{temp?.password}</code>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => void navigator.clipboard.writeText(temp?.password ?? '').catch(() => {})}>คัดลอก</Button>
-            <Button onClick={() => setTemp(null)}>ปิด</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {temp && <TempPassword temp={temp} onClose={() => setTemp(null)} />}
+
+      <ConfirmDialog open={!!resetting} title={`รีเซ็ตรหัสผ่าน ${lastResetting?.display_name}?`} body="รหัสผ่านเดิมจะใช้ไม่ได้ทันที" confirm="รีเซ็ต"
+        onConfirm={() => resetting && reset.mutate(resetting.id, { onSuccess: (password) => setTemp({ email: resetting.email, password }) })} onClose={() => setResetting(null)} />
 
       <ConfirmDialog open={!!deleting} title={`ลบบัญชี ${lastDeleting?.display_name}?`} body="ผู้ใช้นี้จะเข้าสู่ระบบไม่ได้อีก" confirm="ลบบัญชี"
         onConfirm={() => deleting && remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
@@ -89,6 +82,31 @@ function CreateDialog({ onClose, onDone }: { onClose: () => void; onDone: (email
             <Button type="submit" disabled={create.isPending}>สร้างบัญชี</Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function TempPassword({ temp, onClose }: { temp: { email: string; password: string }; onClose: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => navigator.clipboard.writeText(temp.password)
+    .then(() => toast.success('คัดลอกแล้ว'))
+    .catch(() => toast.error('คัดลอกไม่สำเร็จ เลือกข้อความแล้วคัดลอกเอง'))
+    // A failed copy still unlocks close, so the owner is never trapped here.
+    .finally(() => setCopied(true))
+  return (
+    <Dialog open onOpenChange={(o) => !o && copied && onClose()}>
+      <DialogContent showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>รหัสผ่านชั่วคราว</DialogTitle>
+          <DialogDescription>รหัสนี้จะไม่แสดงอีก คัดลอกก่อนจึงจะปิดได้</DialogDescription>
+        </DialogHeader>
+        <p className="text-sm">{temp.email}</p>
+        <code className="rounded-card bg-surface p-3 text-lg select-all">{temp.password}</code>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => void copy()}>{copied ? 'คัดลอกแล้ว' : 'คัดลอก'}</Button>
+          <Button disabled={!copied} onClick={onClose}>ปิด</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

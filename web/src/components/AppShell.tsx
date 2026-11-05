@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Calendar, Home, LogOut, Menu, Search, Tag, User, Users } from 'lucide-react'
+import { Calendar, Home, KeyRound, LogOut, Menu, Search, Tag, User, Users } from 'lucide-react'
 import * as api from '@/api/index'
 import { useMe } from '@/api/queries'
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 
 const NAV = [
@@ -30,6 +31,7 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
   const nav = useNavigate()
   const [params] = useSearchParams()
   const input = useRef<HTMLInputElement>(null)
+  const [changing, setChanging] = useState(false)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -77,15 +79,18 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
       </nav>
       <div className={`mt-auto flex items-center gap-2 px-2 ${rail ? 'flex-col' : ''}`}>
         <span className="flex size-8 items-center justify-center rounded-full bg-ink text-white"><User size={16} /></span>
+        {rail && <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 items-center justify-center text-sub"><KeyRound size={16} /></button>}
         {rail && <button onClick={logout} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center text-sub"><LogOut size={16} /></button>}
         {!rail && (
           <div className="text-sm">
             <b>{me?.display_name}</b>
             <div className="text-xs text-sub">{me?.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</div>
+            <button onClick={() => setChanging(true)} className="block text-xs text-sub underline">เปลี่ยนรหัสผ่าน</button>
             <button onClick={logout} className="text-xs text-sub underline">ออกจากระบบ</button>
           </div>
         )}
       </div>
+      {changing && <ChangePasswordDialog onClose={() => setChanging(false)} />}
     </div>
   )
 }
