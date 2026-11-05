@@ -248,3 +248,58 @@ describe('brief_updated_at', () => {
     expect((await api.getClip('c1'))!.brief_updated_at).toBe(before)
   })
 })
+
+describe('attention', () => {
+  it('lists submitted clips for the owner', async () => {
+    await asOwner()
+    expect((await api.listAttention()).map((c) => [c.id, c.attention])).toEqual([['c1', 'review']])
+  })
+  it('lists revisions first, then overdue, for the creator', async () => {
+    await asCreator()
+    expect((await api.listAttention()).map((c) => [c.id, c.attention])).toEqual([
+      ['c2', 'revision'], ['c4', 'overdue'], ['c5', 'overdue'],
+    ])
+  })
+})
+
+describe('restoreReview', () => {
+  it('puts back the earlier status and note', async () => {
+    await asOwner()
+    await api.reviewClip('c2', 'approved')
+    await api.restoreReview('c2', 'revision', 'ช่วยตัดช่วงกลาง')
+    const c = (await api.getClip('c2'))!
+    expect([c.status, c.revision_note]).toEqual(['revision', 'ช่วยตัดช่วงกลาง'])
+  })
+  it('is owner only', async () => {
+    await asCreator()
+    await expect(api.restoreReview('c2', 'todo', '')).rejects.toThrow('ไม่มีสิทธิ์')
+  })
+})
+
+describe('listExpiring', () => {
+  it('lists files inside the warning window with their clip', async () => {
+    await asOwner()
+    const rows = await api.listExpiring()
+    expect(rows.map((r) => r.id).sort()).toEqual(['m2', 'm5'])
+    expect(rows[0]).toMatchObject({ clip_id: 'c1', clip_title: 'รีวิว Tissot PRX 40 มม.', days: 5 })
+  })
+  it('skips files of deleted clips', async () => {
+    await asOwner()
+    await api.softDeleteClip('c1')
+    expect(await api.listExpiring()).toEqual([])
+  })
+})
+
+describe('changePassword', () => {
+  it('checks the current password and the length', async () => {
+    await asCreator()
+    await expect(api.changePassword('wrong', 'newpass123')).rejects.toThrow('รหัสผ่านปัจจุบันไม่ถูกต้อง')
+    await expect(api.changePassword('creator1234', 'short')).rejects.toThrow('อย่างน้อย 8')
+  })
+  it('lets the user sign in with the new password', async () => {
+    await asCreator()
+    await api.changePassword('creator1234', 'newpass123')
+    api.logout()
+    await expect(api.login('creator@example.com', 'newpass123')).resolves.toBeTruthy()
+  })
+})

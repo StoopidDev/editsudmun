@@ -1,9 +1,10 @@
 // Everything the UI may do to data. Replace this file and ./fake with Supabase calls later;
 // the checks below mimic RLS for realistic behaviour and are not real security.
-import { isIsoDate } from '@/lib/dates'
-import { canWithdraw } from '@/lib/media'
+import { attentionOf, type Attention } from '@/lib/attention'
+import { daysLeft, WARN_DAYS, canWithdraw } from '@/lib/media'
+import { isIsoDate, todayIso } from '@/lib/dates'
 import { searchClips } from '@/lib/search'
-import type { Category, Clip, ClipCardRow, ClipInput, Profile, Role } from '@/lib/types'
+import type { Category, Clip, ClipCardRow, ClipInput, ClipStatus, Profile, Role } from '@/lib/types'
 import { db, save } from './fake/db'
 
 const SESSION = 'fake-session'
@@ -49,6 +50,15 @@ export async function login(email: string, password: string) {
   return user
 }
 export const logout = () => sessionStorage.removeItem(SESSION)
+
+export async function changePassword(current: string, next: string) {
+  await wait()
+  const u = need()
+  if (db().passwords[u.email] !== current) throw new Error('รหัสผ่านปัจจุบันไม่ถูกต้อง')
+  if (next.length < 8) throw new Error('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร')
+  db().passwords[u.email] = next
+  save()
+}
 
 // Clips
 export async function listClips(from: string, to: string) {
@@ -161,6 +171,29 @@ export async function reviewClip(id: string, status: 'approved' | 'revision', no
   return out(c)
 }
 
+export async function restoreReview(id: string, status: ClipStatus, note: string) {
+  await wait()
+  need('owner')
+  const c = clipOf(id)
+  c.status = status
+  c.revision_note = note
+  c.updated_at = stamp()
+  save()
+}
+
+const RANK: Record<Attention, number> = { revision: 0, review: 1, overdue: 2 }
+
+export async function listAttention() {
+  await wait()
+  const u = need()
+  const today = todayIso()
+  const rows = live().flatMap((c) => {
+    const attention = attentionOf(c, u.role, today)
+    return attention ? [{ ...toCard(c), attention }] : []
+  })
+  return out(rows.sort((a, b) => RANK[a.attention] - RANK[b.attention] || a.date.localeCompare(b.date) || a.position - b.position))
+}
+
 export async function search(q: string) {
   await wait()
   need()
@@ -206,6 +239,19 @@ export async function storageUsedBytes() {
   await wait()
   need('owner')
   return db().media.reduce((sum, m) => sum + m.size_bytes, 0)
+}
+
+export async function listExpiring() {
+  await wait()
+  need('owner')
+  const clips = live()
+  return out(db().media.flatMap((m) => {
+    const clip = clips.find((c) => c.id === m.clip_id)
+    const days = daysLeft(m.expires_at)
+    return clip && days <= WARN_DAYS
+      ? [{ id: m.id, file_name: m.file_name, clip_id: clip.id, clip_title: clip.title, days }]
+      : []
+  }).sort((a, b) => a.days - b.days))
 }
 
 // Categories

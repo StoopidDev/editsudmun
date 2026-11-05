@@ -29,3 +29,6 @@ export const formatSize = (bytes: number) => {
   const mb = Math.round(bytes / 1024 ** 2)
   return mb >= 1024 ? '1 GB' : `${mb} MB` // rounding up to 1024 MB reads better as 1 GB
 }
+
+// R2 lifecycle counts from upload, so a brief planned far ahead can lose its files first.
+export const expiresBeforeClip = (expires_at: string, clipDate: string) => expires_at.slice(0, 10) < clipDate

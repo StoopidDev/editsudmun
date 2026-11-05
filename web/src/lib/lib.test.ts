@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
-import { canWithdraw, daysLeft, formatSize, isPlayable, withdrawMinutesLeft, withRounds } from './media'
+import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
+import { attentionOf } from './attention'
 import { contrast, nextColor, readableOn } from './color'
 import type { Clip, ClipMedia } from './types'
 
@@ -98,5 +99,26 @@ describe('color', () => {
   it('offers the first unused colour', () => {
     expect(nextColor(['#6155f5', '#34c759'])).toBe('#ff9500')
     expect(nextColor(['#6155F5'])).toBe('#34c759')
+  })
+})
+
+describe('attentionOf', () => {
+  const today = '2026-10-29'
+  it('sends submitted work to the owner', () => {
+    expect(attentionOf({ status: 'submitted', date: today }, 'owner', today)).toBe('review')
+    expect(attentionOf({ status: 'todo', date: '2026-10-01' }, 'owner', today)).toBeNull()
+  })
+  it('sends revisions and overdue work to the creator', () => {
+    expect(attentionOf({ status: 'revision', date: '2026-11-20' }, 'creator', today)).toBe('revision')
+    expect(attentionOf({ status: 'todo', date: '2026-10-28' }, 'creator', today)).toBe('overdue')
+    expect(attentionOf({ status: 'todo', date: today }, 'creator', today)).toBeNull()
+    expect(attentionOf({ status: 'approved', date: '2026-10-01' }, 'creator', today)).toBeNull()
+  })
+})
+
+describe('expiresBeforeClip', () => {
+  it('compares the expiry day with the clip day', () => {
+    expect(expiresBeforeClip('2026-11-01T10:00:00.000Z', '2026-11-05')).toBe(true)
+    expect(expiresBeforeClip('2026-11-05T10:00:00.000Z', '2026-11-05')).toBe(false)
   })
 })
