@@ -17,9 +17,9 @@ export function ClipDetail() {
   return me?.role === 'owner' ? <ClipForm clipId={id} /> : <CreatorDetail id={id} />
 }
 
-function NoteBox({ note }: { note: string }) {
+function NoteBox({ note, className = '' }: { note: string; className?: string }) {
   return (
-    <section className="rounded-card border border-note-line bg-note p-3">
+    <section className={`rounded-card border border-note-line bg-note p-3 ${className}`}>
       <h2 className="mb-1 text-sm font-bold">หมายเหตุ</h2>
       <ul className="list-disc pl-4 text-sm">{note.split('\n').filter(Boolean).map((line, i) => <li key={i}>{line}</li>)}</ul>
     </section>
@@ -46,7 +46,7 @@ function CreatorDetail({ id }: { id: string }) {
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_360px]">
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 max-lg:contents">
           <div className="flex items-center gap-2 text-sm text-sub">
             <CategoryBadge categoryId={clip.category_id} />{fullDate(fromIso(clip.date))}<StatusChip status={clip.status} />
           </div>
@@ -56,19 +56,19 @@ function CreatorDetail({ id }: { id: string }) {
               <b>เจ้าของขอให้แก้ไข</b><p>{clip.revision_note}</p>
             </div>
           )}
-          <section className="rounded-card border border-line p-4">
+          <section className="rounded-card border border-line p-4 max-lg:order-2">
             <h2 className="mb-2 text-sm font-bold text-sub">สคริปต์</h2>
             <p className="text-lg leading-loose whitespace-pre-wrap">{clip.script}</p>
           </section>
         </div>
 
-        <div className="flex flex-col gap-3 max-lg:order-first">
-          {clip.note && <NoteBox note={clip.note} />}
-          <section className="rounded-card border border-line p-3">
+        <div className="flex flex-col gap-3 max-lg:contents">
+          {clip.note && <NoteBox note={clip.note} className="max-lg:order-1" />}
+          <section className="rounded-card border border-line p-3 max-lg:order-3">
             <h2 className="mb-2 text-sm font-bold">ไฟล์อ้างอิง {refs.length} ไฟล์</h2>
             <div className="grid grid-cols-3 gap-2">{refs.map((f) => <FileTile key={f.id} file={f} clipDate={clip.date} />)}</div>
           </section>
-          <section className="flex flex-col gap-2 rounded-card border border-line p-3">
+          <section className="flex flex-col gap-2 rounded-card border border-line p-3 max-lg:order-4">
             <h2 className="flex justify-between text-sm font-bold">ส่งงาน<span className="text-xs font-normal text-sub">ไฟล์ที่ตัดต่อแล้ว · MP4 ≤ 2 GB</span></h2>
             <UploadDisabled label="ลากไฟล์มาวาง หรือ คลิกเพื่อเลือกไฟล์" />
             <h3 className="text-xs font-bold">ส่งแล้ว ({rounds.length} รอบ)</h3>
