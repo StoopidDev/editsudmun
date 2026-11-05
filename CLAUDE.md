@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Vite + React + TS app, implemented from `docs/superpowers/plans/2026-11-04-frontend-fake-layer.md`. The frontend runs on a browser-only fake backend in `src/api/fake/`, seeded into localStorage (key `fake-db-v1`); Buddy's Supabase backend is not connected yet. File upload is disabled until R2 exists, so all media is seeded rows with no real file. Notifications, dark mode and animation are not built.
 
-Commands: `npm run dev`, `npm test` (Vitest, logic and fake API only), `npm run lint`, `npm run build`.
+The app lives in `web/` (monorepo layout from the spec; `supabase/` goes beside it). Run commands from `web/`: `npm run dev`, `npm test` (Vitest, logic and fake API only), `npm run lint`, `npm run build`.
 
 Fake logins: `owner@example.com` / `owner1234`, `creator@example.com` / `creator1234`. The session is in sessionStorage; run `localStorage.clear(); sessionStorage.clear()` in the console to reseed (seed dates are relative to the first load).
 
