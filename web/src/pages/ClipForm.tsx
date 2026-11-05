@@ -105,7 +105,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
       {expiring.length > 0 && (
         <div role="status" className="rounded-card border border-[#ffb04d] bg-[#fff0e0] p-3 text-sm">
           มี {expiring.length} ไฟล์จะถูกลบใน {Math.min(...expiring.map((m) => daysLeft(m.expires_at)))} วัน
-          <Button variant="link" disabled className="ml-2 h-auto p-0">ดาวน์โหลดทั้งหมด</Button>
+          <Button variant="link" disabled className="ml-2 h-auto p-0 max-md:min-h-11">ดาวน์โหลดทั้งหมด</Button>
         </div>
       )}
 
