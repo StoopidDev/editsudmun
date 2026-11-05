@@ -118,7 +118,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1">
               <Label htmlFor="cat">ประเภท</Label>
-              <select id="cat" value={categoryId} onChange={(e) => set({ category_id: e.target.value })} className="h-9 rounded-md border border-line bg-white px-2 text-sm">
+              <select id="cat" value={categoryId} onChange={(e) => set({ category_id: e.target.value })} className="h-9 rounded-md border border-line bg-white px-2 text-sm max-md:h-11">
                 {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>

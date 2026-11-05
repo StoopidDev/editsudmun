@@ -107,12 +107,12 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-16 items-center justify-between border-b border-line px-4">
           <div className="flex items-center gap-2">
-            <button className="md:hidden" aria-label="เปิดเมนู" onClick={() => setOpen(true)}><Menu /></button>
+            <button className="flex min-h-11 min-w-11 items-center justify-center md:hidden" aria-label="เปิดเมนู" onClick={() => setOpen(true)}><Menu /></button>
             <span className="text-lg">{title}</span>
           </div>
-          <div className="flex gap-3 text-sub">
-            <button disabled aria-label="ภาษา (ยังไม่เปิดใช้)"><Globe size={18} /></button>
-            <button disabled aria-label="โหมดมืด (ยังไม่เปิดใช้)"><Moon size={18} /></button>
+          <div className="flex gap-1 text-sub">
+            <button disabled className="flex min-h-11 min-w-11 items-center justify-center" aria-label="ภาษา (ยังไม่เปิดใช้)"><Globe size={18} /></button>
+            <button disabled className="flex min-h-11 min-w-11 items-center justify-center" aria-label="โหมดมืด (ยังไม่เปิดใช้)"><Moon size={18} /></button>
           </div>
         </header>
         <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6"><Outlet /></main>

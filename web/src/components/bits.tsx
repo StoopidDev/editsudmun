@@ -33,7 +33,7 @@ export function FileTile({ file, onDelete }: { file: ClipMedia; onDelete?: () =>
       <span className="w-full truncate text-center text-xs">{file.file_name}</span>
       <span className="text-xs">ลบใน {daysLeft(file.expires_at)} วัน</span>
       {onDelete && (
-        <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 size-5 rounded-full bg-ink text-xs text-white">×</button>
+        <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 size-5 rounded-full bg-ink text-xs text-white before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
       )}
     </div>
   )
