@@ -4,7 +4,7 @@ import { ChevronLeft, Copy, Trash2 } from 'lucide-react'
 import * as api from '@/api/index'
 import { useAct, useCategories, useClip, useDeleteClip, useMedia } from '@/api/queries'
 import { CopyDialog } from '@/components/CopyDialog'
-import { FileTile, UploadDisabled } from '@/components/bits'
+import { ConfirmDialog, FileTile, UploadDisabled } from '@/components/bits'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,7 +12,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { isIsoDate, todayIso } from '@/lib/dates'
 import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from '@/lib/draft'
 import { daysLeft, WARN_DAYS } from '@/lib/media'
-import type { ClipInput } from '@/lib/types'
+import type { ClipInput, ClipMedia } from '@/lib/types'
+import { useLast } from '@/lib/useLast'
 import { Review } from './Review'
 import { toast } from 'sonner'
 
@@ -39,6 +40,8 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     return saved && initial && sameBrief(saved, initial) ? null : saved
   })
   const [copying, setCopying] = useState(false)
+  const [deletingFile, setDeletingFile] = useState<ClipMedia | null>(null)
+  const lastFile = useLast(deletingFile)
   const del = useDeleteClip(() => nav(`/calendar?date=${form.date}`))
   const removeFile = useAct(api.deleteMedia)
   const save = useAct((input: ClipInput) => (clipId ? api.updateClip(clipId, input) : api.createClip(input)))
@@ -140,7 +143,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           </section>
           <section className="flex flex-col gap-2 rounded-card border border-line p-3">
             <h2 className="text-sm font-bold">ไฟล์อ้างอิง ({refs.length})</h2>
-            <div className="grid grid-cols-2 gap-2">{refs.map((f) => <FileTile key={f.id} file={f} onDelete={() => removeFile.mutate(f.id)} />)}</div>
+            <div className="grid grid-cols-2 gap-2">{refs.map((f) => <FileTile key={f.id} file={f} clipDate={form.date} onDelete={() => setDeletingFile(f)} />)}</div>
             <UploadDisabled label="ลากรูปมาวางหรือคลิกเพื่ออัปโหลด" />
           </section>
         </div>
@@ -148,6 +151,8 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
       </fieldset>
 
       {copying && clipId && <CopyDialog clip={{ id: clipId, title: form.title, date: form.date }} onClose={() => setCopying(false)} />}
+      <ConfirmDialog open={!!deletingFile} title={`ลบไฟล์ “${lastFile?.file_name}”?`} body="ลบแล้วกู้คืนไม่ได้" confirm="ลบ"
+        onConfirm={() => deletingFile && removeFile.mutate(deletingFile.id)} onClose={() => setDeletingFile(null)} />
     </div>
   )
 }

@@ -71,7 +71,7 @@ function CreatorDetail({ id }: { id: string }) {
           {clip.note && <NoteBox note={clip.note} />}
           <section className="rounded-card border border-line p-3">
             <h2 className="mb-2 text-sm font-bold">ไฟล์อ้างอิง {refs.length} ไฟล์</h2>
-            <div className="grid grid-cols-3 gap-2">{refs.map((f) => <FileTile key={f.id} file={f} />)}</div>
+            <div className="grid grid-cols-3 gap-2">{refs.map((f) => <FileTile key={f.id} file={f} clipDate={clip.date} />)}</div>
           </section>
           <section className="flex flex-col gap-2 rounded-card border border-line p-3">
             <h2 className="flex justify-between text-sm font-bold">ส่งงาน<span className="text-xs font-normal text-sub">ไฟล์ที่ตัดต่อแล้ว · MP4 ≤ 2 GB</span></h2>

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { readableOn } from '@/lib/color'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { dayLabel, fromIso, toIso, todayIso, weekDays } from '@/lib/dates'
-import { daysLeft } from '@/lib/media'
+import { daysLeft, expiresBeforeClip } from '@/lib/media'
 import { STATUS } from '@/lib/status'
 import type { ClipMedia, ClipStatus } from '@/lib/types'
 import { addDays } from 'date-fns'
@@ -26,13 +26,16 @@ export function StatusChip({ status }: { status: ClipStatus }) {
   return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${s.className}`}>{s.label}</span>
 }
 
-export function FileTile({ file, onDelete }: { file: ClipMedia; onDelete?: () => void }) {
+export function FileTile({ file, clipDate, onDelete }: { file: ClipMedia; clipDate: string; onDelete?: () => void }) {
   const isVideo = file.kind === 'video'
+  const early = expiresBeforeClip(file.expires_at, clipDate)
   return (
     <div className={`relative flex h-20 flex-col items-center justify-center gap-1 rounded-card px-2 ${isVideo ? 'bg-[#1e1e1e] text-white' : 'bg-surface text-sub'}`}>
       {isVideo ? <Play size={18} /> : <ImageIcon size={18} />}
       <span className="w-full truncate text-center text-xs">{file.file_name}</span>
-      <span className="text-xs">ลบใน {daysLeft(file.expires_at)} วัน</span>
+      <span className={`text-xs ${early ? `font-bold ${isVideo ? 'text-[#ffb04d]' : 'text-danger'}` : ''}`}>
+        {early ? 'ลบก่อนถึงวันคลิป' : `ลบใน ${daysLeft(file.expires_at)} วัน`}
+      </span>
       {onDelete && (
         <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 size-5 rounded-full bg-ink text-xs text-white before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
       )}
