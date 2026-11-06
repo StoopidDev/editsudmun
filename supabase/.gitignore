@@ -9,3 +9,4 @@
 
 # Local secrets (service role key for scripts and tests)
 .env
+r2.env

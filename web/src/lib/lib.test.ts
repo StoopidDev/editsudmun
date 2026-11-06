@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
-import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, roundCount, withdrawMinutesLeft, withRounds } from './media'
+import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, roundCount, uploadProblem, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
 import { contrast, nextColor, readableOn } from './color'
@@ -63,6 +63,14 @@ describe('media', () => {
     ])
     expect(list.map((m) => [m.id, m.round])).toEqual([['c', 2], ['b', 1], ['a', 1]])
     expect(roundCount(list)).toBe(2)
+  })
+  it('refuses unsupported or oversized files before upload', () => {
+    expect(uploadProblem({ type: 'video/mp4', size: 1 })).toBeNull()
+    expect(uploadProblem({ type: 'IMAGE/JPEG', size: 1 })).toBeNull()
+    expect(uploadProblem({ type: 'application/pdf', size: 1 })).toBe('ไม่รองรับไฟล์ชนิดนี้')
+    expect(uploadProblem({ type: 'video/mp4', size: 0 })).toBe('ไฟล์ว่างเปล่า')
+    expect(uploadProblem({ type: 'video/mp4', size: 2 * 1024 ** 3 + 1 })).toBe('วิดีโอใหญ่เกิน 2 GB')
+    expect(uploadProblem({ type: 'image/png', size: 51 * 1024 ** 2 })).toBe('รูปใหญ่เกิน 50 MB')
   })
   it('detects browser-playable video', () => {
     expect(isPlayable('video/mp4')).toBe(true)

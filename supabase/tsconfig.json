@@ -1,0 +1,15 @@
+{
+  // Node-side code only (tests, scripts). functions/ runs on Deno and is excluded here.
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowJs": true,
+    "types": ["node"]
+  },
+  "include": ["tests", "scripts", "vitest.config.mjs"],
+  "exclude": ["functions", "node_modules"]
+}

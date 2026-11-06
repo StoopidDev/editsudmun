@@ -417,3 +417,9 @@ enabled = true
 [functions.manage-users]
 # Authorization happens in code via RLS (see functions/_shared/clients.ts).
 verify_jwt = false
+
+[functions.media-upload]
+verify_jwt = false
+
+[functions.media-view]
+verify_jwt = false

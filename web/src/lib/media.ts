@@ -4,6 +4,24 @@ import type { ClipMedia } from './types'
 const WITHDRAW_MS = 10 * 60 * 1000
 export const WARN_DAYS = 7
 
+// Mirrors supabase/functions/_shared/media.ts so the UI can refuse a file before uploading;
+// the server checks again and is the one that decides.
+export const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']
+export const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska', 'video/x-m4v']
+export const MAX_IMAGE_BYTES = 50 * 1024 ** 2
+export const MAX_VIDEO_BYTES = 2 * 1024 ** 3
+export const ACCEPT = [...IMAGE_TYPES, ...VIDEO_TYPES].join(',')
+
+// Thai reason the file cannot be uploaded, or null.
+export function uploadProblem(file: { type: string; size: number }) {
+  const type = file.type.toLowerCase()
+  const image = IMAGE_TYPES.includes(type)
+  if (!image && !VIDEO_TYPES.includes(type)) return 'ไม่รองรับไฟล์ชนิดนี้'
+  if (file.size <= 0) return 'ไฟล์ว่างเปล่า'
+  if (file.size > (image ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES)) return image ? 'รูปใหญ่เกิน 50 MB' : 'วิดีโอใหญ่เกิน 2 GB'
+  return null
+}
+
 export const daysLeft = (expires_at: string, now = new Date()) =>
   Math.max(0, differenceInCalendarDays(parseISO(expires_at), now))
 

@@ -4,7 +4,7 @@ import { FunctionsHttpError, type PostgrestError } from '@supabase/supabase-js'
 import { addDays } from 'date-fns'
 import { attentionOf, type Attention } from '@/lib/attention'
 import { isIsoDate, todayIso } from '@/lib/dates'
-import { daysLeft, WARN_DAYS } from '@/lib/media'
+import { daysLeft, uploadProblem, WARN_DAYS } from '@/lib/media'
 import type { Category, Clip, ClipCardRow, ClipInput, ClipMedia, ClipStatus, Profile } from '@/lib/types'
 import { supabase } from './supabase'
 
@@ -225,9 +225,9 @@ export async function deleteCategory(id: string) {
   ok(await supabase.rpc('delete_category', { p_id: id }))
 }
 
-// Users (owner): the manage-users Edge Function holds the service role.
-async function manageUsers<T>(body: object): Promise<T> {
-  const { data, error } = await supabase.functions.invoke('manage-users', { body })
+// Edge Functions answer errors as { error: '<Thai message>' } with an HTTP status.
+async function callFunction<T>(name: string, body: object): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body })
   if (error) {
     if (error instanceof FunctionsHttpError) {
       const payload = await error.context.json().catch(() => null)
@@ -237,6 +237,66 @@ async function manageUsers<T>(body: object): Promise<T> {
   }
   return data as T
 }
+
+// Uploads (media-upload Edge Function). The browser sends the bytes straight to R2:
+//   1. startUpload: the server checks type/size and permission, creates the pending row
+//   2a. mode 'single': PUT the file to `url` with `headers` (Content-Type must match)
+//   2b. mode 'multipart': split into part_size chunks, get URLs from signUploadParts (one call
+//       for all parts), PUT each chunk and keep the ETag response header of each part
+//   3. completeUpload: the server checks the file in R2 and marks it ready
+// abortUpload cancels; listUploadParts returns the parts R2 already has, to resume.
+// Fits Uppy's AwsS3 plugin: getUploadParameters / createMultipartUpload / signPart /
+// listParts / completeMultipartUpload / abortMultipartUpload.
+export type UploadStart =
+  | { media: ClipMedia; mode: 'single'; url: string; headers: Record<string, string> }
+  | { media: ClipMedia; mode: 'multipart'; upload_id: string; part_size: number; part_count: number }
+export type UploadedPart = { part_number: number; etag: string }
+
+export async function startUpload(
+  clipId: string,
+  purpose: ClipMedia['purpose'],
+  file: { name: string; type: string; size: number },
+  opts: { multipart?: boolean } = {},
+): Promise<UploadStart> {
+  const problem = uploadProblem(file)
+  if (problem) throw new Error(problem)
+  return callFunction('media-upload', {
+    action: 'init', clip_id: clipId, purpose, file_name: file.name, mime: file.type, size: file.size, multipart: opts.multipart,
+  })
+}
+
+export async function signUploadParts(mediaId: string, uploadId: string, partNumbers: number[]): Promise<Record<number, string>> {
+  return (await callFunction<{ urls: Record<number, string> }>('media-upload', {
+    action: 'sign-parts', media_id: mediaId, upload_id: uploadId, part_numbers: partNumbers,
+  })).urls
+}
+
+export async function listUploadParts(mediaId: string, uploadId: string): Promise<(UploadedPart & { size: number })[]> {
+  return (await callFunction<{ parts: (UploadedPart & { size: number })[] }>('media-upload', {
+    action: 'list-parts', media_id: mediaId, upload_id: uploadId,
+  })).parts
+}
+
+export async function completeUpload(mediaId: string, multipart?: { uploadId: string; parts: UploadedPart[] }): Promise<ClipMedia> {
+  return (await callFunction<{ media: ClipMedia }>('media-upload', {
+    action: 'complete', media_id: mediaId, upload_id: multipart?.uploadId, parts: multipart?.parts,
+  })).media
+}
+
+export async function abortUpload(mediaId: string, uploadId?: string) {
+  await callFunction('media-upload', { action: 'abort', media_id: mediaId, upload_id: uploadId })
+}
+
+// Presigned GET URLs, valid 1 hour, for files the caller may see (others are left out).
+// Call when a clip is opened or a video is played, not for every card on the week page.
+// download: true makes the browser save the file under its original name.
+export async function viewUrls(mediaIds: string[], opts: { download?: boolean } = {}): Promise<Record<string, string>> {
+  if (!mediaIds.length) return {}
+  return (await callFunction<{ urls: Record<string, string> }>('media-view', { media_ids: mediaIds, download: opts.download })).urls
+}
+
+// Users (owner): the manage-users Edge Function holds the service role.
+const manageUsers = <T>(body: object) => callFunction<T>('manage-users', body)
 
 export async function listUsers(): Promise<Profile[]> {
   return ok(await supabase.from('profiles').select('*').order('created_at')) as Profile[]
