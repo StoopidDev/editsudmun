@@ -7,7 +7,7 @@ import { ClipPager } from '@/components/ClipPager'
 import { CategoryBadge, FileTile, StatusChip, UploadDisabled } from '@/components/bits'
 import { Button } from '@/components/ui/button'
 import { fromIso, fullDate } from '@/lib/dates'
-import { canWithdraw, formatSize, withRounds, withdrawMinutesLeft, daysLeft } from '@/lib/media'
+import { canWithdraw, formatSize, roundCount, withRounds, withdrawMinutesLeft, daysLeft } from '@/lib/media'
 import { ClipForm } from './ClipForm'
 
 export function ClipDetail() {
@@ -71,7 +71,7 @@ function CreatorDetail({ id }: { id: string }) {
           <section className="flex flex-col gap-2 rounded-card border border-line p-3 max-lg:order-4">
             <h2 className="flex justify-between text-sm font-bold">ส่งงาน<span className="text-xs font-normal text-sub">ไฟล์ที่ตัดต่อแล้ว · MP4 ≤ 2 GB</span></h2>
             <UploadDisabled label="ลากไฟล์มาวาง หรือ คลิกเพื่อเลือกไฟล์" />
-            <h3 className="text-xs font-bold">ส่งแล้ว ({rounds.length} รอบ)</h3>
+            <h3 className="text-xs font-bold">ส่งแล้ว ({roundCount(rounds)} รอบ)</h3>
             {rounds.map((m) => (
               <div key={m.id} className="flex flex-col gap-2 rounded-card border border-grid p-2">
                 <div className="flex items-center gap-2">

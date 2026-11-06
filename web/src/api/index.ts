@@ -1,346 +1,316 @@
-// Everything the UI may do to data. Replace this file and ./fake with Supabase calls later;
-// the checks below mimic RLS for realistic behaviour and are not real security.
+// Everything the UI may do to data, on Supabase. Permissions are enforced by RLS, triggers and
+// RPCs in supabase/migrations; checks here only give friendlier Thai errors.
+import { FunctionsHttpError, type PostgrestError } from '@supabase/supabase-js'
+import { addDays } from 'date-fns'
 import { attentionOf, type Attention } from '@/lib/attention'
-import { daysLeft, WARN_DAYS, canWithdraw } from '@/lib/media'
 import { isIsoDate, todayIso } from '@/lib/dates'
-import { searchClips } from '@/lib/search'
-import type { Category, Clip, ClipCardRow, ClipInput, ClipStatus, Profile, Role } from '@/lib/types'
-import { db, save } from './fake/db'
+import { daysLeft, uploadProblem, WARN_DAYS } from '@/lib/media'
+import type { Category, Clip, ClipCardRow, ClipInput, ClipMedia, ClipStatus, Profile } from '@/lib/types'
+import { supabase } from './supabase'
 
-const SESSION = 'fake-session'
-const wait = () => new Promise((r) => setTimeout(r, import.meta.env.MODE === 'test' ? 0 : 150))
-// Callers get copies, so editing a returned object cannot change the cache.
-const out = <T>(x: T): T => structuredClone(x)
-
-export function me(): Profile | null {
-  const id = sessionStorage.getItem(SESSION)
-  return db().profiles.find((p) => p.id === id) ?? null
+// Postgres errors raised by our functions are already Thai; map the rest.
+function thai(e: PostgrestError): Error {
+  if (e.code === 'P0001') return new Error(e.message)
+  if (e.code === '42501' || e.code === 'PGRST301') return new Error('ไม่มีสิทธิ์ทำรายการนี้')
+  if (e.code === '23503') return new Error('ข้อมูลที่อ้างถึงไม่มีอยู่แล้ว')
+  if (e.code === '23514') return new Error('ข้อมูลไม่ถูกต้อง')
+  console.error(e)
+  return new Error('เกิดข้อผิดพลาด ลองอีกครั้ง')
 }
 
-function need(role?: Role) {
-  const u = me()
-  if (!u) throw new Error('กรุณาเข้าสู่ระบบ')
-  if (role && u.role !== role) throw new Error('ไม่มีสิทธิ์ทำรายการนี้')
-  return u
+function ok<T>({ data, error }: { data: T; error: PostgrestError | null }): T {
+  if (error) throw thai(error)
+  return data
 }
 
-const live = () => db().clips.filter((c) => !c.deleted_at)
-const uid = () => crypto.randomUUID()
+// An update RLS refuses matches no rows instead of failing; treat that as not found.
+function one<T>(r: { data: T[] | null; error: PostgrestError | null }, missing = 'ไม่พบคลิป'): T {
+  const rows = ok(r) ?? []
+  if (!rows.length) throw new Error(missing)
+  return rows[0]
+}
+
 const stamp = () => new Date().toISOString()
-const nextPosition = (date: string) => Math.max(-1, ...live().filter((c) => c.date === date).map((c) => c.position)) + 1
-const toCard = (c: Clip): ClipCardRow => ({
-  ...c,
-  imageCount: db().media.filter((m) => m.clip_id === c.id && m.purpose === 'reference' && m.kind === 'image').length,
-})
-const checkCategory = (id: string) => {
-  if (!db().categories.some((c) => c.id === id)) throw new Error('ไม่พบประเภทคลิป')
-}
-const clipOf = (id: string) => {
-  const c = db().clips.find((x) => x.id === id)
-  if (!c) throw new Error('ไม่พบคลิป')
-  return c
+const checkDate = (d: string) => {
+  if (!isIsoDate(d)) throw new Error('วันที่ไม่ถูกต้อง')
 }
 
 // Auth
-export async function login(email: string, password: string) {
-  await wait()
-  const user = db().profiles.find((p) => p.email === email.trim().toLowerCase())
-  if (!user || db().passwords[user.email] !== password) throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
-  sessionStorage.setItem(SESSION, user.id)
-  return user
+export async function me(): Promise<Profile | null> {
+  const { data } = await supabase.auth.getSession()
+  const id = data.session?.user.id
+  if (!id) return null
+  return ok(await supabase.from('profiles').select('*').eq('id', id).maybeSingle()) as Profile | null
 }
-export const logout = () => sessionStorage.removeItem(SESSION)
 
+export async function login(email: string, password: string) {
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+  if (error) throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
+  return me()
+}
+
+export async function logout() {
+  await supabase.auth.signOut()
+}
+
+// Re-checks the current password by signing in with it, so a borrowed open session cannot
+// change it. Minimum length must match Auth > Password settings in the dashboard.
 export async function changePassword(current: string, next: string) {
-  await wait()
-  const u = need()
-  if (db().passwords[u.email] !== current) throw new Error('รหัสผ่านปัจจุบันไม่ถูกต้อง')
+  const { data } = await supabase.auth.getUser()
+  const email = data.user?.email
+  if (!email) throw new Error('กรุณาเข้าสู่ระบบ')
   if (next.length < 8) throw new Error('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร')
-  db().passwords[u.email] = next
-  save()
+  const check = await supabase.auth.signInWithPassword({ email, password: current })
+  if (check.error) throw new Error('รหัสผ่านปัจจุบันไม่ถูกต้อง')
+  const { error } = await supabase.auth.updateUser({ password: next })
+  if (error) throw new Error(error.code === 'same_password' ? 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสเดิม' : 'เปลี่ยนรหัสผ่านไม่สำเร็จ')
 }
 
 // Clips
-export async function listClips(from: string, to: string) {
-  await wait()
-  need()
-  return out(
-    live()
-      .filter((c) => c.date >= from && c.date <= to)
-      .sort((a, b) => a.date.localeCompare(b.date) || a.position - b.position)
-      .map(toCard),
+// Cards show the number of reference images; counted in the same request.
+const CARD = '*, images:clip_media(count)'
+type CardRow = Clip & { images: { count: number }[] }
+const toCard = ({ images, ...c }: CardRow): ClipCardRow => ({ ...c, imageCount: images[0]?.count ?? 0 })
+
+export async function listClips(from: string, to: string): Promise<ClipCardRow[]> {
+  const rows = ok(
+    await supabase
+      .from('clips')
+      .select(CARD)
+      .gte('date', from)
+      .lte('date', to)
+      .is('deleted_at', null)
+      .eq('images.purpose', 'reference')
+      .eq('images.kind', 'image')
+      .order('date')
+      .order('position'),
   )
+  return (rows as CardRow[]).map(toCard)
 }
 
-export async function listRecent(limit: number) {
-  await wait()
-  need()
-  return out(live().sort((a, b) => b.brief_updated_at.localeCompare(a.brief_updated_at)).slice(0, limit))
+// brief_updated_at moves only when the brief itself changes, not on review or reorder.
+export async function listRecent(limit: number): Promise<Clip[]> {
+  return ok(
+    await supabase.from('clips').select('*').is('deleted_at', null).order('brief_updated_at', { ascending: false }).limit(limit),
+  ) as Clip[]
 }
 
-export async function getClip(id: string) {
-  await wait()
-  need()
-  return out(live().find((c) => c.id === id) ?? null)
+// Owner: work waiting for review. Creator: changes requested, or todo past its date.
+const RANK: Record<Attention, number> = { revision: 0, review: 1, overdue: 2 }
+export async function listAttention(): Promise<(ClipCardRow & { attention: Attention })[]> {
+  const user = await me()
+  if (!user) throw new Error('กรุณาเข้าสู่ระบบ')
+  const today = todayIso()
+  let q = supabase.from('clips').select(CARD).is('deleted_at', null).eq('images.purpose', 'reference').eq('images.kind', 'image')
+  q = user.role === 'owner' ? q.eq('status', 'submitted') : q.or(`status.eq.revision,and(status.eq.todo,date.lt.${today})`)
+  const rows = (ok(await q) as CardRow[]).flatMap((c) => {
+    const attention = attentionOf(c as Clip, user.role, today)
+    return attention ? [{ ...toCard(c), attention }] : []
+  })
+  return rows.sort((a, b) => RANK[a.attention] - RANK[b.attention] || a.date.localeCompare(b.date) || a.position - b.position)
 }
 
-export async function createClip(input: ClipInput) {
-  await wait()
-  const u = need('owner')
-  if (!isIsoDate(input.date)) throw new Error('วันที่ไม่ถูกต้อง')
-  checkCategory(input.category_id)
-  const clip: Clip = {
-    ...input, id: uid(), position: nextPosition(input.date), created_by: u.id, updated_at: stamp(), brief_updated_at: stamp(),
-    status: 'todo', revision_note: '', deleted_at: null,
-  }
-  db().clips.push(clip)
-  save()
-  return out(clip)
+export async function getClip(id: string): Promise<Clip | null> {
+  return ok(await supabase.from('clips').select('*').eq('id', id).is('deleted_at', null).maybeSingle()) as Clip | null
 }
 
-// Only brief fields are editable; a status or deleted_at key in the patch is ignored.
+export async function createClip(input: ClipInput): Promise<Clip> {
+  checkDate(input.date)
+  return ok(await supabase.from('clips').insert(input).select().single()) as Clip
+}
+
+// Only brief fields are editable here; status changes go through reviewClip.
 const EDITABLE = ['date', 'category_id', 'title', 'script', 'note'] as const
-export async function updateClip(id: string, patch: Partial<ClipInput>) {
-  await wait()
-  need('owner')
-  if (patch.date !== undefined && !isIsoDate(patch.date)) throw new Error('วันที่ไม่ถูกต้อง')
-  if (patch.category_id !== undefined) checkCategory(patch.category_id)
-  const c = clipOf(id)
-  const changes = Object.fromEntries(EDITABLE.filter((k) => patch[k] !== undefined).map((k) => [k, patch[k]]))
-  const briefChanged = EDITABLE.some((k) => patch[k] !== undefined && patch[k] !== c[k])
-  if (patch.date && patch.date !== c.date) c.position = nextPosition(patch.date)
-  Object.assign(c, changes, { updated_at: stamp() }, briefChanged ? { brief_updated_at: stamp() } : {})
-  save()
-  return out(c)
+export async function updateClip(id: string, patch: Partial<ClipInput>): Promise<Clip> {
+  if (patch.date !== undefined) checkDate(patch.date)
+  const changes: Partial<ClipInput> = Object.fromEntries(EDITABLE.filter((k) => patch[k] !== undefined).map((k) => [k, patch[k]]))
+  return one(await supabase.from('clips').update(changes).eq('id', id).select()) as Clip
 }
 
 export async function softDeleteClip(id: string) {
-  await wait()
-  need('owner')
-  clipOf(id).deleted_at = stamp()
-  save()
+  one(await supabase.from('clips').update({ deleted_at: stamp() }).eq('id', id).select('id'))
 }
 
 export async function restoreClip(id: string) {
-  await wait()
-  need('owner')
-  clipOf(id).deleted_at = null
-  save()
+  one(await supabase.from('clips').update({ deleted_at: null }).eq('id', id).select('id'))
 }
 
 export async function moveClip(id: string, dir: -1 | 1) {
-  await wait()
-  need('owner')
-  const c = clipOf(id)
-  const day = live().filter((x) => x.date === c.date).sort((a, b) => a.position - b.position)
-  const i = day.findIndex((x) => x.id === id)
-  if (i < 0) return
-  const t = i + dir
-  if (t < 0 || t >= day.length) return
-  // Restored clips can share a position with another clip; renumber the day before swapping.
-  day.forEach((x, k) => { x.position = k })
-  ;[day[i].position, day[t].position] = [day[t].position, day[i].position]
-  save()
+  ok(await supabase.rpc('move_clip', { p_id: id, p_dir: dir }))
 }
 
-export async function copyClip(id: string, date: string) {
-  await wait()
-  const u = need('owner')
-  if (!isIsoDate(date)) throw new Error('วันที่ไม่ถูกต้อง')
-  const src = clipOf(id)
-  const copy: Clip = {
-    ...src, id: uid(), date, position: nextPosition(date), created_by: u.id, updated_at: stamp(), brief_updated_at: stamp(),
-    status: 'todo', revision_note: '', deleted_at: null,
-  }
-  db().clips.push(copy)
-  const refs = db().media.filter((m) => m.clip_id === id && m.purpose === 'reference')
-  db().media.push(...refs.map((m) => ({ ...m, id: uid(), clip_id: copy.id })))
-  save()
-  return out(copy)
+export async function copyClip(id: string, date: string): Promise<Clip> {
+  checkDate(date)
+  return ok(await supabase.rpc('copy_clip', { p_id: id, p_date: date })) as Clip
 }
 
-export async function reviewClip(id: string, status: 'approved' | 'revision', note = '') {
-  await wait()
-  need('owner')
+export async function reviewClip(id: string, status: 'approved' | 'revision', note = ''): Promise<Clip> {
   if (status === 'revision' && !note.trim()) throw new Error('กรุณาระบุเหตุผลที่ขอแก้ไข')
-  const c = clipOf(id)
-  c.status = status
-  c.revision_note = status === 'revision' ? note.trim() : ''
-  c.updated_at = stamp()
-  save()
-  return out(c)
+  const revision_note = status === 'revision' ? note.trim() : ''
+  return one(await supabase.from('clips').update({ status, revision_note }).eq('id', id).select()) as Clip
 }
 
+// Undo of a review: put back the earlier status and note (owner, plain update; the round
+// trigger keeps rounds right).
 export async function restoreReview(id: string, status: ClipStatus, note: string) {
-  await wait()
-  need('owner')
-  const c = clipOf(id)
-  c.status = status
-  c.revision_note = note
-  c.updated_at = stamp()
-  save()
+  one(await supabase.from('clips').update({ status, revision_note: note }).eq('id', id).select('id'))
 }
 
-const RANK: Record<Attention, number> = { revision: 0, review: 1, overdue: 2 }
-
-export async function listAttention() {
-  await wait()
-  const u = need()
-  const today = todayIso()
-  const rows = live().flatMap((c) => {
-    const attention = attentionOf(c, u.role, today)
-    return attention ? [{ ...toCard(c), attention }] : []
-  })
-  return out(rows.sort((a, b) => RANK[a.attention] - RANK[b.attention] || a.date.localeCompare(b.date) || a.position - b.position))
-}
-
-export async function search(q: string) {
-  await wait()
-  need()
-  return out(searchClips(live(), q).sort((a, b) => b.date.localeCompare(a.date)))
+export async function search(q: string): Promise<Clip[]> {
+  if (!q.trim()) return []
+  return ok(await supabase.rpc('search_clips', { p_q: q })) as Clip[]
 }
 
 // Media
-export async function listMedia(clipId: string) {
-  await wait()
-  need()
-  return out(db().media.filter((m) => m.clip_id === clipId))
-}
-
-function dropMedia(id: string) {
-  const d = db()
-  const m = d.media.find((x) => x.id === id)
-  if (!m) return
-  d.media = d.media.filter((x) => x.id !== id)
-  const left = d.media.some((x) => x.clip_id === m.clip_id && x.purpose === 'submission')
-  if (m.purpose === 'submission' && !left) {
-    const c = clipOf(m.clip_id)
-    c.status = 'todo'
-    c.revision_note = ''
-  }
-  save()
+export async function listMedia(clipId: string): Promise<ClipMedia[]> {
+  return ok(await supabase.from('clip_media').select('*').eq('clip_id', clipId).order('created_at')) as ClipMedia[]
 }
 
 export async function deleteMedia(id: string) {
-  await wait()
-  need('owner')
-  dropMedia(id)
+  one(await supabase.from('clip_media').delete().eq('id', id).select('id'), 'ไม่พบไฟล์')
 }
 
+// RLS allows it only for the uploader, while pending or within 10 minutes of finishing.
 export async function withdrawMedia(id: string) {
-  await wait()
-  const u = need('creator')
-  const m = db().media.find((x) => x.id === id)
-  if (!m || !canWithdraw(m, u.id)) throw new Error('หมดเวลาถอนไฟล์นี้แล้ว')
-  dropMedia(id)
+  one(await supabase.from('clip_media').delete().eq('id', id).select('id'), 'หมดเวลาถอนไฟล์นี้แล้ว')
 }
 
-export async function storageUsedBytes() {
-  await wait()
-  need('owner')
-  return db().media.reduce((sum, m) => sum + m.size_bytes, 0)
-}
-
+// Owner: files R2 will delete within WARN_DAYS, on live clips, soonest first.
 export async function listExpiring() {
-  await wait()
-  need('owner')
-  const clips = live()
-  return out(db().media.flatMap((m) => {
-    const clip = clips.find((c) => c.id === m.clip_id)
-    const days = daysLeft(m.expires_at)
-    return clip && days <= WARN_DAYS
-      ? [{ id: m.id, file_name: m.file_name, clip_id: clip.id, clip_title: clip.title, days }]
-      : []
-  }).sort((a, b) => a.days - b.days))
+  const until = addDays(new Date(), WARN_DAYS).toISOString()
+  const rows = ok(
+    await supabase
+      .from('clip_media')
+      .select('id, file_name, expires_at, clip:clips!inner(id, title, deleted_at)')
+      .lte('expires_at', until)
+      .is('clip.deleted_at', null)
+      .order('expires_at'),
+  ) as { id: string; file_name: string; expires_at: string; clip: { id: string; title: string } }[]
+  return rows.map((m) => ({ id: m.id, file_name: m.file_name, clip_id: m.clip.id, clip_title: m.clip.title, days: daysLeft(m.expires_at) }))
+}
+
+export async function storageUsedBytes(): Promise<number> {
+  const row = ok(await supabase.from('storage_usage').select('total_bytes').single()) as { total_bytes: number }
+  return row.total_bytes
 }
 
 // Categories
-export async function listCategories() {
-  await wait()
-  need()
-  return out([...db().categories].sort((a, b) => a.position - b.position))
+export async function listCategories(): Promise<Category[]> {
+  return ok(await supabase.from('categories').select('*').order('position')) as Category[]
 }
 
-export async function categoryCounts() {
-  await wait()
-  need()
+// shortcut: counts in the browser from one column; move to a grouped view if clips grow past ~50k.
+export async function categoryCounts(): Promise<Record<string, number>> {
+  const rows = ok(await supabase.from('clips').select('category_id').is('deleted_at', null)) as { category_id: string }[]
   const counts: Record<string, number> = {}
-  for (const c of live()) counts[c.category_id] = (counts[c.category_id] ?? 0) + 1
+  for (const r of rows) counts[r.category_id] = (counts[r.category_id] ?? 0) + 1
   return counts
 }
 
-export async function createCategory(name: string, color: string) {
-  await wait()
-  need('owner')
+export async function createCategory(name: string, color: string): Promise<Category> {
   const trimmed = name.trim()
   if (!trimmed) throw new Error('กรุณากรอกชื่อประเภท')
-  const position = Math.max(-1, ...db().categories.map((c) => c.position)) + 1
-  const cat: Category = { id: uid(), name: trimmed, color, position }
-  db().categories.push(cat)
-  save()
-  return out(cat)
+  const last = ok(await supabase.from('categories').select('position').order('position', { ascending: false }).limit(1))
+  const position = ((last as { position: number }[])[0]?.position ?? -1) + 1
+  return ok(await supabase.from('categories').insert({ name: trimmed, color, position }).select().single()) as Category
 }
 
 export async function updateCategory(id: string, patch: Pick<Category, 'name' | 'color'>) {
-  await wait()
-  need('owner')
-  const cat = db().categories.find((c) => c.id === id)
-  if (!cat) throw new Error('ไม่พบประเภท')
   const name = patch.name.trim()
   if (!name) throw new Error('กรุณากรอกชื่อประเภท')
-  Object.assign(cat, { ...patch, name })
-  save()
+  one(await supabase.from('categories').update({ ...patch, name }).eq('id', id).select('id'), 'ไม่พบประเภท')
 }
 
 export async function deleteCategory(id: string) {
-  await wait()
-  need('owner')
-  if (live().some((c) => c.category_id === id)) throw new Error('ลบไม่ได้ ยังมีคลิปในประเภทนี้')
-  db().categories = db().categories.filter((c) => c.id !== id)
-  save()
+  ok(await supabase.rpc('delete_category', { p_id: id }))
 }
 
-// Users (the real version calls the create-creator Edge Function)
-const tempPassword = () => Math.random().toString(36).slice(2, 10)
-
-export async function listUsers() {
-  await wait()
-  need('owner')
-  return out(db().profiles)
+// Edge Functions answer errors as { error: '<Thai message>' } with an HTTP status.
+async function callFunction<T>(name: string, body: object): Promise<T> {
+  const { data, error } = await supabase.functions.invoke(name, { body })
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      const payload = await error.context.json().catch(() => null)
+      throw new Error(payload?.error ?? 'เกิดข้อผิดพลาด ลองอีกครั้ง')
+    }
+    throw new Error('เชื่อมต่อไม่สำเร็จ ลองอีกครั้ง')
+  }
+  return data as T
 }
 
-export async function createCreator(display_name: string, rawEmail: string) {
-  await wait()
-  need('owner')
-  const name = display_name.trim()
-  if (!name) throw new Error('กรุณากรอกชื่อ')
-  const email = rawEmail.trim().toLowerCase()
-  if (db().profiles.some((p) => p.email === email)) throw new Error('อีเมลนี้มีบัญชีอยู่แล้ว')
-  const user: Profile = { id: uid(), role: 'creator', display_name: name, email, created_at: stamp() }
-  const password = tempPassword()
-  db().profiles.push(user)
-  db().passwords[email] = password
-  save()
-  return { user: out(user), tempPassword: password }
+// Uploads (media-upload Edge Function). The browser sends the bytes straight to R2:
+//   1. startUpload: the server checks type/size and permission, creates the pending row
+//   2a. mode 'single': PUT the file to `url` with `headers` (Content-Type must match)
+//   2b. mode 'multipart': split into part_size chunks, get URLs from signUploadParts (one call
+//       for all parts), PUT each chunk and keep the ETag response header of each part
+//   3. completeUpload: the server checks the file in R2 and marks it ready
+// abortUpload cancels; listUploadParts returns the parts R2 already has, to resume.
+// Fits Uppy's AwsS3 plugin: getUploadParameters / createMultipartUpload / signPart /
+// listParts / completeMultipartUpload / abortMultipartUpload.
+export type UploadStart =
+  | { media: ClipMedia; mode: 'single'; url: string; headers: Record<string, string> }
+  | { media: ClipMedia; mode: 'multipart'; upload_id: string; part_size: number; part_count: number }
+export type UploadedPart = { part_number: number; etag: string }
+
+export async function startUpload(
+  clipId: string,
+  purpose: ClipMedia['purpose'],
+  file: { name: string; type: string; size: number },
+  opts: { multipart?: boolean } = {},
+): Promise<UploadStart> {
+  const problem = uploadProblem(file)
+  if (problem) throw new Error(problem)
+  return callFunction('media-upload', {
+    action: 'init', clip_id: clipId, purpose, file_name: file.name, mime: file.type, size: file.size, multipart: opts.multipart,
+  })
 }
 
-export async function resetPassword(id: string) {
-  await wait()
-  need('owner')
-  const user = db().profiles.find((p) => p.id === id)
-  if (!user) throw new Error('ไม่พบผู้ใช้')
-  const password = tempPassword()
-  db().passwords[user.email] = password
-  save()
-  return password
+export async function signUploadParts(mediaId: string, uploadId: string, partNumbers: number[]): Promise<Record<number, string>> {
+  return (await callFunction<{ urls: Record<number, string> }>('media-upload', {
+    action: 'sign-parts', media_id: mediaId, upload_id: uploadId, part_numbers: partNumbers,
+  })).urls
+}
+
+export async function listUploadParts(mediaId: string, uploadId: string): Promise<(UploadedPart & { size: number })[]> {
+  return (await callFunction<{ parts: (UploadedPart & { size: number })[] }>('media-upload', {
+    action: 'list-parts', media_id: mediaId, upload_id: uploadId,
+  })).parts
+}
+
+export async function completeUpload(mediaId: string, multipart?: { uploadId: string; parts: UploadedPart[] }): Promise<ClipMedia> {
+  return (await callFunction<{ media: ClipMedia }>('media-upload', {
+    action: 'complete', media_id: mediaId, upload_id: multipart?.uploadId, parts: multipart?.parts,
+  })).media
+}
+
+export async function abortUpload(mediaId: string, uploadId?: string) {
+  await callFunction('media-upload', { action: 'abort', media_id: mediaId, upload_id: uploadId })
+}
+
+// Presigned GET URLs, valid 1 hour, for files the caller may see (others are left out).
+// Call when a clip is opened or a video is played, not for every card on the week page.
+// download: true makes the browser save the file under its original name.
+export async function viewUrls(mediaIds: string[], opts: { download?: boolean } = {}): Promise<Record<string, string>> {
+  if (!mediaIds.length) return {}
+  return (await callFunction<{ urls: Record<string, string> }>('media-view', { media_ids: mediaIds, download: opts.download })).urls
+}
+
+// Users (owner): the manage-users Edge Function holds the service role.
+const manageUsers = <T>(body: object) => callFunction<T>('manage-users', body)
+
+export async function listUsers(): Promise<Profile[]> {
+  return ok(await supabase.from('profiles').select('*').order('created_at')) as Profile[]
+}
+
+export async function createCreator(display_name: string, email: string) {
+  if (!display_name.trim()) throw new Error('กรุณากรอกชื่อ')
+  return manageUsers<{ user: Profile; tempPassword: string }>({ action: 'create', display_name, email })
+}
+
+export async function resetPassword(id: string): Promise<string> {
+  return (await manageUsers<{ tempPassword: string }>({ action: 'reset_password', id })).tempPassword
 }
 
 export async function deleteUser(id: string) {
-  await wait()
-  need('owner')
-  const user = db().profiles.find((p) => p.id === id)
-  if (user?.role === 'owner') throw new Error('ลบบัญชีเจ้าของไม่ได้')
-  if (user) delete db().passwords[user.email]
-  db().profiles = db().profiles.filter((p) => p.id !== id)
-  save()
+  await manageUsers({ action: 'delete', id })
 }

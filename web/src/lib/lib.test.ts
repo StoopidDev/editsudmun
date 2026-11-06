@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
-import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, withdrawMinutesLeft, withRounds } from './media'
+import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, roundCount, uploadProblem, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
 import { contrast, nextColor, readableOn } from './color'
@@ -9,8 +9,8 @@ import type { Clip, ClipMedia } from './types'
 
 const media = (over: Partial<ClipMedia>): ClipMedia => ({
   id: 'm', clip_id: 'c', kind: 'video', purpose: 'submission', r2_key: 'k', file_name: 'f.mp4',
-  mime: 'video/mp4', size_bytes: 1, status: 'ready', uploaded_by: 'u1',
-  created_at: '2026-10-29T10:00:00.000Z', expires_at: '2026-11-28T10:00:00.000Z', ...over,
+  mime: 'video/mp4', size_bytes: 1, status: 'ready', round: 1, uploaded_by: 'u1', uploader_name: 'ครีเอเตอร์',
+  created_at: '2026-10-29T09:30:00.000Z', ready_at: '2026-10-29T10:00:00.000Z', expires_at: '2026-11-28T10:00:00.000Z', ...over,
 })
 
 describe('dates', () => {
@@ -48,13 +48,29 @@ describe('media', () => {
     expect(canWithdraw(media({}), 'u2', now)).toBe(false)
     expect(canWithdraw(media({}), 'u1', new Date('2026-10-29T10:10:00.000Z'))).toBe(false)
     expect(canWithdraw(media({ purpose: 'reference' }), 'u1', now)).toBe(false)
+    expect(canWithdraw(media({ uploaded_by: null }), 'u1', now)).toBe(false)
   })
-  it('numbers rounds oldest first and lists newest first', () => {
+  it('lets the uploader cancel a pending upload however long it took', () => {
+    const pending = media({ status: 'pending', ready_at: null, created_at: '2026-10-29T08:00:00.000Z' })
+    expect(canWithdraw(pending, 'u1', now)).toBe(true)
+    expect(withdrawMinutesLeft(pending, now)).toBe(10)
+  })
+  it('lists newest first and counts rounds from the server, not files', () => {
     const list = withRounds([
-      media({ id: 'a', created_at: '2026-10-28T00:00:00.000Z' }),
-      media({ id: 'b', created_at: '2026-10-29T00:00:00.000Z' }),
+      media({ id: 'a', round: 1, created_at: '2026-10-28T00:00:00.000Z' }),
+      media({ id: 'b', round: 1, created_at: '2026-10-28T01:00:00.000Z' }),
+      media({ id: 'c', round: 2, created_at: '2026-10-29T00:00:00.000Z' }),
     ])
-    expect(list.map((m) => [m.id, m.round])).toEqual([['b', 2], ['a', 1]])
+    expect(list.map((m) => [m.id, m.round])).toEqual([['c', 2], ['b', 1], ['a', 1]])
+    expect(roundCount(list)).toBe(2)
+  })
+  it('refuses unsupported or oversized files before upload', () => {
+    expect(uploadProblem({ type: 'video/mp4', size: 1 })).toBeNull()
+    expect(uploadProblem({ type: 'IMAGE/JPEG', size: 1 })).toBeNull()
+    expect(uploadProblem({ type: 'application/pdf', size: 1 })).toBe('ไม่รองรับไฟล์ชนิดนี้')
+    expect(uploadProblem({ type: 'video/mp4', size: 0 })).toBe('ไฟล์ว่างเปล่า')
+    expect(uploadProblem({ type: 'video/mp4', size: 2 * 1024 ** 3 + 1 })).toBe('วิดีโอใหญ่เกิน 2 GB')
+    expect(uploadProblem({ type: 'image/png', size: 51 * 1024 ** 2 })).toBe('รูปใหญ่เกิน 50 MB')
   })
   it('detects browser-playable video', () => {
     expect(isPlayable('video/mp4')).toBe(true)

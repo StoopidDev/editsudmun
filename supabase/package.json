@@ -1,0 +1,21 @@
+{
+  "name": "webapp-clip-supabase",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sb": "supabase --workdir ..",
+    "link": "supabase --workdir .. link",
+    "db:push": "supabase --workdir .. db push",
+    "functions:deploy": "supabase --workdir .. functions deploy --use-api",
+    "types": "supabase --workdir .. gen types typescript --linked --schema public > ../web/src/types/database.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "2.118.0",
+    "@types/node": "24.19.2",
+    "supabase": "2.121.0",
+    "typescript": "7.0.2",
+    "vitest": "4.1.12"
+  }
+}

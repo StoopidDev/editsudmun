@@ -51,8 +51,8 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
     if (q) { nav(`/search?q=${encodeURIComponent(q)}`); onNavigate?.() }
   }
 
-  const logout = () => {
-    api.logout()
+  const logout = async () => {
+    await api.logout()
     qc.clear()
     nav('/login')
   }

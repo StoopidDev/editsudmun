@@ -4,24 +4,45 @@ import type { ClipMedia } from './types'
 const WITHDRAW_MS = 10 * 60 * 1000
 export const WARN_DAYS = 7
 
+// Mirrors supabase/functions/_shared/media.ts so the UI can refuse a file before uploading;
+// the server checks again and is the one that decides.
+export const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']
+export const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska', 'video/x-m4v']
+export const MAX_IMAGE_BYTES = 50 * 1024 ** 2
+export const MAX_VIDEO_BYTES = 2 * 1024 ** 3
+export const ACCEPT = [...IMAGE_TYPES, ...VIDEO_TYPES].join(',')
+
+// Thai reason the file cannot be uploaded, or null.
+export function uploadProblem(file: { type: string; size: number }) {
+  const type = file.type.toLowerCase()
+  const image = IMAGE_TYPES.includes(type)
+  if (!image && !VIDEO_TYPES.includes(type)) return 'ไม่รองรับไฟล์ชนิดนี้'
+  if (file.size <= 0) return 'ไฟล์ว่างเปล่า'
+  if (file.size > (image ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES)) return image ? 'รูปใหญ่เกิน 50 MB' : 'วิดีโอใหญ่เกิน 2 GB'
+  return null
+}
+
 export const daysLeft = (expires_at: string, now = new Date()) =>
   Math.max(0, differenceInCalendarDays(parseISO(expires_at), now))
 
+// The window starts when the upload finished (ready_at); a pending upload can always be cancelled.
+// Mirrors the clip_media delete policy in supabase/migrations.
 export const withdrawMinutesLeft = (m: ClipMedia, now = new Date()) =>
-  Math.max(0, Math.ceil((parseISO(m.created_at).getTime() + WITHDRAW_MS - now.getTime()) / 60000))
+  m.ready_at
+    ? Math.max(0, Math.ceil((parseISO(m.ready_at).getTime() + WITHDRAW_MS - now.getTime()) / 60000))
+    : WITHDRAW_MS / 60000
 
 export const canWithdraw = (m: ClipMedia, userId: string, now = new Date()) =>
-  m.purpose === 'submission' && m.uploaded_by === userId && withdrawMinutesLeft(m, now) > 0
+  m.purpose === 'submission' && m.uploaded_by === userId && (m.status === 'pending' || withdrawMinutesLeft(m, now) > 0)
 
 export const isPlayable = (mime: string) => mime === 'video/mp4' || mime === 'video/webm'
 
-// shortcut: one file = one round, because the spec has no round column. Frame 103:2528 shows two
-// files in round 1; ask Buddy for a round column if that grouping is wanted.
+// Submissions newest first. round comes from the server: files sent before a revision request
+// share a round (frame 103:2528 shows two files in round 1).
 export const withRounds = (subs: ClipMedia[]) =>
-  [...subs]
-    .sort((a, b) => a.created_at.localeCompare(b.created_at))
-    .map((m, i) => ({ ...m, round: i + 1 }))
-    .reverse()
+  [...subs].sort((a, b) => b.created_at.localeCompare(a.created_at))
+
+export const roundCount = (subs: ClipMedia[]) => new Set(subs.map((m) => m.round)).size
 
 export const formatSize = (bytes: number) => {
   if (bytes < 1024 ** 2) return `${Math.max(1, Math.round(bytes / 1024))} KB`
