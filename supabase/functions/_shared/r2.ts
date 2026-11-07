@@ -32,7 +32,13 @@ async function call(method: string, url: URL, init: { body?: string; headers?: R
   return res
 }
 
-const tag = (xml: string, name: string) => xml.match(new RegExp(`<${name}>([^<]*)</${name}>`))?.[1]
+// XML text is entity-encoded: ETags arrive as &quot;abc&quot; and must go back as "abc".
+const unescapeXml = (s: string) =>
+  s.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&')
+const tag = (xml: string, name: string) => {
+  const v = xml.match(new RegExp(`<${name}>([^<]*)</${name}>`))?.[1]
+  return v === undefined ? undefined : unescapeXml(v)
+}
 
 // Upload URLs live longer than view URLs: a 2 GB upload on a slow line can take hours.
 export const UPLOAD_URL_SECONDS = 6 * 3600
