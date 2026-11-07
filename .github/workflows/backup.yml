@@ -1,0 +1,44 @@
+# Nightly backup of the prod database (spec §2, §10): Supabase Free has no automatic backups.
+# Dumps roles, schema and data (including auth.users) as three SQL files and keeps them as a
+# workflow artifact for 30 days. Restore steps: docs/backup-restore.md.
+#
+# Needs the repository secret SUPABASE_PROD_DB_URL: the Session pooler connection string from
+# the prod project's Connect dialog (GitHub runners have no IPv6, so not the direct one).
+name: Backup prod database
+
+on:
+  schedule:
+    - cron: '0 20 * * *' # 03:00 Asia/Bangkok
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.121.0
+
+      - name: Dump roles, schema and data
+        env:
+          DB_URL: ${{ secrets.SUPABASE_PROD_DB_URL }}
+        run: |
+          test -n "$DB_URL" || { echo "SUPABASE_PROD_DB_URL secret is not set"; exit 1; }
+          mkdir backup
+          supabase db dump --db-url "$DB_URL" -f backup/roles.sql --role-only
+          supabase db dump --db-url "$DB_URL" -f backup/schema.sql
+          supabase db dump --db-url "$DB_URL" -f backup/data.sql --use-copy --data-only
+          # An empty dump means something went wrong even if the command exited 0.
+          test -s backup/schema.sql && test -s backup/data.sql
+          ls -l backup
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prod-db-${{ github.run_id }}
+          path: backup/
+          retention-days: 30
+          if-no-files-found: error

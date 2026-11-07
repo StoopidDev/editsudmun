@@ -5,7 +5,10 @@
   "scripts": {
     "sb": "supabase --workdir ..",
     "link": "supabase --workdir .. link",
-    "db:push": "supabase --workdir .. db push",
+    "link:dev": "supabase --workdir .. link --project-ref hjitoifpfbiodoiyuoqm",
+    "link:prod": "supabase --workdir .. link --project-ref avxuamggvhdnuzfaincl",
+    "linked": "node scripts/linked.mjs",
+    "db:push": "node scripts/linked.mjs && supabase --workdir .. db push",
     "functions:deploy": "supabase --workdir .. functions deploy --use-api",
     "types": "supabase --workdir .. gen types typescript --linked --schema public > ../web/src/types/database.ts",
     "test": "vitest run",

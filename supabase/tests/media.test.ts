@@ -161,8 +161,10 @@ describe('multipart upload', () => {
 
     const listed = await call(creator, 'media-upload', { action: 'list-parts', media_id: media.id, upload_id })
     expect(listed.data.parts.map((p: { part_number: number }) => p.part_number)).toEqual([1, 2])
+    // Resuming uses the ETags from list-parts; they must match the ones R2 sent on PUT.
+    expect(listed.data.parts.map((p: { etag: string }) => p.etag)).toEqual(parts.map((p) => p.etag))
 
-    const done = await call(creator, 'media-upload', { action: 'complete', media_id: media.id, upload_id, parts })
+    const done = await call(creator, 'media-upload', { action: 'complete', media_id: media.id, upload_id, parts: listed.data.parts })
     expect(done.status).toBe(200)
     expect(done.data.media).toMatchObject({ status: 'ready', size_bytes: size })
   })
