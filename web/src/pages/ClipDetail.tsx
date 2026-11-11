@@ -62,7 +62,7 @@ function CreatorDetail({ id }: { id: string }) {
       </div>
     </Delayed>
   )
-  if (!clip) return <p>ไม่พบคลิป <Link to="/calendar" className="text-brand">กลับปฏิทิน</Link></p>
+  if (!clip) return <p>ไม่พบคลิป <Link viewTransition to="/calendar" className="text-brand">กลับปฏิทิน</Link></p>
 
   const refs = media.filter((m) => m.purpose === 'reference')
   const rounds = withRounds(media.filter((m) => m.purpose === 'submission'))
@@ -83,7 +83,7 @@ function CreatorDetail({ id }: { id: string }) {
           <div className="flex items-center gap-2 text-sm text-sub">
             <CategoryBadge categoryId={clip.category_id} />{fullDate(fromIso(clip.date))}<StatusChip status={clip.status} />
           </div>
-          <h1 className="text-3xl font-bold">{clip.title}</h1>
+          <h1 className="text-3xl font-bold" style={{ viewTransitionName: `title-${id}` }}>{clip.title}</h1>
           {clip.status === 'revision' && (
             <div role="status" className="rounded-card border border-warn-line bg-warn-bg p-3 text-sm">
               <b>เจ้าของขอให้แก้ไข</b><p>{clip.revision_note}</p>

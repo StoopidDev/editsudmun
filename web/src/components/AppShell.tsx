@@ -48,20 +48,20 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const q = new FormData(e.currentTarget).get('q')?.toString().trim()
-    if (q) { nav(`/search?q=${encodeURIComponent(q)}`); onNavigate?.() }
+    if (q) { nav(`/search?q=${encodeURIComponent(q)}`, { viewTransition: true }); onNavigate?.() }
   }
 
   const logout = async () => {
     await api.logout()
     qc.clear()
-    nav('/login')
+    nav('/login', { viewTransition: true })
   }
 
   return (
     <div className="flex h-full flex-col gap-4 bg-surface p-3">
-      {!rail && <Link to="/" className="px-2 py-2 text-lg">Channel's Tool</Link>}
+      {!rail && <Link viewTransition to="/" className="px-2 py-2 text-lg">Channel's Tool</Link>}
       {rail ? (
-        <Link to="/search" aria-label="ค้นหา" className="flex justify-center p-2"><Search size={18} /></Link>
+        <Link viewTransition to="/search" aria-label="ค้นหา" className="flex justify-center p-2"><Search size={18} /></Link>
       ) : (
         <form onSubmit={submit} className="flex items-center gap-2 rounded-card border border-line bg-grid px-2 py-1.5">
           <Search size={16} />
@@ -71,7 +71,7 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
       )}
       <nav className="flex flex-col gap-1">
         {NAV.filter((n) => !n.owner || me?.role === 'owner').map(({ to, label, icon: Icon }) => (
-          <NavLink key={to} to={to} end={to === '/'} onClick={onNavigate} aria-label={label}
+          <NavLink viewTransition key={to} to={to} end={to === '/'} onClick={onNavigate} aria-label={label}
             className={({ isActive }) => `press hover-tint flex items-center gap-2 rounded-card px-2 py-2 text-sm ${rail ? 'justify-center' : ''} ${isActive ? 'bg-brand text-white' : ''}`}>
             <Icon size={16} />{!rail && label}
           </NavLink>
@@ -120,7 +120,7 @@ export function AppShell() {
       </div>
       <nav aria-label="เมนูหลัก" className="fixed inset-x-0 bottom-0 z-20 flex h-16 border-t border-line bg-bg md:hidden">
         {TABS.map(({ to, label, icon: Icon }) => (
-          <NavLink key={to} to={to} end={to === '/'}
+          <NavLink viewTransition key={to} to={to} end={to === '/'}
             className={({ isActive }) => `press flex flex-1 flex-col items-center justify-center gap-0.5 text-xs ${isActive ? 'font-bold text-brand' : 'text-sub'}`}>
             <Icon size={20} />{label}
           </NavLink>

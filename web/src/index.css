@@ -222,6 +222,15 @@ body {
 
 @keyframes row-out { to { opacity: 0; } }
 
+/* Route crossfade; week change slides 24 px in the direction set on <html data-dir>. Reduced motion shortens these. */
+::view-transition-old(root) { animation: 120ms var(--ease-in-quint) both fade-out; }
+::view-transition-new(root) { animation: 200ms var(--ease-out-quint) both fade-in; }
+::view-transition-old(cal) { animation: 160ms var(--ease-in-quint) both slide-out; }
+::view-transition-new(cal) { animation: 240ms var(--ease-out-quint) both slide-in; }
+@keyframes slide-out { to { opacity: 0; transform: translateX(calc(var(--d, 1) * -24px)); } }
+@keyframes slide-in { from { opacity: 0; transform: translateX(calc(var(--d, 1) * 24px)); } }
+:root[data-dir='prev'] { --d: -1; }
+
 /* Approve moment: the tick draws in over 240 ms (pathLength 1 keeps the dash length at 1). */
 .check-draw { stroke-dasharray: 1; animation: check-draw 240ms var(--ease-out-quint) both; }
 @keyframes check-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }

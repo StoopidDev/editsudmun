@@ -52,7 +52,7 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
                     <MoreHorizontal />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => nav(`/clips/${c.id}`)}><Pencil />แก้ไข</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => nav(`/clips/${c.id}`, { viewTransition: true })}><Pencil />แก้ไข</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setCopying(c)}><Copy />คัดลอก</DropdownMenuItem>
                     {filter === null && (
                       <>
@@ -68,7 +68,7 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
           ))}
           {shown.length === 0 && <p className="text-sm text-sub">ไม่มีคลิป</p>}
         </div>
-        {owner && <Button onClick={() => nav(`/clips/new?date=${date}`)}><Plus />เพิ่มคลิป</Button>}
+        {owner && <Button onClick={() => nav(`/clips/new?date=${date}`, { viewTransition: true })}><Plus />เพิ่มคลิป</Button>}
         {copying && <CopyDialog clip={copying} onClose={() => setCopying(null)} />}
       </SheetContent>
     </Sheet>

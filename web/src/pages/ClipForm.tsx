@@ -35,7 +35,7 @@ export function ClipForm({ clipId }: { clipId?: string }) {
       </div>
     </Delayed>
   )
-  if (clipId && !clip) return <p>ไม่พบคลิป <Link to="/calendar" className="text-brand">กลับปฏิทิน</Link></p>
+  if (clipId && !clip) return <p>ไม่พบคลิป <Link viewTransition to="/calendar" className="text-brand">กลับปฏิทิน</Link></p>
   return <Form key={clipId ?? key} clipId={clipId} initial={clip ?? undefined} />
 }
 
@@ -72,7 +72,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   const pending = useRef<Promise<string | null> | null>(null)
   const [deletingFile, setDeletingFile] = useState<ClipMedia | null>(null)
   const lastFile = useLast(deletingFile)
-  const del = useDeleteClip(() => nav(`/calendar?date=${form.date}`))
+  const del = useDeleteClip(() => nav(`/calendar?date=${form.date}`, { viewTransition: true }))
   const removeFile = useAct(api.deleteMedia)
   const save = useAct((input: ClipInput) => (clipId ? api.updateClip(clipId, input) : api.createClip(input)))
 
@@ -101,7 +101,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         if (refused.length) toast.error(refused[0].message)
       }
       setParked([])
-      nav(`/clips/${c.id}`, { replace: true })
+      nav(`/clips/${c.id}`, { replace: true, viewTransition: true })
       return c.id
     } catch {
       setParked([]) // useAct already showed the error
@@ -124,7 +124,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         .then((id) => {
           if (!id) return
           toast.success('บันทึกแล้ว')
-          if (addAnother) nav(`/clips/new?date=${form.date}&cat=${categoryId}`, { replace: true })
+          if (addAnother) nav(`/clips/new?date=${form.date}&cat=${categoryId}`, { replace: true, viewTransition: true })
         })
         .finally(() => setSaving(null))
       return
@@ -194,7 +194,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           </div>
           <div className="grid gap-1">
             <Label htmlFor="title">หัวข้อ</Label>
-            <Input id="title" autoFocus={!!params.get('cat')} aria-invalid={titleError} value={form.title} className="font-bold" onChange={(e) => { set({ title: e.target.value }); setTitleError(false) }} />
+            <Input id="title" autoFocus={!!params.get('cat')} aria-invalid={titleError} value={form.title} className="font-bold" style={clipId ? { viewTransitionName: `title-${clipId}` } : undefined} onChange={(e) => { set({ title: e.target.value }); setTitleError(false) }} />
             {titleError && <p role="alert" className="text-xs text-danger">กรุณากรอกหัวข้อ</p>}
           </div>
           <div className="grid gap-1">

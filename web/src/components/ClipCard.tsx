@@ -1,16 +1,23 @@
+import type { MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Image as ImageIcon } from 'lucide-react'
 import { CategoryBadge, StatusChip } from '@/components/bits'
 import type { ClipCardRow } from '@/lib/types'
 
+// The clicked card lends its title to the detail heading. Set before navigation starts, so the old snapshot has it.
+export function shareTitle(e: MouseEvent<HTMLElement>, id: string) {
+  const title = e.currentTarget.querySelector<HTMLElement>('[data-title]')
+  if (title) title.style.viewTransitionName = `title-${id}`
+}
+
 export function ClipCard({ clip }: { clip: ClipCardRow }) {
   return (
-    <Link to={`/clips/${clip.id}`} className="flex min-w-0 flex-col gap-1 overflow-hidden rounded-card border border-line bg-bg p-2 press hover-tint hover-pointer:border-ink/40">
+    <Link viewTransition to={`/clips/${clip.id}`} onClick={(e) => shareTitle(e, clip.id)} className="flex min-w-0 flex-col gap-1 overflow-hidden rounded-card border border-line bg-bg p-2 press hover-tint hover-pointer:border-ink/40">
       <div className="flex flex-wrap items-center gap-1">
         <CategoryBadge categoryId={clip.category_id} />
         <StatusChip status={clip.status} />
       </div>
-      <b className="text-sm">{clip.title}</b>
+      <b data-title className="text-sm">{clip.title}</b>
       <p className="line-clamp-2 text-sm text-sub xl:hidden">{clip.script}</p>
       <div className="flex gap-2 text-xs text-sub">
         {clip.imageCount > 0 && <span className="flex items-center gap-1"><ImageIcon size={12} />{clip.imageCount}</span>}

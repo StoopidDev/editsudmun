@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { addDays, addMonths, isSameMonth, isValid } from 'date-fns'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { useCategories, useClips, useMe } from '@/api/queries'
+import { useCategories, useClips, useMe, withTransition } from '@/api/queries'
 import { ClipCard } from '@/components/ClipCard'
 import { DayDrawer } from '@/components/DayDrawer'
 import { Delayed, Skeleton } from '@/components/bits'
@@ -27,7 +27,11 @@ export function Calendar() {
   const [drawer, setDrawer] = useState<string | null>(null)
 
   const go = (next: { view?: string; date?: string }) => setParams({ view, date: dateIso, ...next })
-  const step = (n: number) => go({ date: toIso(view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)) })
+  // Later weeks slide in from the right, earlier from the left (CSS reads data-dir).
+  const step = (n: number) => {
+    document.documentElement.dataset.dir = n > 0 ? 'next' : 'prev'
+    withTransition(() => go({ date: toIso(view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)) }))
+  }
   const forDay = (iso: string) => clips.data?.filter((c) => c.date === iso) ?? []
 
   return (
@@ -44,7 +48,7 @@ export function Calendar() {
             </button>
           ))}
         </div>
-        {owner && <Button nativeButton={false} render={<Link to={`/clips/new?date=${dateIso}`} />} className="ml-auto max-md:hidden"><Plus />เพิ่มคลิป</Button>}
+        {owner && <Button nativeButton={false} render={<Link viewTransition to={`/clips/new?date=${dateIso}`} />} className="ml-auto max-md:hidden"><Plus />เพิ่มคลิป</Button>}
       </div>
 
       {view === 'week'
@@ -58,7 +62,7 @@ export function Calendar() {
 
       {drawer && <DayDrawer date={drawer} onClose={() => setDrawer(null)} />}
       {owner && (
-        <Link to={`/clips/new?date=${dateIso}`} aria-label="เพิ่มคลิป" className="fixed right-4 bottom-20 z-10 flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-md md:hidden">
+        <Link viewTransition to={`/clips/new?date=${dateIso}`} aria-label="เพิ่มคลิป" className="fixed right-4 bottom-20 z-10 flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-md md:hidden">
           <Plus />
         </Link>
       )}
@@ -71,7 +75,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
   const selIso = toIso(p.selected)
   const list = p.forDay(selIso)
   return (
-    <div className="flex min-w-0 flex-col gap-3 xl:hidden">
+    <div className="flex min-w-0 flex-col gap-3 xl:hidden" style={{ viewTransitionName: 'cal' }}>
       <div className="grid grid-cols-7 gap-1">
         {p.days.map((d) => {
           const iso = toIso(d)
@@ -95,7 +99,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
       {list.map((c) => <ClipCard key={c.id} clip={c} />)}
       {!p.loading && !p.failed && list.length === 0 && <p className="py-2 text-center text-sm text-sub">ไม่มีคลิป</p>}
       {p.owner && (
-        <Link to={`/clips/new?date=${selIso}`} className="rounded-card border border-dashed border-line py-3 text-center text-sm text-sub">+ เพิ่มคลิป</Link>
+        <Link viewTransition to={`/clips/new?date=${selIso}`} className="rounded-card border border-dashed border-line py-3 text-center text-sm text-sub">+ เพิ่มคลิป</Link>
       )}
     </div>
   )
@@ -104,7 +108,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
 function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => ClipCardRow[]; owner: boolean; onOpen: (iso: string) => void }) {
   const today = todayIso()
   return (
-    <div className="grid grid-cols-7 gap-2">
+    <div className="grid grid-cols-7 gap-2" style={{ viewTransitionName: 'cal' }}>
       {p.days.map((d) => {
         const iso = toIso(d)
         const list = p.forDay(iso)
@@ -121,7 +125,7 @@ function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => Clip
               <button onClick={() => p.onOpen(iso)} className="text-xs text-brand hover-pointer:underline underline-offset-4">ดูเพิ่มอีก {list.length - MAX_CARDS} คลิป</button>
             )}
             {p.owner && (
-              <Link to={`/clips/new?date=${iso}`} className="rounded-card border border-dashed border-line py-1 text-center text-xs text-sub">+ เพิ่มคลิป</Link>
+              <Link viewTransition to={`/clips/new?date=${iso}`} className="rounded-card border border-dashed border-line py-1 text-center text-xs text-sub">+ เพิ่มคลิป</Link>
             )}
           </section>
         )

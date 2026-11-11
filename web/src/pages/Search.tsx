@@ -24,7 +24,7 @@ export function Search() {
         const s = snippet(hay, q)
         const d = fromIso(c.date)
         return (
-          <Link key={c.id} to={`/clips/${c.id}`} className="press hover-tint hover-pointer:border-ink/40 flex flex-col gap-1 rounded-card border border-line p-3">
+          <Link viewTransition key={c.id} to={`/clips/${c.id}`} className="press hover-tint hover-pointer:border-ink/40 flex flex-col gap-1 rounded-card border border-line p-3">
             <div className="flex justify-between text-xs text-sub"><CategoryBadge categoryId={c.category_id} />{dayLabel(d)} {shortDate(d)}</div>
             <b>{c.title}</b>
             <p className="text-xs text-sub">{s.before}<mark className="bg-note-line text-ink">{s.match}</mark>{s.after}</p>
