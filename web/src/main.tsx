@@ -7,7 +7,6 @@ import '@fontsource-variable/noto-sans-thai'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ThemedToaster } from './components/ThemedToaster'
 import { router } from './router'
-import { UploadProvider } from './lib/uploads'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -17,11 +16,9 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <QueryClientProvider client={queryClient}>
-    <UploadProvider>
-      <ErrorBoundary>
-        <RouterProvider router={router} />
-      </ErrorBoundary>
-    </UploadProvider>
+    <ErrorBoundary>
+      <RouterProvider router={router} />
+    </ErrorBoundary>
     <ThemedToaster />
   </QueryClientProvider>,
 )

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useContext, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Calendar, Home, KeyRound, LogOut, Menu, Moon, PanelLeft, Search, Sun, Tag, User, Users } from 'lucide-react'
@@ -7,6 +7,8 @@ import { useMe } from '@/api/queries'
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { toggleTheme, useTheme } from '@/lib/theme'
+import { Ctx } from '@/lib/upload-state'
+import { UploadProvider } from '@/lib/uploads'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 
 const NAV = [
@@ -72,7 +74,9 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
     if (q) { nav(`/search?q=${encodeURIComponent(q)}`, { viewTransition: true }); onNavigate?.() }
   }
 
+  const uppy = useContext(Ctx)
   const logout = async () => {
+    if (uppy?.getFiles().some((f) => !f.progress.complete && !f.error) && !window.confirm('ยังอัปโหลดไม่เสร็จ ออกจากระบบเลยไหม')) return
     await api.logout()
     qc.clear()
     nav('/login', { viewTransition: true })
@@ -138,34 +142,36 @@ export function AppShell() {
   }
   const title = pathname === '/' ? 'หน้าแรก' : TITLES.find(([p]) => pathname.startsWith(p))?.[1] ?? 'ไม่พบหน้า'
   return (
-    <div className="flex min-h-dvh">
-      <aside className={`sticky top-0 hidden h-dvh shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-(--ease-out-quint) md:block ${rail ? 'w-16' : 'w-60'}`}>
-        <Sidebar rail={rail} onToggle={toggle} />
-      </aside>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="left" className="w-72 p-0">
-          <SheetTitle className="sr-only">เมนู</SheetTitle>
-          <Sidebar onNavigate={() => setOpen(false)} />
-        </SheetContent>
-      </Sheet>
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center border-b border-line px-4">
-          <div className="flex items-center gap-2">
-            <button className="flex min-h-11 min-w-11 items-center justify-center md:hidden" aria-label="เปิดเมนู" onClick={() => setOpen(true)}><Menu /></button>
-            <span className="text-xl font-light">{title}</span>
-          </div>
-          <div className="ml-auto hidden lg:block"><ThemeButton /></div>
-        </header>
-        <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6"><Outlet /></main>
+    <UploadProvider>
+      <div className="flex min-h-dvh">
+        <aside className={`sticky top-0 hidden h-dvh shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-(--ease-out-quint) md:block ${rail ? 'w-16' : 'w-60'}`}>
+          <Sidebar rail={rail} onToggle={toggle} />
+        </aside>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="left" className="w-72 p-0">
+            <SheetTitle className="sr-only">เมนู</SheetTitle>
+            <Sidebar onNavigate={() => setOpen(false)} />
+          </SheetContent>
+        </Sheet>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="flex h-16 items-center border-b border-line px-4">
+            <div className="flex items-center gap-2">
+              <button className="flex min-h-11 min-w-11 items-center justify-center md:hidden" aria-label="เปิดเมนู" onClick={() => setOpen(true)}><Menu /></button>
+              <span className="text-xl font-light">{title}</span>
+            </div>
+            <div className="ml-auto hidden lg:block"><ThemeButton /></div>
+          </header>
+          <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6"><Outlet /></main>
+        </div>
+        <nav aria-label="เมนูหลัก" className="fixed inset-x-0 bottom-0 z-20 flex h-16 border-t border-line bg-bg md:hidden">
+          {TABS.map(({ to, label, icon: Icon }) => (
+            <NavLink viewTransition key={to} to={to} end={to === '/'}
+              className={({ isActive }) => `press flex flex-1 flex-col items-center justify-center gap-0.5 text-xs ${isActive ? 'font-bold text-brand' : 'text-sub'}`}>
+              <Icon size={20} />{label}
+            </NavLink>
+          ))}
+        </nav>
       </div>
-      <nav aria-label="เมนูหลัก" className="fixed inset-x-0 bottom-0 z-20 flex h-16 border-t border-line bg-bg md:hidden">
-        {TABS.map(({ to, label, icon: Icon }) => (
-          <NavLink viewTransition key={to} to={to} end={to === '/'}
-            className={({ isActive }) => `press flex flex-1 flex-col items-center justify-center gap-0.5 text-xs ${isActive ? 'font-bold text-brand' : 'text-sub'}`}>
-            <Icon size={20} />{label}
-          </NavLink>
-        ))}
-      </nav>
-    </div>
+    </UploadProvider>
   )
 }
