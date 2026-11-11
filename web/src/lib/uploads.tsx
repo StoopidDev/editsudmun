@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import type { ClipMedia } from '@/lib/types'
 import { Ctx, enqueue, OfflineCtx, type Hub, type Uploader } from './upload-state'
 
@@ -58,6 +59,10 @@ export function UploadProvider({ children }: { children: ReactNode }) {
         for (const p of pending.current) enqueue(u, p.files, p.clipId, p.purpose)
         pending.current = []
         setUppy(u)
+      }).catch(() => {
+        // Chunk failed (offline, or a deploy removed it): queued files wait; the next add or 'online' tries again.
+        loading = false
+        if (pending.current.length) toast.error('โหลดตัวอัปโหลดไม่สำเร็จ จะลองใหม่เมื่อออนไลน์')
       })
     }
     // Idle first; the 2 s bound (or the plain timer where requestIdleCallback is missing) starts it anyway.
@@ -69,7 +74,11 @@ export function UploadProvider({ children }: { children: ReactNode }) {
       if (unfinished()) e.preventDefault()
     }
     const goOffline = () => setOffline(true)
-    const goOnline = () => { setOffline(false); void uppyRef.current?.retryAll() }
+    const goOnline = () => {
+      setOffline(false)
+      if (uppyRef.current) void uppyRef.current.retryAll()
+      else if (pending.current.length) start.current()
+    }
     window.addEventListener('beforeunload', guard)
     window.addEventListener('offline', goOffline)
     window.addEventListener('online', goOnline)

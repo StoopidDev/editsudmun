@@ -16,6 +16,7 @@ const queryClient = new QueryClient({
 
 // After a deploy an open tab asks for chunk files that no longer exist: reload once to get the new index.html.
 window.addEventListener('vite:preloadError', (e) => {
+  if (!navigator.onLine) return // offline is not a deploy: let the import fail and the caller show its error
   e.preventDefault()
   try {
     const last = Number(sessionStorage.getItem('chunk-reload') ?? 0)
