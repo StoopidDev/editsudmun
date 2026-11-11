@@ -4,7 +4,7 @@ import * as api from '@/api/index'
 import { useAct, useClip, useMe, useMedia } from '@/api/queries'
 import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
-import { CategoryBadge, FileTile, StatusChip, UploadDisabled } from '@/components/bits'
+import { CategoryBadge, Delayed, FileTile, Skeleton, StatusChip, UploadDisabled } from '@/components/bits'
 import { Button } from '@/components/ui/button'
 import { fromIso, fullDate } from '@/lib/dates'
 import { canWithdraw, formatSize, roundCount, withRounds, withdrawMinutesLeft, daysLeft } from '@/lib/media'
@@ -32,7 +32,14 @@ function CreatorDetail({ id }: { id: string }) {
   const { data: media = [] } = useMedia(id)
   const withdraw = useAct(api.withdrawMedia)
 
-  if (isPending) return <p className="text-sm text-sub">กำลังโหลด...</p>
+  if (isPending) return (
+    <Delayed>
+      <div className="flex flex-col gap-4 md:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col gap-3"><Skeleton className="h-9 w-2/3" /><Skeleton className="h-64" /></div>
+        <div className="flex w-full flex-col gap-3 md:w-80"><Skeleton className="h-32" /><Skeleton className="h-40" /></div>
+      </div>
+    </Delayed>
+  )
   if (!clip) return <p>ไม่พบคลิป <Link to="/calendar" className="text-brand">กลับปฏิทิน</Link></p>
 
   const refs = media.filter((m) => m.purpose === 'reference')

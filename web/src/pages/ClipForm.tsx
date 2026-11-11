@@ -6,7 +6,7 @@ import { useAct, useCategories, useClip, useDeleteClip, useMedia } from '@/api/q
 import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
 import { CopyDialog } from '@/components/CopyDialog'
-import { ConfirmDialog, FileTile, UploadDisabled } from '@/components/bits'
+import { ConfirmDialog, Delayed, FileTile, Skeleton, UploadDisabled } from '@/components/bits'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,7 +22,14 @@ import { toast } from 'sonner'
 export function ClipForm({ clipId }: { clipId?: string }) {
   const { data: clip, isPending } = useClip(clipId ?? '')
   const { key } = useLocation()
-  if (clipId && isPending) return <p className="text-sm text-sub">กำลังโหลด...</p>
+  if (clipId && isPending) return (
+    <Delayed>
+      <div className="flex flex-col gap-4 md:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col gap-3"><Skeleton className="h-9 w-2/3" /><Skeleton className="h-64" /></div>
+        <div className="flex w-full flex-col gap-3 md:w-80"><Skeleton className="h-32" /><Skeleton className="h-40" /></div>
+      </div>
+    </Delayed>
+  )
   if (clipId && !clip) return <p>ไม่พบคลิป <Link to="/calendar" className="text-brand">กลับปฏิทิน</Link></p>
   return <Form key={clipId ?? key} clipId={clipId} initial={clip ?? undefined} />
 }

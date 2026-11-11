@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight, Image as ImageIcon, Play, Upload } from 'lucide-react'
 import { useCategories } from '@/api/queries'
 import { Button } from '@/components/ui/button'
@@ -95,4 +95,16 @@ export function DayStrip({ value, onChange }: { value: string; onChange: (iso: s
       <Button variant="outline" size="icon" aria-label="สัปดาห์ถัดไป" onClick={() => setAnchor(addDays(anchor, 7))}><ChevronRight /></Button>
     </div>
   )
+}
+
+export const Skeleton = ({ className = '' }: { className?: string }) => <div aria-hidden className={`skeleton ${className}`} />
+
+// Renders children only after 150 ms, so fast loads never flash a skeleton.
+export function Delayed({ children }: { children: ReactNode }) {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), 150)
+    return () => clearTimeout(t)
+  }, [])
+  return show ? <>{children}</> : null
 }

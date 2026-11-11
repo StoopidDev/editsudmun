@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useCategories, useClips, useMe } from '@/api/queries'
 import { ClipCard } from '@/components/ClipCard'
 import { DayDrawer } from '@/components/DayDrawer'
+import { Delayed, Skeleton } from '@/components/bits'
 import { Button } from '@/components/ui/button'
 import { readableOn } from '@/lib/color'
 import { dayLabel, fromIso, fullDate, monthGrid, monthLabel, rangeLabel, shortDate, toIso, todayIso, weekDays } from '@/lib/dates'
@@ -90,7 +91,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
         <h2 className="text-sm font-bold">{dayLabel(p.selected)} {shortDate(p.selected)} · {list.length} คลิป</h2>
         <button type="button" onClick={() => p.onOpen(selIso)} className="min-h-11 px-2 text-sm text-brand hover-pointer:underline underline-offset-4">ดูทั้งวัน</button>
       </div>
-      {p.loading && <div className="h-20 rounded-card bg-grid" aria-label="กำลังโหลด" />}
+      {p.loading && <Delayed><Skeleton className="h-20" /></Delayed>}
       {list.map((c) => <ClipCard key={c.id} clip={c} />)}
       {!p.loading && !p.failed && list.length === 0 && <p className="py-2 text-center text-sm text-sub">ไม่มีคลิป</p>}
       {p.owner && (
@@ -114,7 +115,7 @@ function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => Clip
               <span className="text-xs">{dayLabel(d)}</span><br /><b className="text-xl">{d.getDate()}</b><br />
               <span className="text-xs">{list.length} คลิป</span>
             </button>
-            {p.loading && <div className="h-20 rounded-card bg-grid" aria-label="กำลังโหลด" />}
+            {p.loading && <Delayed><Skeleton className="h-20" /></Delayed>}
             {list.slice(0, MAX_CARDS).map((c) => <ClipCard key={c.id} clip={c} />)}
             {list.length > MAX_CARDS && (
               <button onClick={() => p.onOpen(iso)} className="text-xs text-brand hover-pointer:underline underline-offset-4">ดูเพิ่มอีก {list.length - MAX_CARDS} คลิป</button>

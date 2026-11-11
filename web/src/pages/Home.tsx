@@ -3,7 +3,7 @@ import { formatDistanceToNow, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { ArrowRight, Plus } from 'lucide-react'
 import { useAttention, useCategories, useClips, useExpiring, useMe, useRecent, useStorage } from '@/api/queries'
-import { CategoryBadge, StatusChip } from '@/components/bits'
+import { CategoryBadge, Delayed, Skeleton, StatusChip } from '@/components/bits'
 import { ATTENTION_LABEL } from '@/lib/attention'
 import { Button } from '@/components/ui/button'
 import { dayLabel, fromIso, fullDate, rangeLabel, shortDate, toIso, todayIso, weekDays } from '@/lib/dates'
@@ -68,7 +68,7 @@ export function Home() {
           <h2 className="text-lg">วันนี้ · {fullDate(now)}</h2>
           <Link to="/calendar" className="flex items-center gap-1 text-sm text-brand hover-pointer:underline underline-offset-4">เปิดปฏิทิน<ArrowRight size={14} /></Link>
         </div>
-        {week.isPending ? <p className="text-sm text-sub">กำลังโหลด...</p> : (
+        {week.isPending ? (<Delayed><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /></div></Delayed>) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {todays.map((c, i) => (
               <Link key={c.id} to={`/clips/${c.id}`} className="press hover-tint hover-pointer:border-ink/40 flex flex-col gap-1 rounded-card border border-line p-3">

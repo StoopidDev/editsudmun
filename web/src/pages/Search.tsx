@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { useSearch } from '@/api/queries'
-import { CategoryBadge } from '@/components/bits'
+import { CategoryBadge, Delayed, Skeleton } from '@/components/bits'
 import { Input } from '@/components/ui/input'
 import { dayLabel, fromIso, shortDate } from '@/lib/dates'
 import { snippet } from '@/lib/search'
@@ -16,6 +16,9 @@ export function Search() {
       <Input key={q} className="lg:hidden" aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
       {!q && <p className="py-16 text-center text-sm text-sub">พิมพ์ชื่อคลิปหรือคำในสคริปต์ แล้วกด Enter</p>}
       {q && <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isFetching && !isError && <span className="text-sm font-normal text-sub">{data.length} คลิป</span>}</h1>}
+      {q && isFetching && data.length === 0 && (
+        <Delayed><div className="flex flex-col gap-3"><Skeleton className="h-20" /><Skeleton className="h-20" /><Skeleton className="h-20" /></div></Delayed>
+      )}
       {data.map((c) => {
         const hay = [c.script, c.note, c.title].find((t) => t.toLowerCase().includes(q.trim().toLowerCase())) ?? c.script
         const s = snippet(hay, q)
