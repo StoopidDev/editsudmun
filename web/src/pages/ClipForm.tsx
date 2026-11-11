@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { Copy, Trash2 } from 'lucide-react'
+import { ChevronDown, Copy, Trash2 } from 'lucide-react'
 import * as api from '@/api/index'
 import { useAct, useCategories, useClip, useDeleteClip, useMedia } from '@/api/queries'
 import { BackButton } from '@/components/BackButton'
@@ -16,13 +16,37 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { isIsoDate, todayIso } from '@/lib/dates'
+import { fromIso, fullDate, isIsoDate, todayIso } from '@/lib/dates'
 import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from '@/lib/draft'
 import { daysLeft, readyIds, WARN_DAYS } from '@/lib/media'
 import type { ClipInput, ClipMedia } from '@/lib/types'
 import { useLast } from '@/lib/useLast'
 import { Review } from './Review'
 import { toast } from 'sonner'
+
+// Shows the Thai date (พฤหัส 29 ต.ค. 2026) like the frame; the native picker opens from the same button.
+function ThaiDateField({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+  const picker = useRef<HTMLInputElement>(null)
+  const open = () => {
+    const el = picker.current
+    if (!el) return
+    try {
+      if (el.showPicker) el.showPicker()
+      else { el.focus(); el.click() }
+    } catch { el.focus() } // showPicker throws without a user gesture or cross-origin: keep keyboard focus at least
+  }
+  return (
+    <div className="relative">
+      <button type="button" id={id} onClick={open}
+        className="flex h-9 w-full items-center justify-between rounded-md border border-line bg-bg px-2.5 text-left text-sm font-light max-md:h-11">
+        {isIsoDate(value) ? fullDate(fromIso(value)) : ''}
+        <ChevronDown size={16} aria-hidden className="text-sub" />
+      </button>
+      <input ref={picker} type="date" value={value} tabIndex={-1} aria-hidden
+        onChange={(e) => e.target.value && onChange(e.target.value)} className="pointer-events-none absolute inset-0 size-full opacity-0" />
+    </div>
+  )
+}
 
 export function ClipForm({ clipId }: { clipId?: string }) {
   const { data: clip, isPending } = useClip(clipId ?? '')
@@ -186,13 +210,16 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1">
               <Label htmlFor="cat">ประเภท</Label>
-              <select id="cat" value={categoryId} onChange={(e) => set({ category_id: e.target.value })} className="h-9 rounded-md border border-line bg-bg px-2 text-sm max-md:h-11">
-                {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <div className="relative">
+                <select id="cat" value={categoryId} onChange={(e) => set({ category_id: e.target.value })} className="h-9 w-full appearance-none rounded-md border border-line bg-bg pr-8 pl-2.5 text-sm max-md:h-11">
+                  {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <ChevronDown size={16} aria-hidden className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sub" />
+              </div>
             </div>
             <div className="grid gap-1">
               <Label htmlFor="date">วัน</Label>
-              <Input id="date" type="date" value={form.date} onChange={(e) => e.target.value && set({ date: e.target.value })} />
+              <ThaiDateField id="date" value={form.date} onChange={(v) => set({ date: v })} />
             </div>
           </div>
           <div className="grid gap-1">
