@@ -80,7 +80,7 @@
 .dark {
   --c-bg: #1b1b1d; --c-ink: #f2f2f2; --c-sub: #a0a0a5; --c-line: #8e8e93; --c-surface: #262628;
   --c-grid: #3a3a3c; --c-today: #12304d; --c-note: #3a3112; --c-note-line: #ffcc00;
-  --c-brand: #0088ff; --c-brand-text: #4da3ff; --c-danger: #ff383c; --c-success: #1a7f3c; --c-success-text: #34c759;
+  --c-brand: #0071e3; /* Figma dark #0088ff gives white text 3.5:1; this passes 4.5:1 */ --c-brand-text: #4da3ff; --c-danger: #ff383c; --c-success: #1a7f3c; --c-success-text: #34c759;
   --c-warn-bg: #3a2810; --c-warn-line: #ffb04d; --c-warn-text: #ffb04d; --c-ok-bg: #12301c;
   --c-chip: #3a3a3c; --c-video: #0e0e0f; --c-avatar: #3a3a3c; --c-toast: #3a3a3c;
   color-scheme: dark;

@@ -80,7 +80,7 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
               {!curUrl ? (
                 <Skeleton className="absolute inset-0 rounded-none" />
               ) : isPlayable(current.mime) ? (
-                <video key={current.id} src={curUrl} controls preload="metadata" className="size-full bg-black" />
+                <video key={current.id} src={curUrl} controls preload="metadata" className="size-full bg-video" />
               ) : (
                 <div className="flex flex-col items-center gap-3 p-4 text-center">
                   <p>ProRes · เล่นในเบราว์เซอร์ไม่ได้ ดาวน์โหลดแทน</p>

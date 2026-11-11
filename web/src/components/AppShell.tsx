@@ -34,7 +34,7 @@ function ThemeButton({ className = '', label }: { className?: string; label?: bo
   const name = dark ? 'โหมดสว่าง' : 'โหมดมืด'
   return (
     <button type="button" onClick={toggleTheme} aria-label={name} title={name}
-      className={`press hover-tint flex h-8 min-w-8 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
+      className={`press hover-tint flex h-8 min-w-8 max-md:min-h-11 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
       <Icon size={18} />{label && <span className="text-sm font-light">{name}</span>}
     </button>
   )
@@ -154,7 +154,7 @@ export function AppShell() {
             <button className="flex min-h-11 min-w-11 items-center justify-center md:hidden" aria-label="เปิดเมนู" onClick={() => setOpen(true)}><Menu /></button>
             <span className="text-xl font-light">{title}</span>
           </div>
-          <div className="ml-auto hidden md:block"><ThemeButton /></div>
+          <div className="ml-auto hidden lg:block"><ThemeButton /></div>
         </header>
         <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6"><Outlet /></main>
       </div>

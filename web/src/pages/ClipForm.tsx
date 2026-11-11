@@ -32,12 +32,12 @@ function ThaiDateField({ id, value, onChange }: { id: string; value: string; onC
     if (!el) return
     try {
       if (el.showPicker) el.showPicker()
-      else { el.focus(); el.click() }
-    } catch { el.focus() } // showPicker throws without a user gesture or cross-origin: keep keyboard focus at least
+      else el.click()
+    } catch { /* showPicker throws without a user gesture: focus stays on the button */ }
   }
   return (
     <div className="relative">
-      <button type="button" id={id} onClick={open}
+      <button type="button" id={id} onClick={open} aria-label={`วัน ${isIsoDate(value) ? fullDate(fromIso(value)) : ''}`}
         className="flex h-9 w-full items-center justify-between rounded-md border border-line bg-bg px-2.5 text-left text-sm font-light max-md:h-11">
         {isIsoDate(value) ? fullDate(fromIso(value)) : ''}
         <ChevronDown size={16} aria-hidden className="text-sub" />

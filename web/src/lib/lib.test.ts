@@ -141,7 +141,7 @@ describe('theme tokens', () => {
     const pairs = [
       ['#1e1e1e', '#ffffff'], ['#5f5f5f', '#ffffff'], ['#5f5f5f', '#f5f5f5'], ['#f2f2f2', '#1b1b1d'],
       ['#a0a0a5', '#1b1b1d'], ['#a0a0a5', '#262628'], ['#4da3ff', '#1b1b1d'], ['#ffb04d', '#3a2810'],
-      ['#9a4f00', '#fff0e0'], ['#34c759', '#12301c'],
+      ['#9a4f00', '#fff0e0'], ['#34c759', '#12301c'], ['#ffffff', '#3a3a3c'], ['#ffffff', '#0071e3'], ['#ffffff', '#0066cc'],
     ]
     for (const [fg, bg] of pairs) expect(contrast(fg, bg), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
   })
