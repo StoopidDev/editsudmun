@@ -58,6 +58,13 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   })
   const [copying, setCopying] = useState(false)
   const [saving, setSaving] = useState<'save' | 'more' | null>(null)
+  // The save button says so for 1.5 s after a successful save: the answer sits where the eye is.
+  const [saved, setSaved] = useState(false)
+  useEffect(() => {
+    if (!saved) return
+    const t = setTimeout(() => setSaved(false), 1500)
+    return () => clearTimeout(t)
+  }, [saved])
   // Files dropped before a new clip exists; they belong to this unsaved form only.
   const [parked, setParked] = useState<File[]>([])
   const uppy = useContext(Ctx)
@@ -127,6 +134,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
       onSuccess: () => {
         clearDraft(clipId)
         toast.success('บันทึกแล้ว')
+        setSaved(true)
       },
       onSettled: () => setSaving(null),
     })
@@ -148,7 +156,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           {clipId
             ? <Button variant="outline" onClick={() => setCopying(true)}><Copy />คัดลอกไปวันอื่น</Button>
             : <Button variant="outline" onClick={() => submit(true)} loading={saving === 'more'} disabled={save.isPending || cats.length === 0 || !!draft}>บันทึกและเพิ่มต่อ</Button>}
-          <Button onClick={() => submit()} loading={saving === 'save'} disabled={save.isPending || cats.length === 0 || !!draft}>บันทึก</Button>
+          <Button onClick={() => submit()} loading={saving === 'save'} disabled={save.isPending || cats.length === 0 || !!draft}>{saved ? 'บันทึกแล้ว ✓' : 'บันทึก'}</Button>
         </div>
       </div>
 

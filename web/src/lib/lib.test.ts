@@ -6,6 +6,7 @@ import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
 import { canWithdraw, chunk, daysLeft, expiresBeforeClip, formatDuration, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
+import { swapInDay } from './order'
 import { contrast, nextColor, readableOn } from './color'
 import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from './draft'
 import type { Clip, ClipMedia } from './types'
@@ -227,5 +228,19 @@ describe('formatDuration', () => {
     expect(formatDuration(65.9)).toBe('1:05')
     expect(formatDuration(3725)).toBe('1:02:05')
     expect(formatDuration(NaN)).toBe('')
+  })
+})
+
+describe('order', () => {
+  it('swaps a clip with its neighbour in the same day only', () => {
+    const r = [{ id: 'a', date: 'd1', position: 0 }, { id: 'b', date: 'd1', position: 1 }, { id: 'c', date: 'd2', position: 0 }]
+    expect(swapInDay(r, 'b', -1).map((x) => x.id)).toEqual(['b', 'a', 'c'])
+    expect(swapInDay(r, 'a', -1)).toEqual(r)
+    expect(swapInDay(r, 'c', 1)).toEqual(r)
+  })
+  it('moves down and keeps days in order', () => {
+    const r = [{ id: 'b', date: 'd2', position: 1 }, { id: 'a', date: 'd2', position: 0 }, { id: 'z', date: 'd1', position: 5 }]
+    expect(swapInDay(r, 'a', 1).map((x) => x.id)).toEqual(['z', 'b', 'a'])
+    expect(swapInDay(r, 'missing', 1)).toEqual(r)
   })
 })

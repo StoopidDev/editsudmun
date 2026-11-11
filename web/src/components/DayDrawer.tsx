@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowDown, ArrowUp, Copy, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
 import * as api from '@/api/index'
-import { useAct, useCategories, useClips, useDeleteClip, useMe } from '@/api/queries'
+import { useCategories, useClips, useDeleteClip, useMe, useOptimistic } from '@/api/queries'
 import { CopyDialog } from '@/components/CopyDialog'
 import { ClipCard } from '@/components/ClipCard'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { fromIso, fullDate } from '@/lib/dates'
+import { swapInDay } from '@/lib/order'
 import type { ClipCardRow } from '@/lib/types'
 
 export function DayDrawer({ date, onClose }: { date: string; onClose: () => void }) {
@@ -18,7 +19,10 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
   const { data: cats = [] } = useCategories()
   const [filter, setFilter] = useState<string | null>(null)
   const [copying, setCopying] = useState<ClipCardRow | null>(null)
-  const move = useAct(({ id, dir }: { id: string; dir: -1 | 1 }) => api.moveClip(id, dir))
+  const move = useOptimistic(({ id, dir }: { id: string; dir: -1 | 1 }) => api.moveClip(id, dir), ({ id, dir }) => ({
+    id,
+    rows: (rows) => swapInDay(rows, id, dir),
+  }))
   const del = useDeleteClip()
   const owner = me?.role === 'owner'
   const shown = filter ? clips.filter((c) => c.category_id === filter) : clips
@@ -40,7 +44,7 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
         </div>
         <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
           {shown.map((c) => (
-            <div key={c.id} className="flex items-start gap-1">
+            <div key={c.id} className="flex items-start gap-1" style={{ viewTransitionName: `clip-${c.id}` }}>
               <div className="flex-1"><ClipCard clip={c} /></div>
               {owner && (
                 <DropdownMenu>

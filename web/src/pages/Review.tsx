@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import * as api from '@/api/index'
-import { useAct, useClip, useMedia } from '@/api/queries'
+import { useAct, useClip, useMedia, useOptimistic } from '@/api/queries'
 import { ConfirmDialog, Skeleton, StatusChip } from '@/components/bits'
 import { DownloadAll } from '@/components/media'
 import { downloadOne } from '@/lib/viewer'
@@ -22,8 +22,17 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
   const [deleting, setDeleting] = useState<ClipMedia | null>(null)
   const lastDeleting = useLast(deleting)
   const remove = useAct(api.deleteMedia)
-  const review = useAct(({ status, note }: { status: 'approved' | 'revision'; note?: string }) => api.reviewClip(clipId, status, note))
-  const undo = useAct(({ status, note }: { status: ClipStatus; note: string }) => api.restoreReview(clipId, status, note))
+  const reasonRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => { if (asking) reasonRef.current?.focus() }, [asking])
+  // Approve and request-changes show on the chip, button and list at once; undo replays the same change.
+  const review = useOptimistic(
+    ({ status, note = '' }: { status: 'approved' | 'revision'; note?: string }) => api.reviewClip(clipId, status, note),
+    ({ status, note = '' }) => ({ id: clipId, set: { status, revision_note: status === 'revision' ? note.trim() : '' } }),
+  )
+  const undo = useOptimistic(
+    ({ status, note }: { status: ClipStatus; note: string }) => api.restoreReview(clipId, status, note),
+    ({ status, note }) => ({ id: clipId, set: { status, revision_note: note } }),
+  )
   const current = rounds.find((m) => m.id === selected) ?? rounds[0]
   const curUrl = current ? urls[current.id] : undefined
   const totalBytes = rounds.reduce((sum, m) => sum + m.size_bytes, 0)
@@ -88,20 +97,26 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
           </div>
         </>
       )}
-      {asking ? (
-        <div className="flex flex-col gap-2">
-          <Textarea autoFocus rows={3} aria-label="เหตุผลที่ขอแก้ไข" placeholder="เหตุผลที่ขอแก้ไข (ครีเอเตอร์จะเห็นข้อความนี้)" value={reason} onChange={(e) => setReason(e.target.value)} />
-          <span className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setAsking(false)}>ยกเลิก</Button>
-            <Button loading={review.isPending} disabled={!reason.trim()} onClick={requestChanges}>ส่งคำขอแก้ไข</Button>
-          </span>
+      {/* The reason box opens and closes by its grid row (0fr to 1fr, 200 ms); inert while closed. */}
+      <div className={`grid transition-[grid-template-rows] duration-200 ${asking ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+        <div className="min-h-0 overflow-hidden">
+          <div inert={!asking} className="flex flex-col gap-2 p-px">
+            <Textarea ref={reasonRef} rows={3} aria-label="เหตุผลที่ขอแก้ไข" placeholder="เหตุผลที่ขอแก้ไข (ครีเอเตอร์จะเห็นข้อความนี้)" value={reason} onChange={(e) => setReason(e.target.value)} />
+            <span className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setAsking(false)}>ยกเลิก</Button>
+              <Button loading={review.isPending} disabled={!reason.trim()} onClick={requestChanges}>ส่งคำขอแก้ไข</Button>
+            </span>
+          </div>
         </div>
-      ) : (
+      </div>
+      {!asking && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs">สถานะ: <StatusChip status={clip.status} /></span>
+          <span className="text-xs">สถานะ: <StatusChip status={clip.status} transitionName={`status-${clipId}`} drawCheck /></span>
           <span className="flex gap-2">
             <Button variant="outline" className="border-warn-line text-warn-text" disabled={rounds.length === 0} onClick={() => setAsking(true)}>ขอแก้ไข</Button>
-            <Button className="bg-success text-white hover:bg-success/90" loading={review.isPending} disabled={rounds.length === 0 || clip.status === 'approved'} onClick={approve}>อนุมัติ</Button>
+            <Button className="bg-success text-white hover:bg-success/90" loading={review.isPending} disabled={rounds.length === 0 || clip.status === 'approved'} onClick={approve}>
+              {clip.status === 'approved' ? 'อนุมัติแล้ว ✓' : 'อนุมัติ'}
+            </Button>
           </span>
         </div>
       )}
