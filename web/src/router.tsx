@@ -1,14 +1,11 @@
+import type { ComponentType } from 'react'
 import { createBrowserRouter, createRoutesFromElements, Route } from 'react-router-dom'
 import { RequireAuth, RequireOwner } from '@/components/guards'
-import { AppShell } from '@/components/AppShell'
-import { Calendar } from '@/pages/Calendar'
-import { Categories } from '@/pages/Categories'
-import { ClipDetail } from '@/pages/ClipDetail'
-import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
-import { NotFound } from '@/pages/NotFound'
-import { Search } from '@/pages/Search'
-import { Users } from '@/pages/Users'
+
+// Each page loads on demand; the login page and the guards stay in the entry chunk.
+const page = <T,>(load: () => Promise<T>, pick: (m: T) => ComponentType) =>
+  async () => ({ Component: pick(await load()) })
 
 // Real data routes (not a splat wrapping <Routes>): only data routes pass viewTransition on Link
 // and navigate through to the router, so page transitions run.
@@ -16,16 +13,16 @@ export const router = createBrowserRouter(createRoutesFromElements(
   <>
     <Route path="/login" element={<Login />} />
     <Route element={<RequireAuth />}>
-      <Route element={<AppShell />}>
-        <Route index element={<Home />} />
-        <Route path="calendar" element={<Calendar />} />
-        <Route path="clips/:id" element={<ClipDetail />} />
-        <Route path="search" element={<Search />} />
+      <Route lazy={page(() => import('@/components/AppShell'), (m) => m.AppShell)}>
+        <Route index lazy={page(() => import('@/pages/Home'), (m) => m.Home)} />
+        <Route path="calendar" lazy={page(() => import('@/pages/Calendar'), (m) => m.Calendar)} />
+        <Route path="clips/:id" lazy={page(() => import('@/pages/ClipDetail'), (m) => m.ClipDetail)} />
+        <Route path="search" lazy={page(() => import('@/pages/Search'), (m) => m.Search)} />
         <Route element={<RequireOwner />}>
-          <Route path="categories" element={<Categories />} />
-          <Route path="users" element={<Users />} />
+          <Route path="categories" lazy={page(() => import('@/pages/Categories'), (m) => m.Categories)} />
+          <Route path="users" lazy={page(() => import('@/pages/Users'), (m) => m.Users)} />
         </Route>
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" lazy={page(() => import('@/pages/NotFound'), (m) => m.NotFound)} />
       </Route>
     </Route>
   </>,
