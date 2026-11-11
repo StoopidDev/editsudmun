@@ -14,10 +14,14 @@ type UFile = NonNullable<ReturnType<Up['getFile']>>
 
 // Retry a file. A multipart file with an uploadId resumes: Uppy's aws-s3 plugin reads `s3Multipart`
 // and calls listParts, so only the parts R2 lacks are sent again.
-export function retryFile(uppy: Up, id: string) {
+function keepResumable(uppy: Up, id: string) {
   const f = uppy.getFile(id)
   if (f?.meta.uploadId && f.meta.mediaId)
     uppy.setFileState(id, { s3Multipart: { uploadId: f.meta.uploadId, key: f.meta.mediaId } } as Partial<UFile & { s3Multipart: { uploadId: string; key: string } }>)
+}
+
+export function retryFile(uppy: Up, id: string) {
+  keepResumable(uppy, id)
   void uppy.retryUpload(id)
 }
 
@@ -27,6 +31,12 @@ export function createUploader(onReady: (m: ClipMedia) => void) {
   const patchMeta = (id: string, p: Partial<UploadMeta>) => uppy.setFileState(id, { meta: { ...uppy.getFile(id)?.meta, ...p } as UFile['meta'] })
   const startArgs = (f: { name?: string; type?: string; size: number | null }) =>
     ({ name: f.name ?? 'file', type: f.type ?? '', size: f.size ?? 0 })
+  // Cancelled while the server was creating the row: file-removed saw no mediaId yet, so abort here.
+  const dropIfCancelled = (id: string, mediaId: string, uploadId?: string) => {
+    if (uppy.getFile(id)) return
+    void api.abortUpload(mediaId, uploadId).catch(() => {})
+    throw new Error('ยกเลิกแล้ว')
+  }
   // Presigned part URLs per media key, signed in one call (the promise is shared by concurrent parts).
   const partUrls = new Map<string, Promise<Record<number, string>>>()
 
@@ -50,6 +60,7 @@ export function createUploader(onReady: (m: ClipMedia) => void) {
       if (file.meta.mediaId) void api.abortUpload(file.meta.mediaId).catch(() => {})
       const s = await api.startUpload(file.meta.clipId, file.meta.purpose, startArgs(file))
       if (s.mode !== 'single') throw new Error('เริ่มอัปโหลดไม่สำเร็จ ลองอีกครั้ง')
+      dropIfCancelled(file.id, s.media.id)
       patchMeta(file.id, { mediaId: s.media.id, single: true })
       return { method: 'PUT', url: s.url, headers: s.headers }
     },
@@ -57,6 +68,7 @@ export function createUploader(onReady: (m: ClipMedia) => void) {
     async createMultipartUpload(file: UFile) {
       const s = await api.startUpload(file.meta.clipId, file.meta.purpose, startArgs(file), { multipart: true })
       if (s.mode !== 'multipart') throw new Error('เริ่มอัปโหลดไม่สำเร็จ ลองอีกครั้ง')
+      dropIfCancelled(file.id, s.media.id, s.upload_id)
       patchMeta(file.id, { mediaId: s.media.id, uploadId: s.upload_id })
       return { uploadId: s.upload_id, key: s.media.id }
     },
@@ -110,6 +122,10 @@ export function createUploader(onReady: (m: ClipMedia) => void) {
     }
     if (uppy.getFile(file.id)) uppy.removeFile(file.id)
   })
+
+  // Uppy clears s3Multipart on any error, so every retry path (row button, retryAll on 'online',
+  // the retry Uppy runs when another file is added) would start over. Put it back to resume.
+  uppy.on('upload-error', (file) => { if (file) keepResumable(uppy, file.id) })
 
   // Each automatic retry bumps the count shown as "ครั้งที่ N" (Figma 112:3691).
   uppy.on('upload-retry', (file) => patchMeta(file.id, { retries: (file.meta.retries ?? 0) + 1 }))
