@@ -190,6 +190,7 @@ export async function listExpiring() {
       .from('clip_media')
       .select('id, file_name, expires_at, clip:clips!inner(id, title, deleted_at)')
       .lte('expires_at', until)
+      .eq('status', 'ready')
       .is('clip.deleted_at', null)
       .order('expires_at'),
   ) as { id: string; file_name: string; expires_at: string; clip: { id: string; title: string } }[]

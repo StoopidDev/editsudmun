@@ -16,6 +16,8 @@ export function useViewUrls(ids: string[]) {
     placeholderData: keepPreviousData,
     staleTime: 50 * 60_000,
     gcTime: 55 * 60_000,
+    // A tab left open past the 60-min URL life would break images; re-sign at 45 (a playing video restarts).
+    refetchInterval: 45 * 60_000,
   })
   return q.data ?? EMPTY
 }

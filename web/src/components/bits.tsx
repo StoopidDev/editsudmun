@@ -33,14 +33,16 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
   const isVideo = file.kind === 'video'
   const early = expiresBeforeClip(file.expires_at, clipDate)
   const [loaded, setLoaded] = useState(false)
-  const [broken, setBroken] = useState(false) // e.g. HEIC in Chrome: no preview, show the name
+  // Remember which URL failed (e.g. HEIC in Chrome, or an expired link): a fresh URL gets a new try.
+  const [brokenUrl, setBrokenUrl] = useState<string | null>(null)
+  const broken = !!url && brokenUrl === url
   const [seconds, setSeconds] = useState<number | null>(null)
   const dur = seconds === null ? '' : formatDuration(seconds)
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <div className={`relative aspect-[103/68] overflow-hidden rounded-card ${isVideo ? 'bg-video' : 'bg-surface'}`}>
         {url && !isVideo && !broken && (
-          <img src={url} alt="" loading="lazy" decoding="async" onLoad={() => setLoaded(true)} onError={() => setBroken(true)}
+          <img src={url} alt="" loading="lazy" decoding="async" onLoad={() => setLoaded(true)} onError={() => setBrokenUrl(url)}
             className={`absolute inset-0 size-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`} />
         )}
         {broken && (
