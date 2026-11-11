@@ -14,6 +14,17 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
 })
 
+// After a deploy an open tab asks for chunk files that no longer exist: reload once to get the new index.html.
+window.addEventListener('vite:preloadError', (e) => {
+  e.preventDefault()
+  try {
+    const last = Number(sessionStorage.getItem('chunk-reload') ?? 0)
+    if (Date.now() - last < 10_000) return
+    sessionStorage.setItem('chunk-reload', String(Date.now()))
+  } catch { /* storage blocked: still reload once per page */ }
+  location.reload()
+})
+
 createRoot(document.getElementById('root')!).render(
   <QueryClientProvider client={queryClient}>
     <ErrorBoundary>

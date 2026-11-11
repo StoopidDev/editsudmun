@@ -1,9 +1,10 @@
-import { useMutation, useQuery, useQueryClient, type Query, type QueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as api from './index'
+import { notViews, useMe } from './queries-auth'
 import type { Clip, ClipCardRow } from '@/lib/types'
 
-export const useMe = () => useQuery({ queryKey: ['me'], queryFn: async () => api.me() })
+export { notViews, useMe }
 export const useClips = (from: string, to: string, enabled = true) =>
   useQuery({ queryKey: ['clips', from, to], queryFn: () => api.listClips(from, to), enabled })
 export const useRecent = (limit: number) => useQuery({ queryKey: ['recent', limit], queryFn: () => api.listRecent(limit) })
@@ -17,9 +18,6 @@ export const useCategoryCounts = () => useQuery({ queryKey: ['categoryCounts'], 
 export const useUsers = () => useQuery({ queryKey: ['users'], queryFn: api.listUsers })
 export const useStorage = (enabled: boolean) =>
   useQuery({ queryKey: ['storage'], queryFn: api.storageUsedBytes, enabled })
-
-// Writes refetch everything except playback URLs: re-signing would restart a playing video.
-export const notViews = { predicate: (q: Query) => q.queryKey[0] !== 'view' }
 
 // View Transitions animate whatever the update changes (FLIP for free). No-op where unsupported or under reduced motion.
 let vtRun = 0

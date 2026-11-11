@@ -6,22 +6,11 @@ import { attentionOf, type Attention } from '@/lib/attention'
 import { isIsoDate, todayIso } from '@/lib/dates'
 import { daysLeft, uploadProblem, WARN_DAYS } from '@/lib/media'
 import type { Category, Clip, ClipCardRow, ClipInput, ClipMedia, ClipStatus, Profile } from '@/lib/types'
+import { me } from './auth'
+import { ok } from './errors'
 import { supabase } from './supabase'
 
-// Postgres errors raised by our functions are already Thai; map the rest.
-function thai(e: PostgrestError): Error {
-  if (e.code === 'P0001') return new Error(e.message)
-  if (e.code === '42501' || e.code === 'PGRST301') return new Error('ไม่มีสิทธิ์ทำรายการนี้')
-  if (e.code === '23503') return new Error('ข้อมูลที่อ้างถึงไม่มีอยู่แล้ว')
-  if (e.code === '23514') return new Error('ข้อมูลไม่ถูกต้อง')
-  console.error(e)
-  return new Error('เกิดข้อผิดพลาด ลองอีกครั้ง')
-}
-
-function ok<T>({ data, error }: { data: T; error: PostgrestError | null }): T {
-  if (error) throw thai(error)
-  return data
-}
+export { changePassword, login, logout, me } from './auth'
 
 // An update RLS refuses matches no rows instead of failing; treat that as not found.
 function one<T>(r: { data: T[] | null; error: PostgrestError | null }, missing = 'ไม่พบคลิป'): T {
@@ -33,44 +22,6 @@ function one<T>(r: { data: T[] | null; error: PostgrestError | null }, missing =
 const stamp = () => new Date().toISOString()
 const checkDate = (d: string) => {
   if (!isIsoDate(d)) throw new Error('วันที่ไม่ถูกต้อง')
-}
-
-// Auth
-export async function me(): Promise<Profile | null> {
-  const { data } = await supabase.auth.getSession()
-  const id = data.session?.user.id
-  if (!id) return null
-  return ok(await supabase.from('profiles').select('*').eq('id', id).maybeSingle()) as Profile | null
-}
-
-export async function login(email: string, password: string) {
-  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
-  if (error) throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
-  return me()
-}
-
-export async function logout() {
-  await supabase.auth.signOut()
-}
-
-// Re-checks the current password by signing in with it, so a borrowed open session cannot
-// change it. Minimum length must match Auth > Password settings in the dashboard.
-export async function changePassword(current: string, next: string) {
-  const { data } = await supabase.auth.getUser()
-  const email = data.user?.email
-  if (!email) throw new Error('กรุณาเข้าสู่ระบบ')
-  // Mirrors the Auth password policy (min 12, lower + upper + digit); the server enforces it.
-  if (next.length < 12 || !/[a-z]/.test(next) || !/[A-Z]/.test(next) || !/\d/.test(next))
-    throw new Error('รหัสผ่านใหม่ต้องมีอย่างน้อย 12 ตัว มีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ และตัวเลข')
-  const check = await supabase.auth.signInWithPassword({ email, password: current })
-  if (check.error) throw new Error('รหัสผ่านปัจจุบันไม่ถูกต้อง')
-  const { error } = await supabase.auth.updateUser({ password: next })
-  if (error)
-    throw new Error(
-      error.code === 'same_password' ? 'รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสเดิม'
-      : error.code === 'weak_password' ? 'รหัสผ่านใหม่ต้องมีอย่างน้อย 12 ตัว มีตัวพิมพ์เล็ก ตัวพิมพ์ใหญ่ และตัวเลข'
-      : 'เปลี่ยนรหัสผ่านไม่สำเร็จ',
-    )
 }
 
 // Clips

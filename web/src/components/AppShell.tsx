@@ -74,9 +74,11 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
     if (q) { nav(`/search?q=${encodeURIComponent(q)}`, { viewTransition: true }); onNavigate?.() }
   }
 
-  const uppy = useContext(Ctx)
+  const hub = useContext(Ctx)
   const logout = async () => {
-    if (uppy?.getFiles().some((f) => !f.progress.complete && !f.error) && !window.confirm('ยังอัปโหลดไม่เสร็จ ออกจากระบบเลยไหม')) return
+    if (hub?.unfinished() && !window.confirm('ยังอัปโหลดไม่เสร็จ ออกจากระบบเลยไหม')) return
+    // Stop uploads before the session ends, or they keep sending with no session.
+    hub?.cancelAll()
     await api.logout()
     qc.clear()
     nav('/login', { viewTransition: true })

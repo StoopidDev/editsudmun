@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useMe } from '@/api/queries'
+import { useMe } from '@/api/queries-auth'
 
 export function RequireAuth() {
   const { data: me, isPending } = useMe()

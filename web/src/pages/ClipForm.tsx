@@ -10,7 +10,7 @@ import { ConfirmDialog, Delayed, FileTile, Skeleton } from '@/components/bits'
 import { DownloadAll } from '@/components/media'
 import { useLightbox } from '@/components/useLightbox'
 import { UploadZone } from '@/components/UploadZone'
-import { Ctx, enqueue } from '@/lib/upload-state'
+import { Ctx } from '@/lib/upload-state'
 import { useViewUrls, viewables } from '@/lib/viewer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -91,7 +91,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   }, [saved])
   // Files dropped before a new clip exists; they belong to this unsaved form only.
   const [parked, setParked] = useState<File[]>([])
-  const uppy = useContext(Ctx)
+  const hub = useContext(Ctx)
   // The create in flight, so a drop and a save click make one clip.
   const pending = useRef<Promise<string | null> | null>(null)
   const [deletingFile, setDeletingFile] = useState<ClipMedia | null>(null)
@@ -123,8 +123,8 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     try {
       const c = await save.mutateAsync({ date, script, note, category_id: categoryId, title: form.title.trim() })
       clearDraft(undefined)
-      if (uppy && parked.length) {
-        const refused = enqueue(uppy, parked, c.id, 'reference')
+      if (hub && parked.length) {
+        const refused = hub.add(parked, c.id, 'reference')
         if (refused.length) toast.error(refused[0].message)
       }
       setParked([])

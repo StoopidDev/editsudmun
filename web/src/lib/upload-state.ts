@@ -1,9 +1,22 @@
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from 'react'
 import type { ClipMedia } from '@/lib/types'
-import { retryFile, type createUploader } from './uploader'
+// Type-only: this module must not pull Uppy in, since the app shell imports it on every page.
+import type { createUploader } from './uploader'
 
-type Uploader = ReturnType<typeof createUploader>
-export const Ctx = createContext<Uploader | null>(null)
+export type Uploader = ReturnType<typeof createUploader>
+type Files = ReturnType<Uploader['getState']>['files']
+export type Refused = { name: string; message: string }
+
+// What the screens may do with uploads. `uppy` is null until the uploader chunk has loaded;
+// `add` queues files until then, and the cancel/unfinished calls cover queued files too.
+export type Hub = {
+  uppy: Uploader | null
+  add: (list: File[], clipId: string, purpose: ClipMedia['purpose']) => Refused[]
+  unfinished: () => boolean
+  cancelAll: () => void
+}
+
+export const Ctx = createContext<Hub | null>(null)
 export const OfflineCtx = createContext(false)
 
 export type UploadRow = {
@@ -11,14 +24,22 @@ export type UploadRow = {
   paused: boolean; error: string | null; retries: number; offline: boolean
 }
 
+const NO_FILES = {} as Files
+
 // Rows for one clip and purpose, read from Uppy's state. The snapshot is Uppy's own files object,
 // so React only re-renders when Uppy changes it. A row that failed to confirm stays visible.
+// Until the uploader loads there are no rows; add() still accepts files.
 export function useUploads(clipId: string, purpose: ClipMedia['purpose']) {
-  const uppy = useContext(Ctx)
+  const hub = useContext(Ctx)
   const offline = useContext(OfflineCtx)
-  if (!uppy) throw new Error('useUploads needs UploadProvider')
-  const subscribe = useCallback((cb: () => void) => { uppy.on('state-update', cb); return () => uppy.off('state-update', cb) }, [uppy])
-  const getSnapshot = useCallback(() => uppy.getState().files, [uppy])
+  if (!hub) throw new Error('useUploads needs UploadProvider')
+  const uppy = hub.uppy
+  const subscribe = useCallback((cb: () => void) => {
+    if (!uppy) return () => {}
+    uppy.on('state-update', cb)
+    return () => uppy.off('state-update', cb)
+  }, [uppy])
+  const getSnapshot = useCallback(() => uppy?.getState().files ?? NO_FILES, [uppy])
   const files = useSyncExternalStore(subscribe, getSnapshot)
 
   const rows: UploadRow[] = useMemo(() => Object.values(files)
@@ -30,19 +51,18 @@ export function useUploads(clipId: string, purpose: ClipMedia['purpose']) {
     })), [files, clipId, purpose, offline])
 
   // Callers check uploadProblem first. Returns the files Uppy refused (e.g. a restriction), with why.
-  const add = (list: File[], targetClipId = clipId) => enqueue(uppy, list, targetClipId, purpose)
   return {
     rows,
-    add,
-    pause: (id: string) => uppy.pauseResume(id),
-    retry: (id: string) => retryFile(uppy, id),
-    remove: (id: string) => uppy.removeFile(id),
+    add: (list: File[], targetClipId = clipId) => hub.add(list, targetClipId, purpose),
+    pause: (id: string) => uppy?.pauseResume(id),
+    retry: (id: string) => { if (uppy) void import('./uploader').then((m) => m.retryFile(uppy, id)) },
+    remove: (id: string) => uppy?.removeFile(id),
   }
 }
 
 // Adds files to Uppy for one clip. Returns the files Uppy refused, with why.
 export function enqueue(uppy: Uploader, list: File[], clipId: string, purpose: ClipMedia['purpose']) {
-  const refused: { name: string; message: string }[] = []
+  const refused: Refused[] = []
   for (const file of list) {
     try {
       uppy.addFile({
