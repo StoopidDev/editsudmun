@@ -50,6 +50,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     return saved && initial && sameBrief(saved, initial) ? null : saved
   })
   const [copying, setCopying] = useState(false)
+  const [saving, setSaving] = useState<'save' | 'more' | null>(null)
   const [deletingFile, setDeletingFile] = useState<ClipMedia | null>(null)
   const lastFile = useLast(deletingFile)
   const del = useDeleteClip(() => nav(`/calendar?date=${form.date}`))
@@ -72,6 +73,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     if (!isIsoDate(form.date)) { toast.error('วันที่ไม่ถูกต้อง'); return }
     if (!form.title.trim()) return setTitleError(true)
     const { date, script, note } = form
+    setSaving(addAnother ? 'more' : 'save')
     save.mutate({ date, script, note, category_id: categoryId, title: form.title.trim() }, {
       onSuccess: (c) => {
         clearDraft(clipId)
@@ -79,6 +81,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         if (addAnother) nav(`/clips/new?date=${date}&cat=${categoryId}`, { replace: true })
         else if (!clipId) nav(`/clips/${c.id}`, { replace: true })
       },
+      onSettled: () => setSaving(null),
     })
   }
 
@@ -94,8 +97,8 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         <div className="flex flex-wrap gap-2">
           {clipId
             ? <Button variant="outline" onClick={() => setCopying(true)}><Copy />คัดลอกไปวันอื่น</Button>
-            : <Button variant="outline" onClick={() => submit(true)} loading={save.isPending} disabled={cats.length === 0 || !!draft}>บันทึกและเพิ่มต่อ</Button>}
-          <Button onClick={() => submit()} loading={save.isPending} disabled={cats.length === 0 || !!draft}>บันทึก</Button>
+            : <Button variant="outline" onClick={() => submit(true)} loading={saving === 'more'} disabled={save.isPending || cats.length === 0 || !!draft}>บันทึกและเพิ่มต่อ</Button>}
+          <Button onClick={() => submit()} loading={saving === 'save'} disabled={save.isPending || cats.length === 0 || !!draft}>บันทึก</Button>
         </div>
       </div>
 

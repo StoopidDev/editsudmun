@@ -37,7 +37,7 @@ export function FileTile({ file, clipDate, onDelete }: { file: ClipMedia; clipDa
         {early ? 'ลบก่อนถึงวันคลิป' : `ลบใน ${daysLeft(file.expires_at)} วัน`}
       </span>
       {onDelete && (
-        <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 size-5 rounded-full bg-avatar text-xs text-white opacity-70 transition-opacity hover-pointer:hover:opacity-100 before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
+        <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 size-5 rounded-full bg-avatar text-xs text-white opacity-70 transition-opacity hover-pointer:opacity-100 before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
       )}
     </div>
   )
@@ -99,12 +99,12 @@ export function DayStrip({ value, onChange }: { value: string; onChange: (iso: s
 
 export const Skeleton = ({ className = '' }: { className?: string }) => <div aria-hidden className={`skeleton ${className}`} />
 
-// Renders children only after 150 ms, so fast loads never flash a skeleton.
+// Renders children only after 150 ms, so fast loads never flash a skeleton. Announced as a loading status.
 export function Delayed({ children }: { children: ReactNode }) {
   const [show, setShow] = useState(false)
   useEffect(() => {
     const t = setTimeout(() => setShow(true), 150)
     return () => clearTimeout(t)
   }, [])
-  return show ? <>{children}</> : null
+  return show ? <div role="status" aria-label="กำลังโหลด">{children}</div> : null
 }
