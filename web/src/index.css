@@ -10,7 +10,7 @@
   --c-bg: #ffffff; --c-ink: #1e1e1e; --c-sub: #5f5f5f; --c-line: #757575; --c-surface: #f5f5f5;
   --c-grid: #d9d9d9; --c-today: #eaf4ff; --c-note: #fff4d6; --c-note-line: #ffcc00;
   --c-brand: #0066cc; --c-brand-text: #0066cc; --c-danger: #d70015; --c-success: #1a7f3c; --c-success-text: #1a7f3c;
-  --c-warn-bg: #fff0e0; --c-warn-line: #ffb04d; --c-warn-text: #b35c00; --c-ok-bg: #e6f8ec;
+  --c-warn-bg: #fff0e0; --c-warn-line: #ffb04d; --c-warn-text: #9a4f00; /* Figma #b35c00 is 4.2:1 on warn-bg; darkened to pass 4.5:1 */ --c-ok-bg: #e6f8ec;
   --c-chip: #eeeeee; --c-video: #1e1e1e; --c-avatar: #2c2c2c;
 
   --border: var(--c-grid);
