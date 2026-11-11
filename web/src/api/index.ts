@@ -14,7 +14,7 @@ export { changePassword, login, logout, me } from './auth'
 // An update RLS refuses matches no rows instead of failing; treat that as not found.
 function one<T>(r: { data: T[] | null; error: PostgrestError | null }, missing = 'ไม่พบคลิป'): T {
   const rows = ok(r)
-  if (!rows.length) throw new Error(missing)
+  if (!rows?.length) throw new Error(missing)
   return rows[0]
 }
 
