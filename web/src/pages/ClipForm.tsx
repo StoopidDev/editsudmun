@@ -77,7 +77,10 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   const save = useAct((input: ClipInput) => (clipId ? api.updateClip(clipId, input) : api.createClip(input)))
 
   const categoryId = cats.some((c) => c.id === form.category_id) ? form.category_id : (cats[0]?.id ?? '')
-  const set = (patch: Partial<ClipInput>) => setForm((f) => ({ ...f, ...patch }))
+  const set = (patch: Partial<ClipInput>) => {
+    setSaved(false)
+    setForm((f) => ({ ...f, ...patch }))
+  }
 
   const pristine = initial ? sameBrief(form, initial) : isBlank(form)
 
@@ -165,7 +168,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           พบร่างที่ยังไม่ได้บันทึก: {draft.title || 'ไม่มีหัวข้อ'}
           <span className="flex gap-2">
             <Button variant="outline" onClick={() => { clearDraft(clipId); setDraft(null) }}>ทิ้งร่าง</Button>
-            <Button onClick={() => { setForm((f) => ({ ...draft, date: explicitDate ?? (isIsoDate(draft.date) ? draft.date : f.date) })); setDraft(null) }}>กู้คืนร่าง</Button>
+            <Button onClick={() => { setSaved(false); setForm((f) => ({ ...draft, date: explicitDate ?? (isIsoDate(draft.date) ? draft.date : f.date) })); setDraft(null) }}>กู้คืนร่าง</Button>
           </span>
         </div>
       )}

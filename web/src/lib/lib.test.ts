@@ -243,4 +243,10 @@ describe('order', () => {
     expect(swapInDay(r, 'a', 1).map((x) => x.id)).toEqual(['z', 'b', 'a'])
     expect(swapInDay(r, 'missing', 1)).toEqual(r)
   })
+  it('gives unique positions when a day has duplicates', () => {
+    const r = [{ id: 'a', date: 'd1', position: 0 }, { id: 'b', date: 'd1', position: 0 }, { id: 'c', date: 'd1', position: 0 }]
+    const out = swapInDay(r, 'c', -1)
+    expect(out.map((x) => x.id)).toEqual(['a', 'c', 'b'])
+    expect(out.map((x) => x.position)).toEqual([0, 1, 2])
+  })
 })

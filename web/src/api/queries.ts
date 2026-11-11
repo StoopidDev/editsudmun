@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient, type Query, type QueryClient } from '@tanstack/react-query'
-import { flushSync } from 'react-dom'
 import { toast } from 'sonner'
 import * as api from './index'
 import type { Clip, ClipCardRow } from '@/lib/types'
@@ -23,9 +22,12 @@ export const useStorage = (enabled: boolean) =>
 export const notViews = { predicate: (q: Query) => q.queryKey[0] !== 'view' }
 
 // View Transitions animate whatever the update changes (FLIP for free). No-op where unsupported or under reduced motion.
-export function withTransition(update: () => void) {
+export async function withTransition(update: () => void) {
   if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return update()
-  document.startViewTransition(() => flushSync(update))
+  document.documentElement.dataset.vt = 'local'
+  const t = document.startViewTransition(async () => { update(); await new Promise((r) => setTimeout(r)) }) // TanStack notifies via setTimeout(0)
+  t.finished.finally(() => { delete document.documentElement.dataset.vt })
+  await t.updateCallbackDone.catch(() => {})
 }
 
 // shortcut: every write refetches everything; narrow the invalidation if a real backend makes this slow.
@@ -67,22 +69,26 @@ function apply(qc: QueryClient, p: Patch) {
 
 // Every clip write shows at once in one View Transition; the server only confirms it. On error the cache
 // goes back and the error is toasted. Refetch after settle, so the server's answer wins.
-export function useOptimistic<A>(fn: (a: A) => Promise<unknown>, patch: (a: A) => Patch) {
+// scope: writes in the same scope run one after another (move twice in a row keeps both).
+export function useOptimisticAct<A>(fn: (a: A) => Promise<unknown>, patch: (a: A) => Patch, scope?: { id: string }) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: fn,
+    scope,
     onMutate: async (a: A) => {
       const p = patch(a)
       await Promise.all([qc.cancelQueries({ queryKey: ['clips'] }), qc.cancelQueries({ queryKey: ['clip', p.id] })])
       const before = snapshot(qc, p.id)
-      withTransition(() => apply(qc, p))
+      await withTransition(() => apply(qc, p))
       return { before }
     },
     onError: (e: Error, _a, ctx) => {
       if (ctx) restore(qc, ctx.before)
       toast.error(e.message)
     },
-    onSettled: () => qc.invalidateQueries(notViews),
+    onSettled: () => {
+      void qc.invalidateQueries(notViews)
+    },
   })
 }
 
@@ -104,11 +110,11 @@ function insertRow(rows: ClipCardRow[], row: ClipCardRow, key: readonly unknown[
 // The card collapses at once; the request follows; 'เลิกทำ' puts the same row back in place.
 export function useDeleteClip(onDeleted?: () => void) {
   const qc = useQueryClient()
-  const remove = useOptimistic((id: string) => api.softDeleteClip(id), (id) => ({
+  const remove = useOptimisticAct((id: string) => api.softDeleteClip(id), (id) => ({
     id,
     rows: (rows) => rows.filter((r) => r.id !== id),
   }))
-  const undoDelete = useOptimistic((row: ClipCardRow) => api.restoreClip(row.id), (row) => ({
+  const undoDelete = useOptimisticAct((row: ClipCardRow) => api.restoreClip(row.id), (row) => ({
     id: row.id,
     rows: (rows, key) => insertRow(rows, row, key),
   }))
@@ -117,7 +123,7 @@ export function useDeleteClip(onDeleted?: () => void) {
     try {
       await remove.mutateAsync(id)
     } catch {
-      return false // useOptimistic already rolled back and toasted
+      return false // useOptimisticAct already rolled back and toasted
     }
     onDeleted?.()
     toast('ลบคลิปแล้ว', {

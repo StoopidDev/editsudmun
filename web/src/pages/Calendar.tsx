@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { addDays, addMonths, isSameMonth, isValid } from 'date-fns'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
@@ -25,12 +25,16 @@ export function Calendar() {
   const owner = me?.role === 'owner'
   const clips = useClips(toIso(days[0]), toIso(days[days.length - 1]))
   const [drawer, setDrawer] = useState<string | null>(null)
+  const dirTimer = useRef(0)
 
   const go = (next: { view?: string; date?: string }) => setParams({ view, date: dateIso, ...next })
   // Later weeks slide in from the right, earlier from the left (CSS reads data-dir).
   const step = (n: number) => {
     document.documentElement.dataset.dir = n > 0 ? 'next' : 'prev'
-    withTransition(() => go({ date: toIso(view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)) }))
+    // The slide reads data-dir while it runs (240 ms); clear it after, so later transitions do not inherit it.
+    clearTimeout(dirTimer.current)
+    dirTimer.current = window.setTimeout(() => { delete document.documentElement.dataset.dir }, 400)
+    void withTransition(() => go({ date: toIso(view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)) }))
   }
   const forDay = (iso: string) => clips.data?.filter((c) => c.date === iso) ?? []
 
@@ -139,7 +143,7 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipCar
   const today = todayIso()
   return (
     <>
-    <div className="grid grid-cols-7 overflow-hidden rounded-card border border-line">
+    <div className="grid grid-cols-7 overflow-hidden rounded-card border border-line" style={{ viewTransitionName: 'cal' }}>
       {p.days.slice(0, 7).map((d) => <div key={d.getDay()} className="border-b border-grid py-1 text-center text-xs text-sub">{dayLabel(d)}</div>)}
       {p.days.map((d) => {
         const iso = toIso(d)

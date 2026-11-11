@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import * as api from '@/api/index'
-import { useAct, useClip, useMedia, useOptimistic } from '@/api/queries'
+import { useAct, useClip, useMedia, useOptimisticAct } from '@/api/queries'
 import { ConfirmDialog, Skeleton, StatusChip } from '@/components/bits'
 import { DownloadAll } from '@/components/media'
 import { downloadOne } from '@/lib/viewer'
@@ -23,13 +23,21 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
   const lastDeleting = useLast(deleting)
   const remove = useAct(api.deleteMedia)
   const reasonRef = useRef<HTMLTextAreaElement>(null)
-  useEffect(() => { if (asking) reasonRef.current?.focus() }, [asking])
+  const askRef = useRef<HTMLButtonElement>(null)
+  const restoreFocus = useRef(false)
+  useEffect(() => {
+    if (asking) reasonRef.current?.focus({ preventScroll: true })
+    else if (restoreFocus.current) {
+      restoreFocus.current = false
+      askRef.current?.focus({ preventScroll: true })
+    }
+  }, [asking])
   // Approve and request-changes show on the chip, button and list at once; undo replays the same change.
-  const review = useOptimistic(
+  const review = useOptimisticAct(
     ({ status, note = '' }: { status: 'approved' | 'revision'; note?: string }) => api.reviewClip(clipId, status, note),
     ({ status, note = '' }) => ({ id: clipId, set: { status, revision_note: status === 'revision' ? note.trim() : '' } }),
   )
-  const undo = useOptimistic(
+  const undo = useOptimisticAct(
     ({ status, note }: { status: ClipStatus; note: string }) => api.restoreReview(clipId, status, note),
     ({ status, note }) => ({ id: clipId, set: { status, revision_note: note } }),
   )
@@ -46,13 +54,17 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
     })
   }
 
-  const requestChanges = () => review.mutate({ status: 'revision', note: reason }, {
-    onSuccess: () => {
-      toast.success('ส่งคำขอแก้ไขแล้ว')
-      setReason('')
-      setAsking(false)
-    },
-  })
+  // The box collapses on press; a failed request reopens it with the reason still typed.
+  const requestChanges = () => {
+    setAsking(false)
+    review.mutate({ status: 'revision', note: reason }, {
+      onSuccess: () => {
+        toast.success('ส่งคำขอแก้ไขแล้ว')
+        setReason('')
+      },
+      onError: () => setAsking(true),
+    })
+  }
 
   return (
     <section className="flex flex-col gap-3 rounded-card border border-line p-3">
@@ -103,7 +115,7 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
           <div inert={!asking} className="flex flex-col gap-2 p-px">
             <Textarea ref={reasonRef} rows={3} aria-label="เหตุผลที่ขอแก้ไข" placeholder="เหตุผลที่ขอแก้ไข (ครีเอเตอร์จะเห็นข้อความนี้)" value={reason} onChange={(e) => setReason(e.target.value)} />
             <span className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setAsking(false)}>ยกเลิก</Button>
+              <Button variant="outline" onClick={() => { restoreFocus.current = true; setAsking(false) }}>ยกเลิก</Button>
               <Button loading={review.isPending} disabled={!reason.trim()} onClick={requestChanges}>ส่งคำขอแก้ไข</Button>
             </span>
           </div>
@@ -113,7 +125,7 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs">สถานะ: <StatusChip status={clip.status} transitionName={`status-${clipId}`} drawCheck /></span>
           <span className="flex gap-2">
-            <Button variant="outline" className="border-warn-line text-warn-text" disabled={rounds.length === 0} onClick={() => setAsking(true)}>ขอแก้ไข</Button>
+            <Button ref={askRef} variant="outline" className="border-warn-line text-warn-text" disabled={rounds.length === 0} onClick={() => setAsking(true)}>ขอแก้ไข</Button>
             <Button className="bg-success text-white hover:bg-success/90" loading={review.isPending} disabled={rounds.length === 0 || clip.status === 'approved'} onClick={approve}>
               {clip.status === 'approved' ? 'อนุมัติแล้ว ✓' : 'อนุมัติ'}
             </Button>

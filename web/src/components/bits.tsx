@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight, ImageIcon, Play } from 'lucide-react'
 import { useCategories } from '@/api/queries'
 import { Button } from '@/components/ui/button'
@@ -24,11 +24,18 @@ export function CategoryBadge({ categoryId }: { categoryId: string }) {
 // transitionName lets a page morph this chip on change; drawCheck adds the approve tick that draws in.
 export function StatusChip({ status, transitionName, drawCheck }: { status: ClipStatus; transitionName?: string; drawCheck?: boolean }) {
   const s = STATUS[status]
+  // The tick draws once, when this chip sees the change to approved; a chip that mounts approved stays still.
+  const prev = useRef(status)
+  const [drawn, setDrawn] = useState(false)
+  useEffect(() => {
+    if (status === 'approved' && prev.current !== 'approved') setDrawn(true)
+    prev.current = status
+  }, [status])
   return (
     <span style={transitionName ? { viewTransitionName: transitionName } : undefined}
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold transition-colors duration-200 ${s.className}`}>
       {s.label}
-      {drawCheck && status === 'approved' && (
+      {drawCheck && drawn && status === 'approved' && (
         <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 6 9 17l-5-5" pathLength={1} className="check-draw" />
         </svg>

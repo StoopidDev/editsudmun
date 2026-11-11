@@ -1,14 +1,8 @@
-import type { MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Image as ImageIcon } from 'lucide-react'
 import { CategoryBadge, StatusChip } from '@/components/bits'
+import { shareTitle } from '@/lib/viewTransition'
 import type { ClipCardRow } from '@/lib/types'
-
-// The clicked card lends its title to the detail heading. Set before navigation starts, so the old snapshot has it.
-export function shareTitle(e: MouseEvent<HTMLElement>, id: string) {
-  const title = e.currentTarget.querySelector<HTMLElement>('[data-title]')
-  if (title) title.style.viewTransitionName = `title-${id}`
-}
 
 export function ClipCard({ clip }: { clip: ClipCardRow }) {
   return (

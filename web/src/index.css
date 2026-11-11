@@ -223,8 +223,10 @@ body {
 @keyframes row-out { to { opacity: 0; } }
 
 /* Route crossfade; week change slides 24 px in the direction set on <html data-dir>. Reduced motion shortens these. */
-::view-transition-old(root) { animation: 120ms var(--ease-in-quint) both fade-out; }
-::view-transition-new(root) { animation: 200ms var(--ease-out-quint) both fade-in; }
+::view-transition-old(root) { animation: 120ms var(--ease-in-quint) both fade-out; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: 200ms var(--ease-out-quint) both fade-in; mix-blend-mode: normal; }
+/* Local writes (moves, approvals) animate only the changed element, so the page does not crossfade. */
+:root[data-vt='local']::view-transition-old(root), :root[data-vt='local']::view-transition-new(root) { animation: none; }
 ::view-transition-old(cal) { animation: 160ms var(--ease-in-quint) both slide-out; }
 ::view-transition-new(cal) { animation: 240ms var(--ease-out-quint) both slide-in; }
 @keyframes slide-out { to { opacity: 0; transform: translateX(calc(var(--d, 1) * -24px)); } }

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Drawer } from '@base-ui/react/drawer'
 import { ArrowDown, ArrowUp, Copy, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
 import * as api from '@/api/index'
-import { useCategories, useClips, useDeleteClip, useMe, useOptimistic } from '@/api/queries'
+import { useCategories, useClips, useDeleteClip, useMe, useOptimisticAct } from '@/api/queries'
 import { CopyDialog } from '@/components/CopyDialog'
 import { ClipCard } from '@/components/ClipCard'
 import { Button } from '@/components/ui/button'
@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { fromIso, fullDate } from '@/lib/dates'
 import { swapInDay } from '@/lib/order'
-import { useMedia } from '@/lib/useMedia'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 import type { ClipCardRow } from '@/lib/types'
 
 // Phones (below md) get a bottom drawer that swipes away; md and up keep the right-hand sheet.
@@ -24,11 +24,11 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
   const [copying, setCopying] = useState<ClipCardRow | null>(null)
   // Closing runs the exit animation first; the parent unmounts only once it has finished.
   const [open, setOpen] = useState(true)
-  const wide = useMedia('(min-width: 768px)')
-  const move = useOptimistic(({ id, dir }: { id: string; dir: -1 | 1 }) => api.moveClip(id, dir), ({ id, dir }) => ({
+  const wide = useMediaQuery('(min-width: 768px)')
+  const move = useOptimisticAct(({ id, dir }: { id: string; dir: -1 | 1 }) => api.moveClip(id, dir), ({ id, dir }) => ({
     id,
     rows: (rows) => swapInDay(rows, id, dir),
-  }))
+  }), { id: 'clips-order' })
   const del = useDeleteClip()
   const owner = me?.role === 'owner'
   const shown = filter ? clips.filter((c) => c.category_id === filter) : clips

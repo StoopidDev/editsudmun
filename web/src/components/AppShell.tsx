@@ -6,7 +6,7 @@ import * as api from '@/api/index'
 import { useMe } from '@/api/queries'
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { useMedia } from '@/lib/useMedia'
+import { useMediaQuery } from '@/lib/useMediaQuery'
 
 const NAV = [
   { to: '/', label: 'หน้าแรก', icon: Home, owner: false },
@@ -65,7 +65,7 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 bg-surface p-3">
+    <div className={`flex h-full flex-col gap-4 bg-surface p-3 ${rail ? '' : 'min-w-60'}`}>
       <div className={`flex items-center ${rail ? 'flex-col' : 'justify-between'}`}>
         {!rail && <Link viewTransition to="/" className="px-2 py-2 text-lg">Channel's Tool</Link>}
         {onToggle && (
@@ -112,7 +112,7 @@ export function AppShell() {
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
   // From lg the full sidebar is the default; collapsing it shows the 64 px rail. Below lg the rail is always shown.
-  const wide = useMedia('(min-width: 1024px)')
+  const wide = useMediaQuery('(min-width: 1024px)')
   const [collapsed, setCollapsed] = useState(readCollapsed)
   const rail = !wide || collapsed
   const toggle = () => {
