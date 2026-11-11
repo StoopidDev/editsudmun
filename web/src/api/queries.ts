@@ -22,11 +22,14 @@ export const useStorage = (enabled: boolean) =>
 export const notViews = { predicate: (q: Query) => q.queryKey[0] !== 'view' }
 
 // View Transitions animate whatever the update changes (FLIP for free). No-op where unsupported or under reduced motion.
+let vtRun = 0
 export async function withTransition(update: () => void) {
   if (!document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) return update()
+  const run = ++vtRun
   document.documentElement.dataset.vt = 'local'
   const t = document.startViewTransition(async () => { update(); await new Promise((r) => setTimeout(r)) }) // TanStack notifies via setTimeout(0)
-  t.finished.finally(() => { delete document.documentElement.dataset.vt })
+  // Only the latest run clears the flag, or rapid moves would bring the root crossfade back mid-animation.
+  t.finished.catch(() => {}).finally(() => { if (run === vtRun) delete document.documentElement.dataset.vt })
   await t.updateCallbackDone.catch(() => {})
 }
 

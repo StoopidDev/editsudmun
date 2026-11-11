@@ -33,7 +33,7 @@ export function Calendar() {
     document.documentElement.dataset.dir = n > 0 ? 'next' : 'prev'
     // The slide reads data-dir while it runs (240 ms); clear it after, so later transitions do not inherit it.
     clearTimeout(dirTimer.current)
-    dirTimer.current = window.setTimeout(() => { delete document.documentElement.dataset.dir }, 400)
+    dirTimer.current = window.setTimeout(() => { delete document.documentElement.dataset.dir }, 600)
     void withTransition(() => go({ date: toIso(view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)) }))
   }
   const forDay = (iso: string) => clips.data?.filter((c) => c.date === iso) ?? []
