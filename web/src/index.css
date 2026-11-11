@@ -5,23 +5,30 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Light tokens first; .dark below flips them. Colours are used only through these. */
 :root {
-  --border: oklch(0.922 0 0);
+  --c-bg: #ffffff; --c-ink: #1e1e1e; --c-sub: #5f5f5f; --c-line: #757575; --c-surface: #f5f5f5;
+  --c-grid: #d9d9d9; --c-today: #eaf4ff; --c-note: #fff4d6; --c-note-line: #ffcc00;
+  --c-brand: #0066cc; --c-brand-text: #0066cc; --c-danger: #d70015; --c-success: #1a7f3c; --c-success-text: #1a7f3c;
+  --c-warn-bg: #fff0e0; --c-warn-line: #ffb04d; --c-warn-text: #b35c00; --c-ok-bg: #e6f8ec;
+  --c-chip: #eeeeee; --c-video: #1e1e1e; --c-avatar: #2c2c2c;
+
+  --border: var(--c-grid);
   --accent: oklch(0.97 0 0);
 
-  --background: oklch(1 0 0);
+  --background: var(--c-bg);
 
-  --foreground: oklch(0.145 0 0);
+  --foreground: var(--c-ink);
 
-  --card: oklch(1 0 0);
+  --card: var(--c-bg);
 
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: var(--c-ink);
 
-  --popover: oklch(1 0 0);
+  --popover: var(--c-bg);
 
-  --popover-foreground: oklch(0.145 0 0);
+  --popover-foreground: var(--c-ink);
 
-  --primary: #0066cc;
+  --primary: var(--c-brand);
 
   --primary-foreground: #fff;
 
@@ -31,15 +38,15 @@
 
   --muted: oklch(0.97 0 0);
 
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: var(--c-sub);
 
   --accent-foreground: oklch(0.205 0 0);
 
   --destructive: oklch(0.577 0.245 27.325);
 
-  --input: oklch(0.922 0 0);
+  --input: var(--c-grid);
 
-  --ring: oklch(0.708 0 0);
+  --ring: var(--c-brand);
 
   --chart-1: oklch(0.87 0 0);
 
@@ -68,6 +75,32 @@
   --sidebar-border: oklch(0.922 0 0);
 
   --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --c-bg: #1b1b1d; --c-ink: #f2f2f2; --c-sub: #a0a0a5; --c-line: #8e8e93; --c-surface: #262628;
+  --c-grid: #3a3a3c; --c-today: #12304d; --c-note: #3a3112; --c-note-line: #ffcc00;
+  --c-brand: #0088ff; --c-brand-text: #4da3ff; --c-danger: #ff383c; --c-success: #1a7f3c; --c-success-text: #34c759;
+  --c-warn-bg: #3a2810; --c-warn-line: #ffb04d; --c-warn-text: #ffb04d; --c-ok-bg: #12301c;
+  --c-chip: #3a3a3c; --c-video: #0e0e0f; --c-avatar: #3a3a3c;
+  color-scheme: dark;
+
+  --background: var(--c-bg);
+  --foreground: var(--c-ink);
+  --card: var(--c-bg);
+  --card-foreground: var(--c-ink);
+  --popover: var(--c-surface);
+  --popover-foreground: var(--c-ink);
+  --border: var(--c-grid);
+  --input: var(--c-grid);
+  --primary: var(--c-brand);
+  --muted: var(--c-surface);
+  --muted-foreground: var(--c-sub);
+  --secondary: var(--c-surface);
+  --secondary-foreground: var(--c-ink);
+  --accent: var(--c-surface);
+  --accent-foreground: var(--c-ink);
+  --ring: var(--c-brand);
 }
 
 @theme inline {
@@ -104,6 +137,14 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-bg: var(--c-bg); --color-ink: var(--c-ink); --color-sub: var(--c-sub); --color-line: var(--c-line);
+  --color-surface: var(--c-surface); --color-grid: var(--c-grid); --color-today: var(--c-today);
+  --color-note: var(--c-note); --color-note-line: var(--c-note-line); --color-brand: var(--c-brand);
+  --color-brand-text: var(--c-brand-text); --color-danger: var(--c-danger); --color-success: var(--c-success);
+  --color-success-text: var(--c-success-text); --color-warn-bg: var(--c-warn-bg); --color-warn-line: var(--c-warn-line);
+  --color-warn-text: var(--c-warn-text); --color-ok-bg: var(--c-ok-bg); --color-chip: var(--c-chip);
+  --color-video: var(--c-video); --color-avatar: var(--c-avatar);
+  --radius-card: 10px;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -123,21 +164,10 @@
 
 @theme {
   --font-sans: "Geist Variable", "Noto Sans Thai Variable", sans-serif;
-  --color-brand: #0066cc;
-  --color-ink: #1e1e1e;
-  --color-sub: #5f5f5f;
-  --color-line: #757575;
-  --color-surface: #f5f5f5;
-  --color-grid: #d9d9d9;
-  --color-today: #eaf4ff;
-  --color-note: #fff4d6;
-  --color-note-line: #ffcc00;
-  --color-danger: #d70015;
-  --radius-card: 10px;
 }
 
 body {
   margin: 0;
-  color: var(--color-ink);
-  background: #fff;
+  color: var(--c-ink);
+  background: var(--c-bg);
 }

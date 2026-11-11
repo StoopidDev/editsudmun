@@ -52,7 +52,7 @@ function CreatorDetail({ id }: { id: string }) {
           </div>
           <h1 className="text-3xl font-bold">{clip.title}</h1>
           {clip.status === 'revision' && (
-            <div role="status" className="rounded-card border border-[#ffb04d] bg-[#fff0e0] p-3 text-sm">
+            <div role="status" className="rounded-card border border-warn-line bg-warn-bg p-3 text-sm">
               <b>เจ้าของขอให้แก้ไข</b><p>{clip.revision_note}</p>
             </div>
           )}

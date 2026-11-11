@@ -39,10 +39,10 @@ export function Home() {
           <h2 className="text-lg font-bold">งานของฉัน ({todo.length})</h2>
           <div className="flex max-h-72 flex-col gap-2 overflow-y-auto">
             {todo.map((c) => (
-              <Link key={c.id} to={`/clips/${c.id}`} className="flex flex-col gap-1 rounded-card border border-[#ffb04d] bg-[#fff0e0] p-3">
+              <Link key={c.id} to={`/clips/${c.id}`} className="flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3">
                 <div className="flex items-center justify-between gap-2 text-xs text-sub">
                   <CategoryBadge categoryId={c.category_id} />
-                  <span className="font-bold text-[#b35c00]">{ATTENTION_LABEL[c.attention]} · {shortDate(fromIso(c.date))}</span>
+                  <span className="font-bold text-warn-text">{ATTENTION_LABEL[c.attention]} · {shortDate(fromIso(c.date))}</span>
                 </div>
                 <b className="text-sm">{c.title}</b>
                 {c.attention === 'revision' && <p className="line-clamp-2 text-xs">{c.revision_note}</p>}
@@ -53,7 +53,7 @@ export function Home() {
       )}
 
       {dying.length > 0 && (
-        <section role="status" className="flex flex-col gap-1 rounded-card border border-[#ffb04d] bg-[#fff0e0] p-3 text-sm">
+        <section role="status" className="flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3 text-sm">
           <b>มี {dying.length} ไฟล์ใกล้ถูกลบ</b>
           {dying.map((f) => (
             <Link key={f.id} to={`/clips/${f.clip_id}`} className="truncate text-xs underline">

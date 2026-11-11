@@ -46,7 +46,7 @@ export function Review({ clipId }: { clipId: string }) {
       <h2 className="flex justify-between text-sm font-bold">งานที่ครีเอเตอร์ส่ง ({rounds.length} ไฟล์)</h2>
       {rounds.length === 0 ? <p className="text-sm text-sub">ยังไม่มีไฟล์ส่งงาน</p> : (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
-          <div className="flex aspect-video flex-col justify-between rounded-card bg-[#1e1e1e] p-3 text-sm text-white">
+          <div className="flex aspect-video flex-col justify-between rounded-card bg-video p-3 text-sm text-white">
             <b>รอบ {current.round} · {current.file_name}</b>
             <span className="flex flex-col items-center gap-1"><Play />วิดีโอจริงจะเล่นได้หลังเชื่อมต่อ R2</span>
             <span />
@@ -54,7 +54,7 @@ export function Review({ clipId }: { clipId: string }) {
           <div className="flex flex-col gap-2">
             {rounds.map((m) => (
               <div key={m.id} className={`flex min-w-0 items-center gap-2 rounded-card border p-2 text-sm ${m.id === current.id ? 'border-brand bg-today' : 'border-grid'}`}>
-                <span className="rounded bg-white px-1 text-xs font-bold">รอบ {m.round}</span>
+                <span className="rounded bg-bg px-1 text-xs font-bold">รอบ {m.round}</span>
                 <div className="min-w-0 flex-1">
                   <b className="block truncate">{m.file_name}</b>
                   <span className={`text-xs ${isPlayable(m.mime) ? 'text-sub' : 'text-danger'}`}>
@@ -82,8 +82,8 @@ export function Review({ clipId }: { clipId: string }) {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs">สถานะ: <StatusChip status={clip.status} /></span>
           <span className="flex gap-2">
-            <Button variant="outline" className="border-[#ff9500] text-[#b35c00]" disabled={rounds.length === 0} onClick={() => setAsking(true)}>ขอแก้ไข</Button>
-            <Button className="bg-[#1a7f3c] text-white hover:bg-[#1a7f3c]/90" disabled={review.isPending || rounds.length === 0 || clip.status === 'approved'} onClick={approve}>อนุมัติ</Button>
+            <Button variant="outline" className="border-warn-line text-warn-text" disabled={rounds.length === 0} onClick={() => setAsking(true)}>ขอแก้ไข</Button>
+            <Button className="bg-success text-white hover:bg-success/90" disabled={review.isPending || rounds.length === 0 || clip.status === 'approved'} onClick={approve}>อนุมัติ</Button>
           </span>
         </div>
       )}

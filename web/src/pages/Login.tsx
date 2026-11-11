@@ -33,7 +33,7 @@ export function Login() {
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-surface p-4">
-      <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 rounded-card bg-white p-8">
+      <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 rounded-card bg-bg p-8">
         <h1 className="text-center text-xl">Channel's Tool</h1>
         <div className="grid gap-1">
           <Label htmlFor="email">อีเมล</Label>

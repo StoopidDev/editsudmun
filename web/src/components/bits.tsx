@@ -30,14 +30,14 @@ export function FileTile({ file, clipDate, onDelete }: { file: ClipMedia; clipDa
   const isVideo = file.kind === 'video'
   const early = expiresBeforeClip(file.expires_at, clipDate)
   return (
-    <div className={`relative flex h-20 flex-col items-center justify-center gap-1 rounded-card px-2 ${isVideo ? 'bg-[#1e1e1e] text-white' : 'bg-surface text-sub'}`}>
+    <div className={`relative flex h-20 flex-col items-center justify-center gap-1 rounded-card px-2 ${isVideo ? 'bg-video text-white' : 'bg-surface text-sub'}`}>
       {isVideo ? <Play size={18} /> : <ImageIcon size={18} />}
       <span className="w-full truncate text-center text-xs">{file.file_name}</span>
-      <span className={`text-xs ${early ? `font-bold ${isVideo ? 'text-[#ffb04d]' : 'text-danger'}` : ''}`}>
+      <span className={`text-xs ${early ? `font-bold ${isVideo ? 'text-warn-line' : 'text-danger'}` : ''}`}>
         {early ? 'ลบก่อนถึงวันคลิป' : `ลบใน ${daysLeft(file.expires_at)} วัน`}
       </span>
       {onDelete && (
-        <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 size-5 rounded-full bg-ink text-xs text-white before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
+        <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 size-5 rounded-full bg-avatar text-xs text-white before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
       )}
     </div>
   )

@@ -103,7 +103,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
       )}
 
       {expiring.length > 0 && (
-        <div role="status" className="rounded-card border border-[#ffb04d] bg-[#fff0e0] p-3 text-sm">
+        <div role="status" className="rounded-card border border-warn-line bg-warn-bg p-3 text-sm">
           มี {expiring.length} ไฟล์จะถูกลบใน {Math.min(...expiring.map((m) => daysLeft(m.expires_at)))} วัน
           <Button variant="link" disabled className="ml-2 h-auto p-0 max-md:min-h-11">ดาวน์โหลดทั้งหมด</Button>
         </div>
@@ -115,7 +115,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1">
               <Label htmlFor="cat">ประเภท</Label>
-              <select id="cat" value={categoryId} onChange={(e) => set({ category_id: e.target.value })} className="h-9 rounded-md border border-line bg-white px-2 text-sm max-md:h-11">
+              <select id="cat" value={categoryId} onChange={(e) => set({ category_id: e.target.value })} className="h-9 rounded-md border border-line bg-bg px-2 text-sm max-md:h-11">
                 {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
@@ -139,7 +139,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         <div className="flex flex-col gap-3">
           <section className="rounded-card border border-note-line bg-note p-3">
             <Label htmlFor="note" className="mb-1">หมายเหตุ</Label>
-            <Textarea id="note" rows={5} placeholder="หนึ่งบรรทัดต่อหนึ่งข้อ" className="bg-white" value={form.note} onChange={(e) => set({ note: e.target.value })} />
+            <Textarea id="note" rows={5} placeholder="หนึ่งบรรทัดต่อหนึ่งข้อ" className="bg-bg" value={form.note} onChange={(e) => set({ note: e.target.value })} />
           </section>
           <section className="flex flex-col gap-2 rounded-card border border-line p-3">
             <h2 className="text-sm font-bold">ไฟล์อ้างอิง ({refs.length})</h2>

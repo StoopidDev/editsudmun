@@ -63,10 +63,10 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
       {rail ? (
         <Link to="/search" aria-label="ค้นหา" className="flex justify-center p-2"><Search size={18} /></Link>
       ) : (
-        <form onSubmit={submit} className="flex items-center gap-2 rounded-card border border-line bg-[#e6e6e6] px-2 py-1.5">
+        <form onSubmit={submit} className="flex items-center gap-2 rounded-card border border-line bg-grid px-2 py-1.5">
           <Search size={16} />
           <input ref={input} name="q" defaultValue={params.get('q') ?? ''} placeholder="ค้นหาคลิป..." aria-label="ค้นหาคลิป" className="w-full bg-transparent text-sm outline-none" />
-          <kbd className="hidden rounded bg-white px-1 text-xs text-sub lg:inline">Ctrl K</kbd>
+          <kbd className="hidden rounded bg-bg px-1 text-xs text-sub lg:inline">Ctrl K</kbd>
         </form>
       )}
       <nav className="flex flex-col gap-1">
@@ -78,7 +78,7 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
         ))}
       </nav>
       <div className={`mt-auto flex items-center gap-2 px-2 ${rail ? 'flex-col' : ''}`}>
-        <span className="flex size-8 items-center justify-center rounded-full bg-ink text-white"><User size={16} /></span>
+        <span className="flex size-8 items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
         {rail && <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 items-center justify-center text-sub"><KeyRound size={16} /></button>}
         {rail && <button onClick={logout} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center text-sub"><LogOut size={16} /></button>}
         {!rail && (
@@ -118,7 +118,7 @@ export function AppShell() {
         </header>
         <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6"><Outlet /></main>
       </div>
-      <nav aria-label="เมนูหลัก" className="fixed inset-x-0 bottom-0 z-20 flex h-16 border-t border-line bg-white md:hidden">
+      <nav aria-label="เมนูหลัก" className="fixed inset-x-0 bottom-0 z-20 flex h-16 border-t border-line bg-bg md:hidden">
         {TABS.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} end={to === '/'}
             className={({ isActive }) => `flex flex-1 flex-col items-center justify-center gap-0.5 text-xs ${isActive ? 'font-bold text-brand' : 'text-sub'}`}>
