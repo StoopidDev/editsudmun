@@ -13,7 +13,10 @@ if (!['owner', 'creator'].includes(role) || !email || !displayName) {
 const db = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY, {
   auth: { persistSession: false },
 })
-const password = randomBytes(9).toString('base64url')
+// 16 characters with lower, upper and digit, to pass the Auth password policy.
+let password
+do password = randomBytes(12).toString('base64url')
+while (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password))
 const { data, error } = await db.auth.admin.createUser({
   email: email.toLowerCase(),
   password,

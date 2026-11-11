@@ -17,6 +17,7 @@ All data access goes through `web/src/api/index.ts` (supabase-js); screens never
 - A `BEFORE INSERT` trigger on `clip_media` sets `id`, `status`, `uploaded_by`, `round`, dates and `r2_key`, so clients cannot forge a key. `copy_clip` shares the source `r2_key`/`expires_at`; `storage_usage` counts each `r2_key` once.
 - Soft delete: creators cannot see deleted clips or their media; pg_cron purges them after 7 days. Owner queries must filter `deleted_at is null` themselves.
 - Withdraw: a creator may delete an own submission while pending or within 10 minutes of `ready_at`.
+- Auth hardening (2026-11-11): password policy min 12 with lower, upper and digit (set in each project's dashboard; `manage-users` temp passwords, `create-user.mjs` and the tests comply; `changePassword` mirrors it). Supabase Auth's built-in per-IP rate limits are used as-is. `web/public/_headers` sets a CSP and other security headers on the Workers site. The session stays in localStorage (static SPA, no server for httpOnly cookies); role checks in the UI are UX only, RLS and the Edge Functions enforce. 2FA and CAPTCHA are not built.
 - Deleting a user is a real delete; `uploaded_by`/`created_by` become null and `uploader_name` keeps the name. `manage-users` Edge Function: create, reset_password, delete (refuses owners).
 - Search: RPC `search_clips` (substring `ILIKE` with trigram indexes, because Postgres full-text search cannot split Thai words).
 

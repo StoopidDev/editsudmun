@@ -16,7 +16,7 @@ let categoryId: string
 
 async function makeUser(role: 'owner' | 'creator') {
   const email = `media-${role}-${tag}@example.com`
-  const password = `pw-${tag}-${role}-123`
+  const password = `Pw-${tag}-${role}-1234`
   const { data, error } = await admin.auth.admin.createUser({
     email, password, email_confirm: true, app_metadata: { role }, user_metadata: { display_name: `ทดสอบไฟล์ ${role}` },
   })
