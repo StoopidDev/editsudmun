@@ -30,14 +30,14 @@ export function FileTile({ file, clipDate, onDelete }: { file: ClipMedia; clipDa
   const isVideo = file.kind === 'video'
   const early = expiresBeforeClip(file.expires_at, clipDate)
   return (
-    <div className={`relative flex h-20 flex-col items-center justify-center gap-1 rounded-card px-2 ${isVideo ? 'bg-video text-white' : 'bg-surface text-sub'}`}>
+    <div className={`relative flex h-20 flex-col items-center justify-center gap-1 rounded-card px-2 hover-pointer:brightness-95 ${isVideo ? 'bg-video text-white' : 'bg-surface text-sub'}`}>
       {isVideo ? <Play size={18} /> : <ImageIcon size={18} />}
       <span className="w-full truncate text-center text-xs">{file.file_name}</span>
       <span className={`text-xs ${early ? `font-bold ${isVideo ? 'text-warn-line' : 'text-danger'}` : ''}`}>
         {early ? 'ลบก่อนถึงวันคลิป' : `ลบใน ${daysLeft(file.expires_at)} วัน`}
       </span>
       {onDelete && (
-        <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 size-5 rounded-full bg-avatar text-xs text-white before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
+        <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 size-5 rounded-full bg-avatar text-xs text-white opacity-70 transition-opacity hover-pointer:hover:opacity-100 before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
       )}
     </div>
   )
@@ -83,7 +83,7 @@ export function DayStrip({ value, onChange }: { value: string; onChange: (iso: s
           const iso = toIso(d)
           const cls = iso === value ? 'bg-brand text-white' : iso === todayIso() ? 'border border-brand bg-today' : 'bg-surface'
           return (
-            <button key={iso} onClick={() => onChange(iso)} className={`rounded-card p-2 text-center text-xs ${cls}`}>
+            <button key={iso} onClick={() => onChange(iso)} className={`press rounded-card p-2 text-center text-xs ${cls}`}>
               {dayLabel(d)}<br /><b className="text-base">{d.getDate()}</b>
             </button>
           )

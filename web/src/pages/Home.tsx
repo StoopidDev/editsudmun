@@ -39,7 +39,7 @@ export function Home() {
           <h2 className="text-lg font-bold">งานของฉัน ({todo.length})</h2>
           <div className="flex max-h-72 flex-col gap-2 overflow-y-auto">
             {todo.map((c) => (
-              <Link key={c.id} to={`/clips/${c.id}`} className="flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3">
+              <Link key={c.id} to={`/clips/${c.id}`} className="press flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3">
                 <div className="flex items-center justify-between gap-2 text-xs text-sub">
                   <CategoryBadge categoryId={c.category_id} />
                   <span className="font-bold text-warn-text">{ATTENTION_LABEL[c.attention]} · {shortDate(fromIso(c.date))}</span>
@@ -66,12 +66,12 @@ export function Home() {
       <section className="flex flex-col gap-2">
         <div className="flex justify-between">
           <h2 className="text-lg">วันนี้ · {fullDate(now)}</h2>
-          <Link to="/calendar" className="flex items-center gap-1 text-sm text-brand">เปิดปฏิทิน<ArrowRight size={14} /></Link>
+          <Link to="/calendar" className="flex items-center gap-1 text-sm text-brand hover-pointer:underline underline-offset-4">เปิดปฏิทิน<ArrowRight size={14} /></Link>
         </div>
         {week.isPending ? <p className="text-sm text-sub">กำลังโหลด...</p> : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {todays.map((c, i) => (
-              <Link key={c.id} to={`/clips/${c.id}`} className="flex flex-col gap-1 rounded-card border border-line p-3 hover:bg-surface">
+              <Link key={c.id} to={`/clips/${c.id}`} className="press hover-tint hover-pointer:border-ink/40 flex flex-col gap-1 rounded-card border border-line p-3">
                 <div className="flex items-center justify-between gap-1 text-xs text-sub">
                   <span className="flex flex-wrap items-center gap-1"><CategoryBadge categoryId={c.category_id} /><StatusChip status={c.status} /></span>
                   คลิป {i + 1} จาก {todays.length}
@@ -82,7 +82,7 @@ export function Home() {
             ))}
             {todays.length === 0 && !owner && !week.isError && <p className="text-sm text-sub">วันนี้ไม่มีคลิป</p>}
             {owner && (
-              <Link to={`/clips/new?date=${today}`} className="flex min-h-24 flex-col items-center justify-center rounded-card border border-dashed border-line text-sm text-sub">
+              <Link to={`/clips/new?date=${today}`} className="press hover-tint flex min-h-24 flex-col items-center justify-center rounded-card border border-dashed border-line text-sm text-sub">
                 <Plus size={16} />เพิ่มคลิปวันนี้
               </Link>
             )}
@@ -93,7 +93,7 @@ export function Home() {
       <section className="flex flex-col gap-2">
         <div className="flex justify-between">
           <h2 className="text-lg">สัปดาห์นี้</h2>
-          <span className="text-sm text-sub">{rangeLabel(now)} · <Link to="/calendar" className="text-brand">ดูทั้งหมด</Link></span>
+          <span className="text-sm text-sub">{rangeLabel(now)} · <Link to="/calendar" className="text-brand hover-pointer:underline underline-offset-4">ดูทั้งหมด</Link></span>
         </div>
         <div className="grid grid-cols-7 overflow-hidden rounded-card border border-line">
           {days.map((d) => {
@@ -120,7 +120,7 @@ export function Home() {
         <h2 className="text-lg">แก้ไขล่าสุด</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {recent.data?.map((c) => (
-            <Link key={c.id} to={`/clips/${c.id}`} className="flex flex-col gap-1 rounded-card border border-line p-3 hover:bg-surface">
+            <Link key={c.id} to={`/clips/${c.id}`} className="press hover-tint hover-pointer:border-ink/40 flex flex-col gap-1 rounded-card border border-line p-3">
               <div className="flex justify-between text-xs text-sub">
                 <CategoryBadge categoryId={c.category_id} />
                 {formatDistanceToNow(parseISO(c.brief_updated_at), { locale: th, addSuffix: true })}

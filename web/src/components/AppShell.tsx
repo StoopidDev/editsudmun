@@ -72,7 +72,7 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
       <nav className="flex flex-col gap-1">
         {NAV.filter((n) => !n.owner || me?.role === 'owner').map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} end={to === '/'} onClick={onNavigate} aria-label={label}
-            className={({ isActive }) => `flex items-center gap-2 rounded-card px-2 py-2 text-sm ${rail ? 'justify-center' : ''} ${isActive ? 'bg-brand text-white' : ''}`}>
+            className={({ isActive }) => `press hover-tint flex items-center gap-2 rounded-card px-2 py-2 text-sm ${rail ? 'justify-center' : ''} ${isActive ? 'bg-brand text-white' : ''}`}>
             <Icon size={16} />{!rail && label}
           </NavLink>
         ))}
@@ -85,7 +85,7 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
           <div className="text-sm">
             <b>{me?.display_name}</b>
             <div className="text-xs text-sub">{me?.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</div>
-            <button onClick={() => setChanging(true)} className="block text-xs text-sub underline">เปลี่ยนรหัสผ่าน</button>
+            <button onClick={() => setChanging(true)} className="block text-xs text-sub underline hover-pointer:no-underline">เปลี่ยนรหัสผ่าน</button>
             <button onClick={logout} className="text-xs text-sub underline">ออกจากระบบ</button>
           </div>
         )}
@@ -121,7 +121,7 @@ export function AppShell() {
       <nav aria-label="เมนูหลัก" className="fixed inset-x-0 bottom-0 z-20 flex h-16 border-t border-line bg-bg md:hidden">
         {TABS.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} end={to === '/'}
-            className={({ isActive }) => `flex flex-1 flex-col items-center justify-center gap-0.5 text-xs ${isActive ? 'font-bold text-brand' : 'text-sub'}`}>
+            className={({ isActive }) => `press flex flex-1 flex-col items-center justify-center gap-0.5 text-xs ${isActive ? 'font-bold text-brand' : 'text-sub'}`}>
             <Icon size={20} />{label}
           </NavLink>
         ))}

@@ -171,3 +171,40 @@ body {
   color: var(--c-ink);
   background: var(--c-bg);
 }
+
+@theme {
+  --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-quint: cubic-bezier(0.64, 0, 0.78, 0);
+  --duration-press: 100ms;
+  --duration-state: 200ms;
+  --duration-layout: 320ms;
+}
+
+/* Feedback on pointer-down, not on click (apple-design §1). */
+@utility press {
+  transition: transform var(--duration-press) var(--ease-out-quint), background-color var(--duration-state), opacity var(--duration-state);
+  &:active:not(:disabled):not([aria-haspopup]) { transform: scale(0.97); }
+}
+
+@utility skeleton {
+  background: linear-gradient(90deg, var(--c-surface) 25%, var(--c-grid) 50%, var(--c-surface) 75%) 0 0 / 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: var(--radius-card);
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+/* One hover language: a 150 ms tint, no lift, no shadow jump. */
+@custom-variant hover-pointer (@media (hover: hover) and (pointer: fine));
+@utility hover-tint {
+  transition: background-color 150ms var(--ease-out-quint), border-color 150ms var(--ease-out-quint);
+  @media (hover: hover) and (pointer: fine) { &:hover { background-color: color-mix(in oklab, var(--c-ink) 5%, transparent); } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skeleton { animation: none; }
+}

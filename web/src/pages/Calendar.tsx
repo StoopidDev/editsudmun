@@ -88,7 +88,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
       </div>
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold">{dayLabel(p.selected)} {shortDate(p.selected)} · {list.length} คลิป</h2>
-        <button type="button" onClick={() => p.onOpen(selIso)} className="min-h-11 px-2 text-sm text-brand">ดูทั้งวัน</button>
+        <button type="button" onClick={() => p.onOpen(selIso)} className="min-h-11 px-2 text-sm text-brand hover-pointer:underline underline-offset-4">ดูทั้งวัน</button>
       </div>
       {p.loading && <div className="h-20 rounded-card bg-grid" aria-label="กำลังโหลด" />}
       {list.map((c) => <ClipCard key={c.id} clip={c} />)}
@@ -110,14 +110,14 @@ function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => Clip
         const isToday = iso === today
         return (
           <section key={iso} className={`flex flex-col gap-2 rounded-card p-2 min-h-[70vh] ${isToday ? 'border border-brand bg-today' : 'bg-surface'}`}>
-            <button onClick={() => p.onOpen(iso)} className={`rounded-card py-1 text-center ${isToday ? 'bg-brand text-white' : ''}`}>
+            <button onClick={() => p.onOpen(iso)} className={`press hover-tint rounded-card py-1 text-center ${isToday ? 'bg-brand text-white' : ''}`}>
               <span className="text-xs">{dayLabel(d)}</span><br /><b className="text-xl">{d.getDate()}</b><br />
               <span className="text-xs">{list.length} คลิป</span>
             </button>
             {p.loading && <div className="h-20 rounded-card bg-grid" aria-label="กำลังโหลด" />}
             {list.slice(0, MAX_CARDS).map((c) => <ClipCard key={c.id} clip={c} />)}
             {list.length > MAX_CARDS && (
-              <button onClick={() => p.onOpen(iso)} className="text-xs text-brand">ดูเพิ่มอีก {list.length - MAX_CARDS} คลิป</button>
+              <button onClick={() => p.onOpen(iso)} className="text-xs text-brand hover-pointer:underline underline-offset-4">ดูเพิ่มอีก {list.length - MAX_CARDS} คลิป</button>
             )}
             {p.owner && (
               <Link to={`/clips/new?date=${iso}`} className="rounded-card border border-dashed border-line py-1 text-center text-xs text-sub">+ เพิ่มคลิป</Link>
@@ -141,7 +141,7 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipCar
         const list = p.forDay(iso)
         const inMonth = isSameMonth(d, p.anchor)
         return (
-          <button key={iso} onClick={() => p.onPick(iso)} className={`flex min-h-20 flex-col gap-1 border-r border-b border-grid p-1 text-left md:min-h-28 ${iso === today ? 'bg-today' : inMonth ? '' : 'bg-surface opacity-60'}`}>
+          <button key={iso} onClick={() => p.onPick(iso)} className={`press hover-tint flex min-h-20 flex-col gap-1 border-r border-b border-grid p-1 text-left md:min-h-28 ${iso === today ? 'bg-today' : inMonth ? '' : 'bg-surface opacity-60'}`}>
             <span className="flex justify-between text-xs"><b>{d.getDate()}</b>{list.length > 0 && <span className="hidden text-sub sm:inline">{list.length} คลิป</span>}</span>
             {cats.map((c) => {
               const n = list.filter((x) => x.category_id === c.id).length
