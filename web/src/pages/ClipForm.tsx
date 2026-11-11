@@ -6,8 +6,9 @@ import { useAct, useCategories, useClip, useDeleteClip, useMedia } from '@/api/q
 import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
 import { CopyDialog } from '@/components/CopyDialog'
-import { ConfirmDialog, Delayed, FileTile, Skeleton, UploadDisabled } from '@/components/bits'
+import { ConfirmDialog, Delayed, FileTile, Skeleton } from '@/components/bits'
 import { DownloadAll, useLightbox } from '@/components/media'
+import { UploadZone } from '@/components/UploadZone'
 import { useViewUrls, viewables } from '@/lib/viewer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -73,6 +74,22 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     else writeDraft(form, clipId)
   }, [form, pristine, clipId, draft])
 
+  // A new clip is created by its first file (D2). Without a title the files stay parked until the title is filled.
+  const ensureClip = async () => {
+    if (clipId) return clipId
+    if (!isIsoDate(form.date)) { toast.error('วันที่ไม่ถูกต้อง'); return null }
+    if (!form.title.trim()) { setTitleError(true); document.getElementById('title')?.focus(); return null }
+    const { date, script, note } = form
+    try {
+      const c = await save.mutateAsync({ date, script, note, category_id: categoryId, title: form.title.trim() })
+      clearDraft(undefined)
+      nav(`/clips/${c.id}`, { replace: true })
+      return c.id
+    } catch {
+      return null // useAct already showed the error; the files stay parked
+    }
+  }
+
   const submit = (addAnother = false) => {
     if (!isIsoDate(form.date)) { toast.error('วันที่ไม่ถูกต้อง'); return }
     if (!form.title.trim()) return setTitleError(true)
@@ -92,6 +109,8 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   const refs = media.filter((m) => m.purpose === 'reference')
   const refViews = viewables(refs, urls)
   const expiring = media.filter((m) => daysLeft(m.expires_at) <= WARN_DAYS)
+  // Files R2 keeps 30 days from upload; on a saved clip the soonest-expiring reference sets the line.
+  const refDays = refs.length ? Math.min(...refs.map((f) => daysLeft(f.expires_at))) : 30
 
   return (
     <div className="flex flex-col gap-3">
@@ -164,7 +183,8 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
                   onOpen={urls[f.id] ? (el) => lb.openAt(refViews, refViews.findIndex((v) => v.id === f.id), el) : undefined} />
               ))}
             </div>
-            <UploadDisabled label="ลากรูปมาวางหรือคลิกเพื่ออัปโหลด" />
+            <UploadZone clipId={clipId ?? ''} purpose="reference" ensureClipId={ensureClip} />
+            <p className="text-xs text-sub">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {refDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>
           </section>
           {clipId && <Button variant="outline" className="self-start border-danger text-danger max-md:min-h-11" onClick={() => void del(clipId)}><Trash2 />ลบคลิป</Button>}
         </div>

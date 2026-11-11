@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ChevronLeft, ChevronRight, Play, Upload } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
 import { useCategories } from '@/api/queries'
 import { Button } from '@/components/ui/button'
 import { readableOn } from '@/lib/color'
@@ -61,16 +61,6 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
       <span className={`text-xs ${early ? `font-bold ${isVideo ? 'text-warn-line' : 'text-danger'}` : 'text-sub'}`}>
         {early ? 'ลบก่อนถึงวันคลิป' : `ลบใน ${daysLeft(file.expires_at)} วัน`}
       </span>
-    </div>
-  )
-}
-
-export function UploadDisabled({ label }: { label: string }) {
-  return (
-    <div aria-disabled className="flex cursor-not-allowed flex-col items-center gap-1 rounded-card border border-dashed border-line p-4 text-center text-xs text-sub opacity-70">
-      <Upload size={16} />
-      <span>{label}</span>
-      <span>เปิดใช้เมื่อเชื่อมต่อระบบหลังบ้านแล้ว</span>
     </div>
   )
 }

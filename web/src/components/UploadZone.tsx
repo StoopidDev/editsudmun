@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { ACCEPT, progressLabel, uploadProblem, uploadStatus } from '@/lib/media'
 import type { ClipMedia } from '@/lib/types'
-import { useUploads, type UploadRow } from '@/lib/upload-state'
+import { parkedCount, park, takeParked, useUploads, type UploadRow } from '@/lib/upload-state'
 
 const COPY = {
   reference: { title: 'ลากรูปหรือวิดีโอมาวาง หรือคลิกเพื่อเลือกไฟล์', hint: 'รูปภาพ และวิดีโอ MP4 / MOV ไม่เกิน 2 GB' },
@@ -29,6 +29,7 @@ export function UploadZone({ clipId, purpose, ensureClipId }: {
   const [refused, setRefused] = useState<Refused[]>([])
   const [leaving, setLeaving] = useState<UploadRow[]>([])
   const [announce, setAnnounce] = useState('')
+  const [, bumpParked] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const seq = useRef(0)
   const scope = useRef('')
@@ -72,13 +73,24 @@ export function UploadZone({ clipId, purpose, ensureClipId }: {
     if (bad.length) { setRefused((r) => [...r, ...bad]); setAnnounce(bad[0].message) }
     if (!good.length) return
     const id = clipId || (await ensureClipId?.()) || ''
-    if (!id) return
-    const failed = add(good, id)
+    if (!id) { park(purpose, good); bumpParked((n) => n + 1); return }
+    addFiles(good, id)
+  }
+
+  const addFiles = (list: File[], id: string) => {
+    const failed = add(list, id)
     if (failed.length) {
       setRefused((r) => [...r, ...failed.map((f) => ({ key: ++seq.current, name: f.name, message: f.message, tooBig: false }))])
       setAnnounce(failed[0].message)
     }
   }
+
+  // Files parked before the clip existed start as soon as it does.
+  useEffect(() => {
+    if (!clipId) return
+    const waiting = takeParked(purpose)
+    if (waiting.length) addFiles(waiting, clipId)
+  })
 
   const cancel = (id: string) => { cancelled.current.add(id); remove(id) }
 
@@ -128,6 +140,8 @@ export function UploadZone({ clipId, purpose, ensureClipId }: {
           )}
         </div>
       ))}
+
+      {!clipId && parkedCount(purpose) > 0 && <p className="text-xs text-warn-text">กรอกหัวข้อก่อนแนบไฟล์</p>}
 
       <div aria-live="polite" className="sr-only">{announce}</div>
     </div>

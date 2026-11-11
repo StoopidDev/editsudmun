@@ -52,3 +52,9 @@ export function useUploads(clipId: string, purpose: ClipMedia['purpose']) {
     remove: (id: string) => uppy.removeFile(id),
   }
 }
+
+// Files dropped before a new clip is saved (D2). They wait here across the remount that follows the first save.
+const parked: Partial<Record<ClipMedia['purpose'], File[]>> = {}
+export const park = (purpose: ClipMedia['purpose'], files: File[]) => { parked[purpose] = [...(parked[purpose] ?? []), ...files] }
+export const parkedCount = (purpose: ClipMedia['purpose']) => parked[purpose]?.length ?? 0
+export const takeParked = (purpose: ClipMedia['purpose']) => { const files = parked[purpose] ?? []; delete parked[purpose]; return files }
