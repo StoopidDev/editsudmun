@@ -81,7 +81,7 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
   return (
     <div className={`flex h-full flex-col gap-4 bg-surface p-3 ${rail ? '' : 'min-w-60'}`}>
       <div className={`flex items-center ${rail ? 'flex-col' : 'justify-between'}`}>
-        {!rail && <Link viewTransition to="/" className="px-2 py-2 text-lg">Channel's Tool</Link>}
+        {!rail && <Link viewTransition to="/" className="px-2 py-2 text-xl font-light">Channel's Tool</Link>}
         {onToggle && (
           <button type="button" onClick={onToggle} aria-label={rail ? 'แสดงเมนู' : 'ซ่อนเมนู'} aria-expanded={!rail}
             className="hover-tint hidden size-8 items-center justify-center rounded-card text-sub lg:flex"><PanelLeft size={18} /></button>
@@ -99,7 +99,7 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
       <nav className="flex flex-col gap-1">
         {NAV.filter((n) => !n.owner || me?.role === 'owner').map(({ to, label, icon: Icon }) => (
           <NavLink viewTransition key={to} to={to} end={to === '/'} onClick={onNavigate} aria-label={label}
-            className={({ isActive }) => `press hover-tint flex items-center gap-2 rounded-card px-2 py-2 text-sm ${rail ? 'justify-center' : ''} ${isActive ? 'bg-brand text-white' : ''}`}>
+            className={({ isActive }) => `press hover-tint flex items-center gap-2 rounded-card px-2 py-2 text-base font-light ${rail ? 'justify-center' : ''} ${isActive ? 'bg-brand text-white' : ''}`}>
             <Icon size={16} />{!rail && label}
           </NavLink>
         ))}
@@ -107,7 +107,7 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
       {onNavigate && <ThemeButton label className="w-full justify-start" />}
       <div className={`mt-auto flex items-center gap-2 px-2 ${rail ? 'flex-col' : ''}`}>
         {rail && <ThemeButton />}
-        <span className="flex size-8 items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
+        <span className="flex size-[35px] items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
         {rail && <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 items-center justify-center text-sub"><KeyRound size={16} /></button>}
         {rail && <button onClick={logout} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center text-sub"><LogOut size={16} /></button>}
         {!rail && (
@@ -152,7 +152,7 @@ export function AppShell() {
         <header className="flex h-16 items-center border-b border-line px-4">
           <div className="flex items-center gap-2">
             <button className="flex min-h-11 min-w-11 items-center justify-center md:hidden" aria-label="เปิดเมนู" onClick={() => setOpen(true)}><Menu /></button>
-            <span className="text-lg">{title}</span>
+            <span className="text-xl font-light">{title}</span>
           </div>
           <div className="ml-auto hidden md:block"><ThemeButton /></div>
         </header>
