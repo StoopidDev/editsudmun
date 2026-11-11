@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { Play } from 'lucide-react'
+import { FileText, Play } from 'lucide-react'
 import * as api from '@/api/index'
 import { useAct, useClip, useMe, useMedia } from '@/api/queries'
 import { BackButton } from '@/components/BackButton'
@@ -24,8 +24,8 @@ export function ClipDetail() {
 function NoteBox({ note, className = '' }: { note: string; className?: string }) {
   return (
     <section className={`rounded-card border border-note-line bg-note p-3 ${className}`}>
-      <h2 className="mb-1 text-sm font-bold">หมายเหตุ</h2>
-      <ul className="list-disc pl-4 text-sm">{note.split('\n').filter(Boolean).map((line, i) => <li key={i}>{line}</li>)}</ul>
+      <h2 className="mb-1 flex items-center gap-1.5 text-sm font-bold"><FileText size={14} aria-hidden />หมายเหตุ</h2>
+      <ul className="list-disc pl-4 text-base leading-[26px]">{note.split('\n').filter(Boolean).map((line, i) => <li key={i}>{line}</li>)}</ul>
     </section>
   )
 }
@@ -80,10 +80,10 @@ function CreatorDetail({ id }: { id: string }) {
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-3 max-lg:contents">
-          <div className="flex items-center gap-2 text-sm text-sub">
+          <div className="flex items-center gap-2 text-sm font-light text-sub">
             <CategoryBadge categoryId={clip.category_id} />{fullDate(fromIso(clip.date))}<StatusChip status={clip.status} />
           </div>
-          <h1 className="text-3xl font-bold" style={{ viewTransitionName: `title-${id}` }}>{clip.title}</h1>
+          <h1 className="text-[32px] leading-[1.3] font-bold" style={{ viewTransitionName: `title-${id}` }}>{clip.title}</h1>
           {clip.status === 'revision' && (
             <div role="status" className="rounded-card border border-warn-line bg-warn-bg p-3 text-sm">
               <b>เจ้าของขอให้แก้ไข</b><p>{clip.revision_note}</p>
@@ -91,7 +91,7 @@ function CreatorDetail({ id }: { id: string }) {
           )}
           <section className="rounded-card border border-line p-4 max-lg:order-2">
             <h2 className="mb-2 text-sm font-bold text-sub">สคริปต์</h2>
-            <p className="text-lg leading-loose whitespace-pre-wrap">{clip.script}</p>
+            <p className="text-xl leading-[34px] whitespace-pre-wrap">{clip.script}</p>
           </section>
         </div>
 
@@ -109,7 +109,7 @@ function CreatorDetail({ id }: { id: string }) {
               ))}
             </div>
             {minDays !== null && (
-              <p className="text-xs text-sub">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {minDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>
+              <p className="text-xs font-light text-sub">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {minDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>
             )}
           </section>
 
@@ -157,7 +157,7 @@ function CreatorDetail({ id }: { id: string }) {
                 </div>
               )
             })}
-            <p className="text-xs text-sub">
+            <p className="text-xs font-light text-sub">
               {anyWithdraw ? 'ถอนไฟล์ได้ภายใน 10 นาทีหลังส่ง หลังจากนั้นล็อก และแก้ไม่ได้ ต้องส่งเป็นรอบใหม่' : 'ส่งแล้วลบหรือแก้ไม่ได้ ถ้าต้องแก้ให้ส่งเป็นรอบใหม่'}
             </p>
           </section>
