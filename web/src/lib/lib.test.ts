@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
-import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, roundCount, uploadProblem, withdrawMinutesLeft, withRounds } from './media'
+import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, progressLabel, roundCount, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
 import { contrast, nextColor, readableOn } from './color'
@@ -181,7 +181,18 @@ describe('draft', () => {
   })
 })
 
-describe('uploader', () => {
+describe('upload helpers', () => {
+  it('labels upload progress', () => {
+    expect(progressLabel(1.2 * 1024 ** 3, 1.8 * 1024 ** 3)).toBe('1.2 GB / 1.8 GB · 66%')
+  })
+  it('picks the row state: failed beats paused beats retrying', () => {
+    const base = { error: null, paused: false, retries: 0, offline: false }
+    expect(uploadStatus(base)).toBe('uploading')
+    expect(uploadStatus({ ...base, offline: true })).toBe('retrying')
+    expect(uploadStatus({ ...base, retries: 2 })).toBe('retrying')
+    expect(uploadStatus({ ...base, paused: true, retries: 2 })).toBe('paused')
+    expect(uploadStatus({ ...base, error: 'x', retries: 2 })).toBe('failed')
+  })
   it('uses the same multipart threshold and part size as the server', () => {
     // npm test runs in web/, so the server file is one level up (read as text: it imports Deno).
     const src = readFileSync(resolve(process.cwd(), '../supabase/functions/_shared/media.ts'), 'utf8')

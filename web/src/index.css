@@ -219,3 +219,5 @@ body {
 @media (max-width: 767px) {
   [data-sonner-toaster][data-y-position="bottom"] { bottom: 80px !important; }
 }
+
+@keyframes row-out { to { opacity: 0; } }

@@ -54,6 +54,12 @@ export const formatSize = (bytes: number) => {
 // R2 lifecycle counts from upload, so a brief planned far ahead can lose its files first.
 export const expiresBeforeClip = (expires_at: string, clipDate: string) => expires_at.slice(0, 10) < clipDate
 
+export const progressLabel = (sent: number, size: number) =>
+  `${formatSize(sent)} / ${formatSize(size)} · ${size ? Math.floor((sent / size) * 100) : 0}%`
+
+// Which row style an in-flight upload gets. Offline or any automatic retry reads as retrying (orange).
+export const uploadStatus = (r: { error: string | null; paused: boolean; retries: number; offline: boolean }) =>
+  r.error ? 'failed' : r.paused ? 'paused' : r.offline || r.retries > 0 ? 'retrying' : 'uploading'
 
 // Uploader part rules. Must equal MULTIPART_THRESHOLD and PART_BYTES in supabase/functions/_shared/media.ts,
 // or the server's part_count will not match the parts Uppy sends (lib.test.ts checks this).
