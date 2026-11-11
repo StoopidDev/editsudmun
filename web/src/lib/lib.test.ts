@@ -1,6 +1,9 @@
+/// <reference types="node" />
+import { resolve } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
-import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, roundCount, uploadProblem, withdrawMinutesLeft, withRounds } from './media'
+import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, roundCount, uploadProblem, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
 import { contrast, nextColor, readableOn } from './color'
@@ -175,5 +178,15 @@ describe('draft', () => {
   it('treats a form with only a date as blank', () => {
     expect(isBlank({ ...form, title: '' })).toBe(true)
     expect(isBlank(form)).toBe(false)
+  })
+})
+
+describe('uploader', () => {
+  it('uses the same multipart threshold and part size as the server', () => {
+    // npm test runs in web/, so the server file is one level up (read as text: it imports Deno).
+    const src = readFileSync(resolve(process.cwd(), '../supabase/functions/_shared/media.ts'), 'utf8')
+    const mb = (name: string) => Number(src.match(new RegExp(`const\\s+${name}\\s*=\\s*(\\d+)\\s*\\*\\s*1024\\s*\\*\\*\\s*2`))?.[1])
+    expect(mb('MULTIPART_THRESHOLD') * 1024 ** 2).toBe(MULTIPART_AT)
+    expect(mb('PART_BYTES') * 1024 ** 2).toBe(PART_BYTES)
   })
 })
