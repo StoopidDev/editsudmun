@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type Query } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as api from './index'
 
@@ -17,12 +17,15 @@ export const useUsers = () => useQuery({ queryKey: ['users'], queryFn: api.listU
 export const useStorage = (enabled: boolean) =>
   useQuery({ queryKey: ['storage'], queryFn: api.storageUsedBytes, enabled })
 
+// Writes refetch everything except playback URLs: re-signing would restart a playing video.
+export const notViews = { predicate: (q: Query) => q.queryKey[0] !== 'view' }
+
 // shortcut: every write refetches everything; narrow the invalidation if a real backend makes this slow.
 export function useAct<A, R>(fn: (arg: A) => Promise<R>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => qc.invalidateQueries(),
+    onSuccess: () => qc.invalidateQueries(notViews),
     onError: (e: Error) => toast.error(e.message),
   })
 }
@@ -37,7 +40,7 @@ export function useDeleteClip(onDeleted?: () => void) {
       return false
     }
     onDeleted?.()
-    await qc.invalidateQueries()
+    await qc.invalidateQueries(notViews)
     toast('ลบคลิปแล้ว', {
       duration: 10_000,
       action: {
@@ -45,7 +48,7 @@ export function useDeleteClip(onDeleted?: () => void) {
         onClick: async () => {
           try {
             await api.restoreClip(id)
-            await qc.invalidateQueries()
+            await qc.invalidateQueries(notViews)
           } catch (e) {
             toast.error((e as Error).message)
           }

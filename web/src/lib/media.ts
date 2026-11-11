@@ -1,7 +1,7 @@
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import type { ClipMedia } from './types'
 
-const WITHDRAW_MS = 10 * 60 * 1000
+export const WITHDRAW_MS = 10 * 60 * 1000
 export const WARN_DAYS = 7
 
 // Mirrors supabase/functions/_shared/media.ts so the UI can refuse a file before uploading;
@@ -29,7 +29,7 @@ export const daysLeft = (expires_at: string, now = new Date()) =>
 // Mirrors the clip_media delete policy in supabase/migrations.
 export const withdrawMinutesLeft = (m: ClipMedia, now = new Date()) =>
   m.ready_at
-    ? Math.max(0, Math.ceil((parseISO(m.ready_at).getTime() + WITHDRAW_MS - now.getTime()) / 60000))
+    ? Math.min(WITHDRAW_MS / 60000, Math.max(0, Math.ceil((parseISO(m.ready_at).getTime() + WITHDRAW_MS - now.getTime()) / 60000)))
     : WITHDRAW_MS / 60000
 
 export const canWithdraw = (m: ClipMedia, userId: string, now = new Date()) =>
@@ -70,6 +70,10 @@ export const partNumbers = (size: number) => Array.from({ length: Math.max(1, Ma
 
 // Ready files only: the server marks a row ready after it checked the object, and only those have a playable URL.
 export const readyIds = (files: ClipMedia[]) => files.filter((f) => f.status === 'ready').map((f) => f.id)
+
+// Splits a list into runs of `size` (the API takes at most 100 ids per call).
+export const chunk = <T,>(list: T[], size: number): T[][] =>
+  Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size))
 
 // m:ss, or h:mm:ss from an hour up. Empty when the duration is unknown.
 export function formatDuration(seconds: number) {

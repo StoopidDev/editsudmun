@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
-import { canWithdraw, daysLeft, expiresBeforeClip, formatDuration, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
+import { canWithdraw, chunk, daysLeft, expiresBeforeClip, formatDuration, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
 import { contrast, nextColor, readableOn } from './color'
@@ -39,6 +39,16 @@ describe('dates', () => {
   })
 })
 
+describe('chunk', () => {
+  it('splits ids into runs of at most the size, keeping order', () => {
+    expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
+    expect(chunk(Array.from({ length: 250 }, (_, i) => i), 100).map((c) => c.length)).toEqual([100, 100, 50])
+  })
+  it('returns no runs for an empty list', () => {
+    expect(chunk([], 100)).toEqual([])
+  })
+})
+
 describe('media', () => {
   const now = new Date('2026-10-29T10:03:00.000Z')
   it('counts days left and never goes negative', () => {
@@ -52,6 +62,9 @@ describe('media', () => {
     expect(canWithdraw(media({}), 'u1', new Date('2026-10-29T10:10:00.000Z'))).toBe(false)
     expect(canWithdraw(media({ purpose: 'reference' }), 'u1', now)).toBe(false)
     expect(canWithdraw(media({ uploaded_by: null }), 'u1', now)).toBe(false)
+  })
+  it('caps the withdraw countdown at 10 minutes even if the upload time is in the future', () => {
+    expect(withdrawMinutesLeft(media({ ready_at: '2026-10-29T10:30:00.000Z' }), now)).toBe(10)
   })
   it('lets the uploader cancel a pending upload however long it took', () => {
     const pending = media({ status: 'pending', ready_at: null, created_at: '2026-10-29T08:00:00.000Z' })

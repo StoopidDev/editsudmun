@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ImageIcon, Play } from 'lucide-react'
 import { useCategories } from '@/api/queries'
 import { Button } from '@/components/ui/button'
 import { readableOn } from '@/lib/color'
@@ -33,14 +33,21 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
   const isVideo = file.kind === 'video'
   const early = expiresBeforeClip(file.expires_at, clipDate)
   const [loaded, setLoaded] = useState(false)
+  const [broken, setBroken] = useState(false) // e.g. HEIC in Chrome: no preview, show the name
   const [seconds, setSeconds] = useState<number | null>(null)
   const dur = seconds === null ? '' : formatDuration(seconds)
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <div className={`relative aspect-[103/68] overflow-hidden rounded-card ${isVideo ? 'bg-video' : 'bg-surface'}`}>
-        {url && !isVideo && (
-          <img src={url} alt="" loading="lazy" decoding="async" onLoad={() => setLoaded(true)}
+        {url && !isVideo && !broken && (
+          <img src={url} alt="" loading="lazy" decoding="async" onLoad={() => setLoaded(true)} onError={() => setBroken(true)}
             className={`absolute inset-0 size-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`} />
+        )}
+        {broken && (
+          <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-center text-xs text-sub">
+            <ImageIcon size={20} aria-hidden />
+            <span className="line-clamp-2 break-all">{file.file_name}</span>
+          </span>
         )}
         {url && isVideo && isPlayable(file.mime) && (
           // Metadata only: the first frame is the thumbnail and loadedmetadata gives the duration.
@@ -48,7 +55,7 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
             className="absolute inset-0 size-full object-cover" />
         )}
         {isVideo && <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-white"><span className="flex size-8 items-center justify-center rounded-full bg-black/40"><Play size={14} /></span></span>}
-        {(!url || (!isVideo && !loaded)) && <Skeleton className="absolute inset-0 rounded-none" />}
+        {(!url || (!isVideo && !loaded && !broken)) && <Skeleton className="absolute inset-0 rounded-none" />}
         {onOpen && (
           <button type="button" aria-label={`เปิด ${file.file_name}`} disabled={!url}
             onClick={(e) => onOpen(e.currentTarget)} className="hover-tint absolute inset-0 rounded-card focus-visible:ring-2 focus-visible:ring-brand" />

@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
 import * as api from '@/api/index'
-import { useMe } from '@/api/queries'
+import { notViews, useMe } from '@/api/queries'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,7 +16,7 @@ export function Login() {
   // Plain useMutation, not useAct: the error shows inline here, not as a toast.
   const act = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) => api.login(email, password),
-    onSuccess: () => qc.invalidateQueries(),
+    onSuccess: () => qc.invalidateQueries(notViews),
   })
 
   // Only same-app paths: a bare '//host' would be a protocol-relative URL.

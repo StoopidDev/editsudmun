@@ -4,6 +4,7 @@ import { th } from 'date-fns/locale'
 import { ArrowRight, Plus } from 'lucide-react'
 import { useAttention, useCategories, useClips, useExpiring, useMe, useRecent, useStorage } from '@/api/queries'
 import { CategoryBadge, Delayed, Skeleton, StatusChip } from '@/components/bits'
+import { DownloadAll } from '@/components/media'
 import { ATTENTION_LABEL } from '@/lib/attention'
 import { Button } from '@/components/ui/button'
 import { dayLabel, fromIso, fullDate, rangeLabel, shortDate, toIso, todayIso, weekDays } from '@/lib/dates'
@@ -60,6 +61,7 @@ export function Home() {
               {f.file_name} · {f.clip_title} · ลบใน {f.days} วัน
             </Link>
           ))}
+          <div className="self-start pt-1"><DownloadAll ids={dying.map((f) => f.id)} /></div>
         </section>
       )}
 

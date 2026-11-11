@@ -5,6 +5,7 @@ import { useAct, useClip, useMedia } from '@/api/queries'
 import { ConfirmDialog, Skeleton, StatusChip } from '@/components/bits'
 import { DownloadAll } from '@/components/media'
 import { downloadOne } from '@/lib/viewer'
+import { sentAt } from '@/lib/dates'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { daysLeft, formatSize, isPlayable, readyIds, withRounds } from '@/lib/media'
@@ -52,7 +53,7 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
       </h2>
       {rounds.length === 0 ? <p className="text-sm text-sub">ยังไม่มีไฟล์ส่งงาน</p> : (
         <>
-          <DownloadAll ids={readyIds(rounds)} />
+          <div className="self-start"><DownloadAll ids={readyIds(rounds)} /></div>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
             <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-card bg-video text-sm text-white">
               {!curUrl ? (
@@ -74,7 +75,7 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
                   <div className="min-w-0 flex-1">
                     <b className="block truncate">{m.file_name}</b>
                     <span className={`text-xs ${isPlayable(m.mime) ? 'text-sub' : 'text-danger'}`}>
-                      {isPlayable(m.mime) ? `${formatSize(m.size_bytes)} · ลบใน ${daysLeft(m.expires_at)} วัน` : `ProRes · ${formatSize(m.size_bytes)} · ลบใน ${daysLeft(m.expires_at)} วัน`}
+                      {isPlayable(m.mime) ? '' : 'ProRes · '}{formatSize(m.size_bytes)} · {sentAt(m.created_at)} · ลบใน {daysLeft(m.expires_at)} วัน
                     </span>
                   </div>
                   {isPlayable(m.mime)

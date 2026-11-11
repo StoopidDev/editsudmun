@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type DragEvent } from 'react'
+import { useEffect, useRef, useState, type Dispatch, type DragEvent, type SetStateAction } from 'react'
 import { ACCEPT, progressLabel, uploadProblem, uploadStatus } from '@/lib/media'
 import type { ClipMedia } from '@/lib/types'
-import { parkedCount, park, takeParked, useUploads, type UploadRow } from '@/lib/upload-state'
+import { useUploads, type UploadRow } from '@/lib/upload-state'
 
 const COPY = {
   reference: { title: 'ลากรูปหรือวิดีโอมาวาง หรือคลิกเพื่อเลือกไฟล์', hint: 'รูปภาพ และวิดีโอ MP4 / MOV ไม่เกิน 2 GB' },
@@ -18,18 +18,20 @@ function refusedCopy(problem: string, purpose: ClipMedia['purpose']) {
 
 type Refused = { key: number; name: string; message: string; tooBig: boolean }
 
-export function UploadZone({ clipId, purpose, ensureClipId }: {
+export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setParked }: {
   clipId: string
   purpose: ClipMedia['purpose']
   // Called when a file arrives before the clip is saved (add clip, D2); returns the new clip id.
   ensureClipId?: () => Promise<string | null>
+  // Files waiting for a new clip. The form owns them, so they go away with the unsaved form.
+  parked?: File[]
+  setParked?: Dispatch<SetStateAction<File[]>>
 }) {
   const { rows, add, pause, retry, remove } = useUploads(clipId, purpose)
   const [over, setOver] = useState(false)
   const [refused, setRefused] = useState<Refused[]>([])
   const [leaving, setLeaving] = useState<UploadRow[]>([])
   const [announce, setAnnounce] = useState('')
-  const [, bumpParked] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const seq = useRef(0)
   const scope = useRef('')
@@ -73,7 +75,7 @@ export function UploadZone({ clipId, purpose, ensureClipId }: {
     if (bad.length) { setRefused((r) => [...r, ...bad]); setAnnounce(bad[0].message) }
     if (!good.length) return
     const id = clipId || (await ensureClipId?.()) || ''
-    if (!id) { park(purpose, good); bumpParked((n) => n + 1); return }
+    if (!id) { setParked?.((p) => [...p, ...good]); return }
     addFiles(good, id)
   }
 
@@ -84,13 +86,6 @@ export function UploadZone({ clipId, purpose, ensureClipId }: {
       setAnnounce(failed[0].message)
     }
   }
-
-  // Files parked before the clip existed start as soon as it does.
-  useEffect(() => {
-    if (!clipId) return
-    const waiting = takeParked(purpose)
-    if (waiting.length) addFiles(waiting, clipId)
-  })
 
   const cancel = (id: string) => { cancelled.current.add(id); remove(id) }
 
@@ -141,7 +136,18 @@ export function UploadZone({ clipId, purpose, ensureClipId }: {
         </div>
       ))}
 
-      {!clipId && parkedCount(purpose) > 0 && <p className="text-xs text-warn-text">กรอกหัวข้อก่อนแนบไฟล์</p>}
+      {parked.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xs text-warn-text">กรอกหัวข้อก่อนแนบไฟล์ · ไฟล์จะเริ่มอัปเมื่อบันทึกคลิป</p>
+          {parked.map((f, i) => (
+            <div key={`${i}-${f.name}`} className="flex items-baseline justify-between gap-2 rounded-card border border-line bg-surface p-3">
+              <span className="truncate text-sm text-ink">{f.name}</span>
+              <button type="button" className="press shrink-0 text-xs text-sub hover-pointer:underline underline-offset-4"
+                onClick={() => setParked?.((p) => p.filter((_, j) => j !== i))}>ลบออก</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div aria-live="polite" className="sr-only">{announce}</div>
     </div>

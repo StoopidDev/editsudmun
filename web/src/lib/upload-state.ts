@@ -30,20 +30,7 @@ export function useUploads(clipId: string, purpose: ClipMedia['purpose']) {
     })), [files, clipId, purpose, offline])
 
   // Callers check uploadProblem first. Returns the files Uppy refused (e.g. a restriction), with why.
-  const add = (list: File[], targetClipId = clipId) => {
-    const refused: { name: string; message: string }[] = []
-    for (const file of list) {
-      try {
-        uppy.addFile({
-          id: `${targetClipId}:${purpose}:${crypto.randomUUID()}`,
-          name: file.name, type: file.type, data: file, meta: { clipId: targetClipId, purpose },
-        })
-      } catch (e) {
-        refused.push({ name: file.name, message: e instanceof Error ? e.message : 'เพิ่มไฟล์ไม่สำเร็จ' })
-      }
-    }
-    return refused
-  }
+  const add = (list: File[], targetClipId = clipId) => enqueue(uppy, list, targetClipId, purpose)
   return {
     rows,
     add,
@@ -53,8 +40,18 @@ export function useUploads(clipId: string, purpose: ClipMedia['purpose']) {
   }
 }
 
-// Files dropped before a new clip is saved (D2). They wait here across the remount that follows the first save.
-const parked: Partial<Record<ClipMedia['purpose'], File[]>> = {}
-export const park = (purpose: ClipMedia['purpose'], files: File[]) => { parked[purpose] = [...(parked[purpose] ?? []), ...files] }
-export const parkedCount = (purpose: ClipMedia['purpose']) => parked[purpose]?.length ?? 0
-export const takeParked = (purpose: ClipMedia['purpose']) => { const files = parked[purpose] ?? []; delete parked[purpose]; return files }
+// Adds files to Uppy for one clip. Returns the files Uppy refused, with why.
+export function enqueue(uppy: Uploader, list: File[], clipId: string, purpose: ClipMedia['purpose']) {
+  const refused: { name: string; message: string }[] = []
+  for (const file of list) {
+    try {
+      uppy.addFile({
+        id: `${clipId}:${purpose}:${crypto.randomUUID()}`,
+        name: file.name, type: file.type, data: file, meta: { clipId, purpose },
+      })
+    } catch (e) {
+      refused.push({ name: file.name, message: e instanceof Error ? e.message : 'เพิ่มไฟล์ไม่สำเร็จ' })
+    }
+  }
+  return refused
+}

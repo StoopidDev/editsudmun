@@ -1,16 +1,19 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import * as api from '@/api/index'
 import type { ClipMedia } from '@/lib/types'
+import { chunk } from '@/lib/media'
 
 const EMPTY: Record<string, string> = {}
 
-// Playback or download URLs for ready files of one clip, in one call. Signed URLs last 60 min, so cache 50.
-export function useViewUrls(ids: string[], download = false) {
+// Playback URLs for ready files of one clip, in one call. Signed URLs last 60 min, so cache 50.
+// Keyed by sorted ids so the same files give the same URLs; keepPreviousData keeps a playing <video> on screen while a new set loads.
+export function useViewUrls(ids: string[]) {
   const key = [...ids].sort()
   const q = useQuery({
-    queryKey: ['view', download, key],
-    queryFn: () => api.viewUrls(key, { download }),
+    queryKey: ['view', key],
+    queryFn: () => api.viewUrls(key),
     enabled: key.length > 0,
+    placeholderData: keepPreviousData,
     staleTime: 50 * 60_000,
     gcTime: 55 * 60_000,
   })
@@ -34,11 +37,13 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 // Browsers block a burst of downloads, so each file starts 400 ms after the previous one.
 export async function downloadAll(ids: string[]) {
-  const urls = await api.viewUrls(ids, { download: true })
+  const urls: Record<string, string> = {}
+  for (const part of chunk(ids, 100)) Object.assign(urls, await api.viewUrls(part, { download: true }))
+  const ready = ids.filter((id) => urls[id])
+  if (!ready.length) throw new Error('ไม่มีไฟล์ให้ดาวน์โหลด')
   let started = 0
-  for (const id of ids) {
+  for (const id of ready) {
     const url = urls[id]
-    if (!url) continue
     if (started++) await wait(400)
     const a = document.createElement('a')
     a.href = url

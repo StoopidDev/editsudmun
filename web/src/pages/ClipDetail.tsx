@@ -6,12 +6,12 @@ import { useAct, useClip, useMe, useMedia } from '@/api/queries'
 import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
 import { CategoryBadge, Delayed, FileTile, Skeleton, StatusChip } from '@/components/bits'
-import { useLightbox } from '@/components/media'
+import { useLightbox } from '@/components/useLightbox'
 import { useViewUrls, viewables } from '@/lib/viewer'
 import { UploadZone } from '@/components/UploadZone'
 import { Button } from '@/components/ui/button'
 import { fromIso, fullDate, sentAt } from '@/lib/dates'
-import { canWithdraw, daysLeft, formatSize, readyIds, roundCount, withRounds, withdrawMinutesLeft } from '@/lib/media'
+import { canWithdraw, daysLeft, formatSize, readyIds, roundCount, WITHDRAW_MS, withRounds, withdrawMinutesLeft } from '@/lib/media'
 import { ClipForm } from './ClipForm'
 
 export function ClipDetail() {
@@ -43,6 +43,16 @@ function CreatorDetail({ id }: { id: string }) {
     const t = setInterval(() => setNow(new Date()), 30_000)
     return () => clearInterval(t)
   }, [])
+  // Also wake at the exact moment the next withdraw window closes, so the button hides on time.
+  const nextClose = Math.min(...media
+    .filter((m) => m.purpose === 'submission' && m.uploaded_by === me?.id)
+    .flatMap((m) => (m.ready_at ? [Date.parse(m.ready_at) + WITHDRAW_MS] : []))
+    .filter((t) => t > now.getTime()))
+  useEffect(() => {
+    if (!Number.isFinite(nextClose)) return
+    const t = setTimeout(() => setNow(new Date()), nextClose - Date.now() + 100)
+    return () => clearTimeout(t)
+  }, [nextClose])
 
   if (isPending) return (
     <Delayed>

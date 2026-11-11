@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Copy, Trash2 } from 'lucide-react'
 import * as api from '@/api/index'
@@ -7,8 +7,10 @@ import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
 import { CopyDialog } from '@/components/CopyDialog'
 import { ConfirmDialog, Delayed, FileTile, Skeleton } from '@/components/bits'
-import { DownloadAll, useLightbox } from '@/components/media'
+import { DownloadAll } from '@/components/media'
+import { useLightbox } from '@/components/useLightbox'
 import { UploadZone } from '@/components/UploadZone'
+import { Ctx, enqueue } from '@/lib/upload-state'
 import { useViewUrls, viewables } from '@/lib/viewer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -56,6 +58,11 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   })
   const [copying, setCopying] = useState(false)
   const [saving, setSaving] = useState<'save' | 'more' | null>(null)
+  // Files dropped before a new clip exists; they belong to this unsaved form only.
+  const [parked, setParked] = useState<File[]>([])
+  const uppy = useContext(Ctx)
+  // The create in flight, so a drop and a save click make one clip.
+  const pending = useRef<Promise<string | null> | null>(null)
   const [deletingFile, setDeletingFile] = useState<ClipMedia | null>(null)
   const lastFile = useLast(deletingFile)
   const del = useDeleteClip(() => nav(`/calendar?date=${form.date}`))
@@ -74,33 +81,52 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     else writeDraft(form, clipId)
   }, [form, pristine, clipId, draft])
 
-  // A new clip is created by its first file (D2). Without a title the files stay parked until the title is filled.
-  const ensureClip = async () => {
-    if (clipId) return clipId
+  // A new clip is created by its first file (D2) or its first save. Without a title nothing is created.
+  const createNew = async (): Promise<string | null> => {
     if (!isIsoDate(form.date)) { toast.error('วันที่ไม่ถูกต้อง'); return null }
     if (!form.title.trim()) { setTitleError(true); document.getElementById('title')?.focus(); return null }
     const { date, script, note } = form
     try {
       const c = await save.mutateAsync({ date, script, note, category_id: categoryId, title: form.title.trim() })
       clearDraft(undefined)
+      if (uppy && parked.length) {
+        const refused = enqueue(uppy, parked, c.id, 'reference')
+        if (refused.length) toast.error(refused[0].message)
+      }
+      setParked([])
       nav(`/clips/${c.id}`, { replace: true })
       return c.id
     } catch {
-      return null // useAct already showed the error; the files stay parked
+      setParked([]) // useAct already showed the error
+      return null
     }
+  }
+
+  const ensureClip = (): Promise<string | null> => {
+    if (clipId) return Promise.resolve(clipId)
+    pending.current ??= createNew().finally(() => { pending.current = null })
+    return pending.current
   }
 
   const submit = (addAnother = false) => {
     if (!isIsoDate(form.date)) { toast.error('วันที่ไม่ถูกต้อง'); return }
     if (!form.title.trim()) return setTitleError(true)
-    const { date, script, note } = form
     setSaving(addAnother ? 'more' : 'save')
+    if (!clipId) {
+      void ensureClip()
+        .then((id) => {
+          if (!id) return
+          toast.success('บันทึกแล้ว')
+          if (addAnother) nav(`/clips/new?date=${form.date}&cat=${categoryId}`, { replace: true })
+        })
+        .finally(() => setSaving(null))
+      return
+    }
+    const { date, script, note } = form
     save.mutate({ date, script, note, category_id: categoryId, title: form.title.trim() }, {
-      onSuccess: (c) => {
+      onSuccess: () => {
         clearDraft(clipId)
         toast.success('บันทึกแล้ว')
-        if (addAnother) nav(`/clips/new?date=${date}&cat=${categoryId}`, { replace: true })
-        else if (!clipId) nav(`/clips/${c.id}`, { replace: true })
       },
       onSettled: () => setSaving(null),
     })
@@ -183,7 +209,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
                   onOpen={urls[f.id] ? (el) => lb.openAt(refViews, refViews.findIndex((v) => v.id === f.id), el) : undefined} />
               ))}
             </div>
-            <UploadZone clipId={clipId ?? ''} purpose="reference" ensureClipId={ensureClip} />
+            <UploadZone clipId={clipId ?? ''} purpose="reference" ensureClipId={ensureClip} parked={parked} setParked={setParked} />
             <p className="text-xs text-sub">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {refDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>
           </section>
           {clipId && <Button variant="outline" className="self-start border-danger text-danger max-md:min-h-11" onClick={() => void del(clipId)}><Trash2 />ลบคลิป</Button>}
