@@ -8,11 +8,19 @@ type Body =
   | { action: 'reset_password'; id: string }
   | { action: 'delete'; id: string }
 
-// No look-alike characters, since the owner reads it out to the creator.
-const ALPHABET = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-function tempPassword(length = 10) {
-  const bytes = crypto.getRandomValues(new Uint8Array(length))
-  return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join('')
+// No look-alike characters, since the owner reads it out to the creator. Always 12 characters
+// with lower, upper and digit, so it passes the Auth password policy (min 12, letters + digits).
+const SETS = ['abcdefghjkmnpqrstuvwxyz', 'ABCDEFGHJKLMNPQRSTUVWXYZ', '23456789']
+const ALPHABET = SETS.join('')
+const pick = (chars: string) => chars[crypto.getRandomValues(new Uint32Array(1))[0] % chars.length]
+function tempPassword(length = 12) {
+  const out = [...SETS.map(pick), ...Array.from({ length: length - SETS.length }, () => pick(ALPHABET))]
+  // Fisher-Yates so the guaranteed characters are not always first.
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1)
+    ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out.join('')
 }
 
 Deno.serve(async (req) => {

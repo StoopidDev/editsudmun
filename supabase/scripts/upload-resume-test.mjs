@@ -19,7 +19,7 @@ const fail = (msg) => { throw new Error(msg) }
 
 async function user(role) {
   const email = `resume-${role}-${tag}@example.com`
-  const password = `pw-${tag}-123456`
+  const password = `Pw-${tag}-123456`
   const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true, app_metadata: { role } })
   if (error) throw error
   users.push(data.user.id)

@@ -1,0 +1,12 @@
+# Security headers for Cloudflare Workers static assets.
+# The Supabase session lives in localStorage (static SPA, no server to own an httpOnly cookie), so
+# the CSP limits where scripts can come from and where data can be sent if an XSS ever lands.
+# connect/img/media: Supabase API and the R2 S3 endpoint (presigned PUT and GET URLs).
+# style 'unsafe-inline': sonner injects its stylesheet at runtime.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.r2.cloudflarestorage.com; media-src 'self' blob: https://*.r2.cloudflarestorage.com; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.r2.cloudflarestorage.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000

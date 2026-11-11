@@ -20,7 +20,7 @@ let categoryId: string
 
 async function makeUser(role: 'owner' | 'creator') {
   const email = `test-${role}-${tag}@example.com`
-  const password = `pw-${tag}-${role}-123`
+  const password = `Pw-${tag}-${role}-1234`
   const { data, error } = await admin.auth.admin.createUser({
     email, password, email_confirm: true, app_metadata: { role }, user_metadata: { display_name: `ทดสอบ ${role}` },
   })
@@ -290,6 +290,8 @@ describe('manage-users function', () => {
     const { user, tempPassword } = created.data
     users.push(user.id)
     expect(user).toMatchObject({ role: 'creator', email, display_name: 'ครีเอเตอร์ใหม่' })
+    // Temp passwords must pass the Auth policy (min 12, lower + upper + digit).
+    expect(tempPassword).toMatch(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{12,}$/)
 
     const dup = await invoke(owner, { action: 'create', display_name: 'ซ้ำ', email })
     expect(dup.error).not.toBeNull()
