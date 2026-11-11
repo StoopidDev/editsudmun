@@ -4,7 +4,8 @@ import { th } from 'date-fns/locale'
 import { ArrowRight, Plus } from 'lucide-react'
 import { useAttention, useCategories, useClips, useExpiring, useMe, useRecent, useStorage } from '@/api/queries'
 import { shareTitle } from '@/lib/viewTransition'
-import { CategoryBadge, Delayed, Skeleton, StatusChip } from '@/components/bits'
+import { CategoryBadge, Delayed, Skeleton } from '@/components/bits'
+import { ClipCard } from '@/components/ClipCard'
 import { DownloadAll } from '@/components/media'
 import { ATTENTION_LABEL } from '@/lib/attention'
 import { Button } from '@/components/ui/button'
@@ -47,6 +48,7 @@ export function Home() {
                   <span className="font-bold text-warn-text">{ATTENTION_LABEL[c.attention]} · {shortDate(fromIso(c.date))}</span>
                 </div>
                 <b data-title className="text-sm">{c.title}</b>
+                {c.attention === 'review' && <span className="text-xs text-sub">ครีเอเตอร์ส่งงานแล้ว {c.round} รอบ</span>}
                 {c.attention === 'revision' && <p className="line-clamp-2 text-xs">{c.revision_note}</p>}
               </Link>
             ))}
@@ -74,14 +76,7 @@ export function Home() {
         {week.isPending ? (<Delayed><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /></div></Delayed>) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {todays.map((c, i) => (
-              <Link viewTransition key={c.id} to={`/clips/${c.id}`} onClick={(e) => shareTitle(e, c.id)} className="press hover-tint hover-pointer:border-ink/40 flex flex-col gap-1 rounded-card border border-line p-3">
-                <div className="flex items-center justify-between gap-1 text-xs text-sub">
-                  <span className="flex flex-wrap items-center gap-1"><CategoryBadge categoryId={c.category_id} /><StatusChip status={c.status} /></span>
-                  คลิป {i + 1} จาก {todays.length}
-                </div>
-                <b data-title>{c.title}</b>
-                <p className="line-clamp-2 text-xs text-sub">{c.script}</p>
-              </Link>
+              <ClipCard key={c.id} clip={c} variant="today" index={i + 1} total={todays.length} />
             ))}
             {todays.length === 0 && !owner && !week.isError && <p className="text-sm text-sub">วันนี้ไม่มีคลิป</p>}
             {owner && (
