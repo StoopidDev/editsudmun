@@ -11,7 +11,7 @@
   --c-grid: #d9d9d9; --c-today: #eaf4ff; --c-note: #fff4d6; --c-note-line: #ffcc00;
   --c-brand: #0066cc; --c-brand-text: #0066cc; --c-danger: #d70015; --c-success: #1a7f3c; --c-success-text: #1a7f3c;
   --c-warn-bg: #fff0e0; --c-warn-line: #ffb04d; --c-warn-text: #9a4f00; /* Figma #b35c00 is 4.2:1 on warn-bg; darkened to pass 4.5:1 */ --c-ok-bg: #e6f8ec;
-  --c-chip: #eeeeee; --c-video: #1e1e1e; --c-avatar: #2c2c2c;
+  --c-chip: #eeeeee; --c-video: #1e1e1e; --c-avatar: #2c2c2c; --c-toast: #ffffff;
 
   --border: var(--c-grid);
   --accent: oklch(0.97 0 0);
@@ -82,7 +82,7 @@
   --c-grid: #3a3a3c; --c-today: #12304d; --c-note: #3a3112; --c-note-line: #ffcc00;
   --c-brand: #0088ff; --c-brand-text: #4da3ff; --c-danger: #ff383c; --c-success: #1a7f3c; --c-success-text: #34c759;
   --c-warn-bg: #3a2810; --c-warn-line: #ffb04d; --c-warn-text: #ffb04d; --c-ok-bg: #12301c;
-  --c-chip: #3a3a3c; --c-video: #0e0e0f; --c-avatar: #3a3a3c;
+  --c-chip: #3a3a3c; --c-video: #0e0e0f; --c-avatar: #3a3a3c; --c-toast: #3a3a3c;
   color-scheme: dark;
 
   --background: var(--c-bg);
@@ -143,7 +143,7 @@
   --color-brand-text: var(--c-brand-text); --color-danger: var(--c-danger); --color-success: var(--c-success);
   --color-success-text: var(--c-success-text); --color-warn-bg: var(--c-warn-bg); --color-warn-line: var(--c-warn-line);
   --color-warn-text: var(--c-warn-text); --color-ok-bg: var(--c-ok-bg); --color-chip: var(--c-chip);
-  --color-video: var(--c-video); --color-avatar: var(--c-avatar);
+  --color-video: var(--c-video); --color-avatar: var(--c-avatar); --color-toast: var(--c-toast);
   --radius-card: 10px;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);

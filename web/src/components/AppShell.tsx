@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Calendar, Home, KeyRound, LogOut, Menu, PanelLeft, Search, Tag, User, Users } from 'lucide-react'
+import { Calendar, Home, KeyRound, LogOut, Menu, Moon, PanelLeft, Search, Sun, Tag, User, Users } from 'lucide-react'
 import * as api from '@/api/index'
 import { useMe } from '@/api/queries'
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { toggleTheme, useTheme } from '@/lib/theme'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 
 const NAV = [
@@ -25,6 +26,19 @@ const TITLES: [string, string][] = [
   ['/calendar', 'ปฏิทิน'], ['/clips/new', 'เพิ่มคลิป'], ['/clips', 'รายละเอียดคลิป'],
   ['/categories', 'ประเภทคลิป'], ['/users', 'ผู้ใช้งาน'], ['/search', 'ค้นหา'],
 ]
+
+// Header, rail and menu sheet share one toggle: the icon shows the theme it switches to.
+function ThemeButton({ className = '', label }: { className?: string; label?: boolean }) {
+  const dark = useTheme()
+  const Icon = dark ? Sun : Moon
+  const name = dark ? 'โหมดสว่าง' : 'โหมดมืด'
+  return (
+    <button type="button" onClick={toggleTheme} aria-label={name} title={name}
+      className={`press hover-tint flex h-8 min-w-8 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
+      <Icon size={18} />{label && <span className="text-sm font-light">{name}</span>}
+    </button>
+  )
+}
 
 const COLLAPSE_KEY = 'sidebar-collapsed'
 // Storage can be blocked (private mode): the sidebar then starts expanded and the choice lasts one visit.
@@ -90,7 +104,9 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
           </NavLink>
         ))}
       </nav>
+      {onNavigate && <ThemeButton label className="w-full justify-start" />}
       <div className={`mt-auto flex items-center gap-2 px-2 ${rail ? 'flex-col' : ''}`}>
+        {rail && <ThemeButton />}
         <span className="flex size-8 items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
         {rail && <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 items-center justify-center text-sub"><KeyRound size={16} /></button>}
         {rail && <button onClick={logout} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center text-sub"><LogOut size={16} /></button>}
@@ -138,6 +154,7 @@ export function AppShell() {
             <button className="flex min-h-11 min-w-11 items-center justify-center md:hidden" aria-label="เปิดเมนู" onClick={() => setOpen(true)}><Menu /></button>
             <span className="text-lg">{title}</span>
           </div>
+          <div className="ml-auto hidden md:block"><ThemeButton /></div>
         </header>
         <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6"><Outlet /></main>
       </div>
