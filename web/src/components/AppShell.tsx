@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Calendar, Home, KeyRound, LogOut, Menu, Search, Tag, User, Users } from 'lucide-react'
+import { Calendar, Home, KeyRound, LogOut, Menu, PanelLeft, Search, Tag, User, Users } from 'lucide-react'
 import * as api from '@/api/index'
 import { useMe } from '@/api/queries'
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { useMedia } from '@/lib/useMedia'
 
 const NAV = [
   { to: '/', label: 'หน้าแรก', icon: Home, owner: false },
@@ -25,7 +26,13 @@ const TITLES: [string, string][] = [
   ['/categories', 'ประเภทคลิป'], ['/users', 'ผู้ใช้งาน'], ['/search', 'ค้นหา'],
 ]
 
-function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void }) {
+const COLLAPSE_KEY = 'sidebar-collapsed'
+// Storage can be blocked (private mode): the sidebar then starts expanded and the choice lasts one visit.
+function readCollapsed() {
+  try { return localStorage.getItem(COLLAPSE_KEY) === '1' } catch { return false }
+}
+
+function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: () => void; onToggle?: () => void }) {
   const { data: me } = useMe()
   const qc = useQueryClient()
   const nav = useNavigate()
@@ -59,7 +66,13 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
 
   return (
     <div className="flex h-full flex-col gap-4 bg-surface p-3">
-      {!rail && <Link viewTransition to="/" className="px-2 py-2 text-lg">Channel's Tool</Link>}
+      <div className={`flex items-center ${rail ? 'flex-col' : 'justify-between'}`}>
+        {!rail && <Link viewTransition to="/" className="px-2 py-2 text-lg">Channel's Tool</Link>}
+        {onToggle && (
+          <button type="button" onClick={onToggle} aria-label={rail ? 'แสดงเมนู' : 'ซ่อนเมนู'} aria-expanded={!rail}
+            className="hover-tint hidden size-8 items-center justify-center rounded-card text-sub lg:flex"><PanelLeft size={18} /></button>
+        )}
+      </div>
       {rail ? (
         <Link viewTransition to="/search" aria-label="ค้นหา" className="flex justify-center p-2"><Search size={18} /></Link>
       ) : (
@@ -98,11 +111,21 @@ function Sidebar({ rail, onNavigate }: { rail?: boolean; onNavigate?: () => void
 export function AppShell() {
   const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
+  // From lg the full sidebar is the default; collapsing it shows the 64 px rail. Below lg the rail is always shown.
+  const wide = useMedia('(min-width: 1024px)')
+  const [collapsed, setCollapsed] = useState(readCollapsed)
+  const rail = !wide || collapsed
+  const toggle = () => {
+    const next = !collapsed
+    setCollapsed(next)
+    try { localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0') } catch { /* blocked storage: keep the state for this visit */ }
+  }
   const title = pathname === '/' ? 'หน้าแรก' : TITLES.find(([p]) => pathname.startsWith(p))?.[1] ?? 'ไม่พบหน้า'
   return (
     <div className="flex min-h-dvh">
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 lg:block"><Sidebar /></aside>
-      <aside className="sticky top-0 hidden h-dvh w-16 shrink-0 md:block lg:hidden"><Sidebar rail /></aside>
+      <aside className={`sticky top-0 hidden h-dvh shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-(--ease-out-quint) md:block ${rail ? 'w-16' : 'w-60'}`}>
+        <Sidebar rail={rail} onToggle={toggle} />
+      </aside>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-72 p-0">
           <SheetTitle className="sr-only">เมนู</SheetTitle>
