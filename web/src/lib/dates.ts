@@ -20,3 +20,4 @@ export const rangeLabel = (d: Date) => {
   const [a, b] = [weekStart(d), addDays(weekStart(d), 6)]
   return `${shortDate(a)} – ${shortDate(b)} ${format(b, 'yyyy')}`
 }
+export const sentAt = (iso: string) => format(parseISO(iso), 'd MMM HH:mm', { locale: th })

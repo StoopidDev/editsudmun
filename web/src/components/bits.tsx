@@ -1,11 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { ChevronLeft, ChevronRight, Image as ImageIcon, Play, Upload } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Play, Upload } from 'lucide-react'
 import { useCategories } from '@/api/queries'
 import { Button } from '@/components/ui/button'
 import { readableOn } from '@/lib/color'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { dayLabel, fromIso, toIso, todayIso, weekDays } from '@/lib/dates'
-import { daysLeft, expiresBeforeClip } from '@/lib/media'
+import { daysLeft, expiresBeforeClip, formatDuration, isPlayable } from '@/lib/media'
 import { STATUS } from '@/lib/status'
 import type { ClipMedia, ClipStatus } from '@/lib/types'
 import { addDays } from 'date-fns'
@@ -26,19 +26,41 @@ export function StatusChip({ status }: { status: ClipStatus }) {
   return <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${s.className}`}>{s.label}</span>
 }
 
-export function FileTile({ file, clipDate, onDelete }: { file: ClipMedia; clipDate: string; onDelete?: () => void }) {
+export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
+  file: ClipMedia; clipDate: string; url?: string
+  onOpen?: (el: HTMLElement) => void; onDelete?: () => void
+}) {
   const isVideo = file.kind === 'video'
   const early = expiresBeforeClip(file.expires_at, clipDate)
+  const [loaded, setLoaded] = useState(false)
+  const [seconds, setSeconds] = useState<number | null>(null)
+  const dur = seconds === null ? '' : formatDuration(seconds)
   return (
-    <div className={`relative flex h-20 flex-col items-center justify-center gap-1 rounded-card px-2 hover-pointer:brightness-95 ${isVideo ? 'bg-video text-white' : 'bg-surface text-sub'}`}>
-      {isVideo ? <Play size={18} /> : <ImageIcon size={18} />}
-      <span className="w-full truncate text-center text-xs">{file.file_name}</span>
-      <span className={`text-xs ${early ? `font-bold ${isVideo ? 'text-warn-line' : 'text-danger'}` : ''}`}>
+    <div className="flex min-w-0 flex-col gap-1">
+      <div className={`relative aspect-[103/68] overflow-hidden rounded-card ${isVideo ? 'bg-video' : 'bg-surface'}`}>
+        {url && !isVideo && (
+          <img src={url} alt="" loading="lazy" decoding="async" onLoad={() => setLoaded(true)}
+            className={`absolute inset-0 size-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`} />
+        )}
+        {url && isVideo && isPlayable(file.mime) && (
+          // Metadata only: the first frame is the thumbnail and loadedmetadata gives the duration.
+          <video src={url} preload="metadata" muted playsInline onLoadedMetadata={(e) => setSeconds(e.currentTarget.duration)}
+            className="absolute inset-0 size-full object-cover" />
+        )}
+        {isVideo && <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-white"><span className="flex size-8 items-center justify-center rounded-full bg-black/40"><Play size={14} /></span></span>}
+        {(!url || (!isVideo && !loaded)) && <Skeleton className="absolute inset-0 rounded-none" />}
+        {onOpen && (
+          <button type="button" aria-label={`เปิด ${file.file_name}`} disabled={!url}
+            onClick={(e) => onOpen(e.currentTarget)} className="hover-tint absolute inset-0 rounded-card focus-visible:ring-2 focus-visible:ring-brand" />
+        )}
+        {onDelete && (
+          <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 z-10 size-5 rounded-full bg-avatar text-xs text-white opacity-70 transition-opacity hover-pointer:opacity-100 before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
+        )}
+      </div>
+      <span className="block truncate text-xs">{file.file_name}{dur && ` · ${dur}`}</span>
+      <span className={`text-xs ${early ? `font-bold ${isVideo ? 'text-warn-line' : 'text-danger'}` : 'text-sub'}`}>
         {early ? 'ลบก่อนถึงวันคลิป' : `ลบใน ${daysLeft(file.expires_at)} วัน`}
       </span>
-      {onDelete && (
-        <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 size-5 rounded-full bg-avatar text-xs text-white opacity-70 transition-opacity hover-pointer:opacity-100 before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
-      )}
     </div>
   )
 }

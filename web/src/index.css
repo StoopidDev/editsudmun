@@ -221,3 +221,15 @@ body {
 }
 
 @keyframes row-out { to { opacity: 0; } }
+
+/* Lightbox opens from the clicked tile (--lb-*) and closes back to it; reduced motion keeps only the fade. */
+[data-slot="lightbox"][data-open] { animation: lb-in 320ms var(--ease-out-quint); }
+[data-slot="lightbox"][data-closed] { animation: lb-out 200ms var(--ease-in-quint) forwards; }
+@keyframes lb-in { from { opacity: 0; transform: translate(var(--lb-x, 0px), var(--lb-y, 0px)) scale(var(--lb-s, 1)); } }
+@keyframes lb-out { to { opacity: 0; transform: translate(var(--lb-x, 0px), var(--lb-y, 0px)) scale(var(--lb-s, 1)); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="lightbox"][data-open] { animation: fade-in 200ms linear !important; }
+  [data-slot="lightbox"][data-closed] { animation: fade-out 200ms linear forwards !important; }
+}

@@ -1,16 +1,17 @@
 import { useState } from 'react'
-import { Play } from 'lucide-react'
 import { toast } from 'sonner'
 import * as api from '@/api/index'
 import { useAct, useClip, useMedia } from '@/api/queries'
-import { ConfirmDialog, StatusChip } from '@/components/bits'
+import { ConfirmDialog, Skeleton, StatusChip } from '@/components/bits'
+import { DownloadAll } from '@/components/media'
+import { downloadOne } from '@/lib/viewer'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { daysLeft, formatSize, isPlayable, withRounds } from '@/lib/media'
+import { daysLeft, formatSize, isPlayable, readyIds, withRounds } from '@/lib/media'
 import type { ClipMedia, ClipStatus } from '@/lib/types'
 import { useLast } from '@/lib/useLast'
 
-export function Review({ clipId }: { clipId: string }) {
+export function Review({ clipId, urls }: { clipId: string; urls: Record<string, string> }) {
   const { data: clip } = useClip(clipId)
   const { data: media = [] } = useMedia(clipId)
   const rounds = withRounds(media.filter((m) => m.purpose === 'submission'))
@@ -23,6 +24,8 @@ export function Review({ clipId }: { clipId: string }) {
   const review = useAct(({ status, note }: { status: 'approved' | 'revision'; note?: string }) => api.reviewClip(clipId, status, note))
   const undo = useAct(({ status, note }: { status: ClipStatus; note: string }) => api.restoreReview(clipId, status, note))
   const current = rounds.find((m) => m.id === selected) ?? rounds[0]
+  const curUrl = current ? urls[current.id] : undefined
+  const totalBytes = rounds.reduce((sum, m) => sum + m.size_bytes, 0)
 
   if (!clip) return null
 
@@ -43,32 +46,46 @@ export function Review({ clipId }: { clipId: string }) {
 
   return (
     <section className="flex flex-col gap-3 rounded-card border border-line p-3">
-      <h2 className="flex justify-between text-sm font-bold">งานที่ครีเอเตอร์ส่ง ({rounds.length} ไฟล์)</h2>
+      <h2 className="flex flex-wrap items-baseline justify-between gap-2 text-sm font-bold">
+        งานที่ครีเอเตอร์ส่ง ({rounds.length} ไฟล์)
+        {rounds.length > 0 && <span className="text-xs font-light text-sub">ใช้พื้นที่ {formatSize(totalBytes)} · ลบอัตโนมัติหลัง 30 วัน</span>}
+      </h2>
       {rounds.length === 0 ? <p className="text-sm text-sub">ยังไม่มีไฟล์ส่งงาน</p> : (
-        <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
-          <div className="flex aspect-video flex-col justify-between rounded-card bg-video p-3 text-sm text-white">
-            <b>รอบ {current.round} · {current.file_name}</b>
-            <span className="flex flex-col items-center gap-1"><Play />วิดีโอจริงจะเล่นได้หลังเชื่อมต่อ R2</span>
-            <span />
-          </div>
-          <div className="flex flex-col gap-2">
-            {rounds.map((m) => (
-              <div key={m.id} className={`flex min-w-0 items-center gap-2 rounded-card border p-2 text-sm ${m.id === current.id ? 'border-brand bg-today' : 'border-grid'}`}>
-                <span className="rounded bg-bg px-1 text-xs font-bold">รอบ {m.round}</span>
-                <div className="min-w-0 flex-1">
-                  <b className="block truncate">{m.file_name}</b>
-                  <span className={`text-xs ${isPlayable(m.mime) ? 'text-sub' : 'text-danger'}`}>
-                    {isPlayable(m.mime) ? `${formatSize(m.size_bytes)} · ลบใน ${daysLeft(m.expires_at)} วัน` : 'ProRes · เล่นในเบราว์เซอร์ไม่ได้ ดาวน์โหลดแทน'}
-                  </span>
+        <>
+          <DownloadAll ids={readyIds(rounds)} />
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
+            <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-card bg-video text-sm text-white">
+              {!curUrl ? (
+                <Skeleton className="absolute inset-0 rounded-none" />
+              ) : isPlayable(current.mime) ? (
+                <video key={current.id} src={curUrl} controls preload="metadata" className="size-full bg-black" />
+              ) : (
+                <div className="flex flex-col items-center gap-3 p-4 text-center">
+                  <p>ProRes · เล่นในเบราว์เซอร์ไม่ได้ ดาวน์โหลดแทน</p>
+                  <Button variant="outline" onClick={() => downloadOne(current.id).catch((e: Error) => toast.error(e.message))}>ดาวน์โหลด</Button>
                 </div>
-                {isPlayable(m.mime)
-                  ? <button aria-label={`เล่น ${m.file_name}`} className="min-h-11 md:min-h-0 px-2 text-xs text-brand" onClick={() => setSelected(m.id)}>{m.id === current.id ? 'กำลังเล่น' : 'เล่น'}</button>
-                  : <button aria-label={`ดาวน์โหลด ${m.file_name}`} disabled className="min-h-11 md:min-h-0 px-2 text-xs text-sub">ดาวน์โหลด</button>}
-                <button aria-label={`ลบ ${m.file_name}`} className="min-h-11 md:min-h-0 px-2 text-xs text-danger" onClick={() => setDeleting(m)}>ลบ</button>
-              </div>
-            ))}
+              )}
+              {curUrl && <b className="pointer-events-none absolute top-3 left-3 rounded bg-black/50 px-2 py-1 text-xs">รอบ {current.round} · {current.file_name}</b>}
+            </div>
+            <div className="flex flex-col gap-2">
+              {rounds.map((m) => (
+                <div key={m.id} className={`flex min-w-0 items-center gap-2 rounded-card border p-2 text-sm ${m.id === current.id ? 'border-brand bg-today' : 'border-grid'}`}>
+                  <span className="shrink-0 rounded bg-bg px-1 text-xs font-bold">รอบ {m.round}</span>
+                  <div className="min-w-0 flex-1">
+                    <b className="block truncate">{m.file_name}</b>
+                    <span className={`text-xs ${isPlayable(m.mime) ? 'text-sub' : 'text-danger'}`}>
+                      {isPlayable(m.mime) ? `${formatSize(m.size_bytes)} · ลบใน ${daysLeft(m.expires_at)} วัน` : `ProRes · ${formatSize(m.size_bytes)} · ลบใน ${daysLeft(m.expires_at)} วัน`}
+                    </span>
+                  </div>
+                  {isPlayable(m.mime)
+                    ? <button aria-label={`เล่น ${m.file_name}`} disabled={!urls[m.id]} className="press min-h-11 px-2 text-xs text-brand disabled:text-sub md:min-h-0" onClick={() => setSelected(m.id)}>{m.id === current.id ? 'กำลังเล่น' : 'เล่น'}</button>
+                    : <button aria-label={`ดาวน์โหลด ${m.file_name}`} disabled={!urls[m.id]} className="press min-h-11 px-2 text-xs text-brand disabled:text-sub md:min-h-0" onClick={() => downloadOne(m.id).catch((e: Error) => toast.error(e.message))}>ดาวน์โหลด</button>}
+                  <button aria-label={`ลบ ${m.file_name}`} className="press min-h-11 px-2 text-xs text-danger md:min-h-0" onClick={() => setDeleting(m)}>ลบ</button>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
       {asking ? (
         <div className="flex flex-col gap-2">

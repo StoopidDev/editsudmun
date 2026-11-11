@@ -7,13 +7,15 @@ import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
 import { CopyDialog } from '@/components/CopyDialog'
 import { ConfirmDialog, Delayed, FileTile, Skeleton, UploadDisabled } from '@/components/bits'
+import { DownloadAll, useLightbox } from '@/components/media'
+import { useViewUrls, viewables } from '@/lib/viewer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { isIsoDate, todayIso } from '@/lib/dates'
 import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from '@/lib/draft'
-import { daysLeft, WARN_DAYS } from '@/lib/media'
+import { daysLeft, readyIds, WARN_DAYS } from '@/lib/media'
 import type { ClipInput, ClipMedia } from '@/lib/types'
 import { useLast } from '@/lib/useLast'
 import { Review } from './Review'
@@ -41,6 +43,8 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   const explicitDate = urlDate && isIsoDate(urlDate) ? urlDate : null
   const { data: cats = [] } = useCategories()
   const { data: media = [] } = useMedia(clipId ?? '')
+  const urls = useViewUrls(readyIds(media))
+  const lb = useLightbox()
   const [form, setForm] = useState<ClipInput>(initial
     ? { date: initial.date, category_id: initial.category_id, title: initial.title, script: initial.script, note: initial.note }
     : { date: explicitDate ?? todayIso(), category_id: params.get('cat') ?? '', title: '', script: '', note: '' })
@@ -86,6 +90,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   }
 
   const refs = media.filter((m) => m.purpose === 'reference')
+  const refViews = viewables(refs, urls)
   const expiring = media.filter((m) => daysLeft(m.expires_at) <= WARN_DAYS)
 
   return (
@@ -115,7 +120,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
       {expiring.length > 0 && (
         <div role="status" className="rounded-card border border-warn-line bg-warn-bg p-3 text-sm">
           มี {expiring.length} ไฟล์จะถูกลบใน {Math.min(...expiring.map((m) => daysLeft(m.expires_at)))} วัน
-          <Button variant="link" disabled className="ml-2 h-auto p-0 max-md:min-h-11">ดาวน์โหลดทั้งหมด</Button>
+          <span className="ml-2 inline-block"><DownloadAll ids={readyIds(expiring)} /></span>
         </div>
       )}
 
@@ -143,7 +148,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
             <Label htmlFor="script">สคริปต์</Label>
             <Textarea id="script" rows={clipId ? 10 : 18} value={form.script} onChange={(e) => set({ script: e.target.value })} />
           </div>
-          {clipId && <Review clipId={clipId} />}
+          {clipId && <Review clipId={clipId} urls={urls} />}
         </div>
 
         <div className="flex flex-col gap-3">
@@ -153,7 +158,12 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           </section>
           <section className="flex flex-col gap-2 rounded-card border border-line p-3">
             <h2 className="text-sm font-bold">ไฟล์อ้างอิง ({refs.length})</h2>
-            <div className="grid grid-cols-2 gap-2">{refs.map((f) => <FileTile key={f.id} file={f} clipDate={form.date} onDelete={() => setDeletingFile(f)} />)}</div>
+            <div className="grid grid-cols-2 gap-2">
+              {refs.map((f) => (
+                <FileTile key={f.id} file={f} clipDate={form.date} url={urls[f.id]} onDelete={() => setDeletingFile(f)}
+                  onOpen={urls[f.id] ? (el) => lb.openAt(refViews, refViews.findIndex((v) => v.id === f.id), el) : undefined} />
+              ))}
+            </div>
             <UploadDisabled label="ลากรูปมาวางหรือคลิกเพื่ออัปโหลด" />
           </section>
           {clipId && <Button variant="outline" className="self-start border-danger text-danger max-md:min-h-11" onClick={() => void del(clipId)}><Trash2 />ลบคลิป</Button>}
@@ -161,6 +171,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
       </div>
       </fieldset>
 
+      {lb.node}
       {copying && clipId && <CopyDialog clip={{ id: clipId, title: form.title, date: form.date }} onClose={() => setCopying(false)} />}
       <ConfirmDialog open={!!deletingFile} title={`ลบไฟล์ “${lastFile?.file_name}”?`} body="ลบแล้วกู้คืนไม่ได้" confirm="ลบ"
         onConfirm={() => deletingFile && removeFile.mutateAsync(deletingFile.id)} loading={removeFile.isPending} onClose={() => setDeletingFile(null)} />

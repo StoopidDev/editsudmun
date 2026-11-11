@@ -67,3 +67,16 @@ export const MULTIPART_AT = 100 * 1024 ** 2
 export const PART_BYTES = 50 * 1024 ** 2
 // Part numbers 1..n for a file of `size` bytes, as Uppy cuts it into PART_BYTES chunks.
 export const partNumbers = (size: number) => Array.from({ length: Math.max(1, Math.ceil(size / PART_BYTES)) }, (_, i) => i + 1)
+
+// Ready files only: the server marks a row ready after it checked the object, and only those have a playable URL.
+export const readyIds = (files: ClipMedia[]) => files.filter((f) => f.status === 'ready').map((f) => f.id)
+
+// m:ss, or h:mm:ss from an hour up. Empty when the duration is unknown.
+export function formatDuration(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds < 0) return ''
+  const s = Math.floor(seconds)
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const ss = String(s % 60).padStart(2, '0')
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`
+}

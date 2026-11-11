@@ -1,13 +1,17 @@
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { Play } from 'lucide-react'
 import * as api from '@/api/index'
 import { useAct, useClip, useMe, useMedia } from '@/api/queries'
 import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
-import { CategoryBadge, Delayed, FileTile, Skeleton, StatusChip, UploadDisabled } from '@/components/bits'
+import { CategoryBadge, Delayed, FileTile, Skeleton, StatusChip } from '@/components/bits'
+import { useLightbox } from '@/components/media'
+import { useViewUrls, viewables } from '@/lib/viewer'
+import { UploadZone } from '@/components/UploadZone'
 import { Button } from '@/components/ui/button'
-import { fromIso, fullDate } from '@/lib/dates'
-import { canWithdraw, formatSize, roundCount, withRounds, withdrawMinutesLeft, daysLeft } from '@/lib/media'
+import { fromIso, fullDate, sentAt } from '@/lib/dates'
+import { canWithdraw, daysLeft, formatSize, readyIds, roundCount, withRounds, withdrawMinutesLeft } from '@/lib/media'
 import { ClipForm } from './ClipForm'
 
 export function ClipDetail() {
@@ -30,7 +34,15 @@ function CreatorDetail({ id }: { id: string }) {
   const { data: me } = useMe()
   const { data: clip, isPending } = useClip(id)
   const { data: media = [] } = useMedia(id)
+  const urls = useViewUrls(readyIds(media))
   const withdraw = useAct(api.withdrawMedia)
+  const lb = useLightbox()
+  // Re-render every 30 s so the withdraw countdown and its fade stay current.
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(t)
+  }, [])
 
   if (isPending) return (
     <Delayed>
@@ -44,6 +56,10 @@ function CreatorDetail({ id }: { id: string }) {
 
   const refs = media.filter((m) => m.purpose === 'reference')
   const rounds = withRounds(media.filter((m) => m.purpose === 'submission'))
+  const refViews = viewables(refs, urls)
+  const subViews = viewables(rounds, urls)
+  const minDays = refs.length ? Math.min(...refs.map((f) => daysLeft(f.expires_at))) : null
+  const anyWithdraw = !!me && rounds.some((m) => canWithdraw(m, me.id, now))
 
   return (
     <div className="flex flex-col gap-3">
@@ -71,34 +87,73 @@ function CreatorDetail({ id }: { id: string }) {
 
         <div className="flex flex-col gap-3 max-lg:contents">
           {clip.note && <NoteBox note={clip.note} className="max-lg:order-1" />}
-          <section className="rounded-card border border-line p-3 max-lg:order-3">
-            <h2 className="mb-2 text-sm font-bold">ไฟล์อ้างอิง {refs.length} ไฟล์</h2>
-            <div className="grid grid-cols-3 gap-2">{refs.map((f) => <FileTile key={f.id} file={f} clipDate={clip.date} />)}</div>
+          <section className="flex flex-col gap-2 rounded-card border border-line p-3 max-lg:order-3">
+            <h2 className="flex items-baseline justify-between gap-2 text-sm font-bold">
+              ไฟล์อ้างอิง {refs.length} ไฟล์
+              <span className="text-xs font-light text-sub">แตะรูปเพื่อดูขยาย</span>
+            </h2>
+            <div className="grid grid-cols-3 gap-2">
+              {refs.map((f) => (
+                <FileTile key={f.id} file={f} clipDate={clip.date} url={urls[f.id]}
+                  onOpen={urls[f.id] ? (el) => lb.openAt(refViews, refViews.findIndex((v) => v.id === f.id), el) : undefined} />
+              ))}
+            </div>
+            {minDays !== null && (
+              <p className="text-xs text-sub">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {minDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>
+            )}
           </section>
+
           <section className="flex flex-col gap-2 rounded-card border border-line p-3 max-lg:order-4">
-            <h2 className="flex justify-between text-sm font-bold">ส่งงาน<span className="text-xs font-normal text-sub">ไฟล์ที่ตัดต่อแล้ว · MP4 ≤ 2 GB</span></h2>
-            <UploadDisabled label="ลากไฟล์มาวาง หรือ คลิกเพื่อเลือกไฟล์" />
+            <h2 className="flex items-baseline justify-between gap-2 text-sm font-bold">
+              ส่งงาน
+              <span className="text-xs font-light text-sub">ไฟล์ตัดต่อเสร็จ · MP4 ≤ 2 GB</span>
+            </h2>
+            <UploadZone clipId={id} purpose="submission" />
             <h3 className="text-xs font-bold">ส่งแล้ว ({roundCount(rounds)} รอบ)</h3>
-            {rounds.map((m) => (
-              <div key={m.id} className="flex flex-col gap-2 rounded-card border border-grid p-2">
-                <div className="flex items-center gap-2">
-                  <span className="flex size-7 items-center justify-center rounded-full bg-today text-brand"><Play size={14} /></span>
-                  <div className="min-w-0 flex-1 text-sm">
-                    <span className="mr-1 rounded bg-surface px-1 text-xs font-bold">รอบ {m.round}</span><b className="truncate">{m.file_name}</b>
-                    <div className="text-xs text-sub">{formatSize(m.size_bytes)} · ลบใน {daysLeft(m.expires_at)} วัน</div>
+            {rounds.map((m) => {
+              const left = withdrawMinutesLeft(m, now)
+              const open = !!me && canWithdraw(m, me.id, now)
+              const view = subViews.findIndex((v) => v.id === m.id)
+              return (
+                <div key={m.id} className="flex flex-col gap-2 rounded-card border border-grid p-2">
+                  <div className="flex min-h-[58px] items-center gap-2">
+                    {view >= 0 && (
+                      <button type="button" aria-label={`เปิด ${m.file_name}`}
+                        onClick={(e) => lb.openAt(subViews, view, e.currentTarget)}
+                        className="press flex size-8 shrink-0 items-center justify-center rounded-full bg-today text-brand">
+                        <Play size={14} />
+                      </button>
+                    )}
+                    <div className="min-w-0 flex-1 text-sm">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="shrink-0 rounded-card bg-surface px-1.5 text-xs font-bold">รอบ {m.round}</span>
+                        <b className="truncate">{m.file_name}</b>
+                      </div>
+                      <div className="text-xs text-sub">{formatSize(m.size_bytes)} · ส่งเมื่อ {sentAt(m.created_at)}</div>
+                    </div>
+                    <span className="shrink-0 text-xs font-light text-sub">ลบใน {daysLeft(m.expires_at)} วัน</span>
                   </div>
+                  {me && m.uploaded_by === me.id && (
+                    // Collapses instead of unmounting, so the withdraw button fades out when its window closes.
+                    <div inert={!open} className={`grid transition-[grid-template-rows,opacity] duration-200 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                      <div className="min-h-0 overflow-hidden">
+                        <Button variant="outline" className="w-full border-danger text-danger max-md:min-h-11"
+                          loading={withdraw.isPending} onClick={() => withdraw.mutate(m.id)}>
+                          ถอนไฟล์นี้ (เหลือ {left} นาที)
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                {me && canWithdraw(m, me.id) && (
-                  <Button variant="outline" className="min-h-11 border-danger text-danger md:min-h-0" loading={withdraw.isPending} onClick={() => withdraw.mutate(m.id)}>
-                    ถอนไฟล์นี้ (เหลือ {withdrawMinutesLeft(m)} นาที)
-                  </Button>
-                )}
-              </div>
-            ))}
-            <p className="text-xs text-sub">ถอนไฟล์ได้ภายใน 10 นาทีหลังส่ง หลังจากนั้นไฟล์จะถูกล็อก และแก้ไขได้ด้วยการส่งรอบใหม่</p>
+              )
+            })}
+            <p className="text-xs text-sub">
+              {anyWithdraw ? 'ถอนไฟล์ได้ภายใน 10 นาทีหลังส่ง หลังจากนั้นล็อก และแก้ไม่ได้ ต้องส่งเป็นรอบใหม่' : 'ส่งแล้วลบหรือแก้ไม่ได้ ถ้าต้องแก้ให้ส่งเป็นรอบใหม่'}
+            </p>
           </section>
         </div>
       </div>
+      {lb.node}
     </div>
   )
 }

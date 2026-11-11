@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
-import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
+import { canWithdraw, daysLeft, expiresBeforeClip, formatDuration, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
 import { contrast, nextColor, readableOn } from './color'
@@ -205,5 +205,14 @@ describe('upload helpers', () => {
     const mb = (name: string) => Number(src.match(new RegExp(`const\\s+${name}\\s*=\\s*(\\d+)\\s*\\*\\s*1024\\s*\\*\\*\\s*2`))?.[1])
     expect(mb('MULTIPART_THRESHOLD') * 1024 ** 2).toBe(MULTIPART_AT)
     expect(mb('PART_BYTES') * 1024 ** 2).toBe(PART_BYTES)
+  })
+})
+
+describe('formatDuration', () => {
+  it('formats seconds as m:ss and h:mm:ss', () => {
+    expect(formatDuration(42)).toBe('0:42')
+    expect(formatDuration(65.9)).toBe('1:05')
+    expect(formatDuration(3725)).toBe('1:02:05')
+    expect(formatDuration(NaN)).toBe('')
   })
 })
