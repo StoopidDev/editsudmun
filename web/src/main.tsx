@@ -5,6 +5,7 @@ import '@fontsource-variable/geist'
 import '@fontsource-variable/noto-sans-thai'
 import { App } from './App'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { UploadProvider } from './lib/uploads'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -14,9 +15,11 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <QueryClientProvider client={queryClient}>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
+    <UploadProvider>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </UploadProvider>
     <Toaster position="bottom-center" theme="light" mobileOffset={{ bottom: 80 }} />
   </QueryClientProvider>,
 )
