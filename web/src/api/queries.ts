@@ -21,14 +21,7 @@ export const useDayCounts = (from: string, to: string, enabled = true) => useQue
 export const useRecent = (limit: number) => useQuery(recentQuery(limit))
 export const useClip = (id: string) => useQuery(clipQuery(id))
 export const useMedia = (clipId: string) => useQuery(mediaQuery(clipId))
-// Each page of results is its own cache entry. While "ดูเพิ่ม" loads the previous page stays, but never another search's.
-export const useSearch = (q: string, limit: number) =>
-  useQuery({
-    queryKey: ['search', q, limit],
-    queryFn: () => api.search(q, limit),
-    enabled: !!q.trim(),
-    placeholderData: (prev, prevQuery) => (prevQuery?.queryKey[1] === q ? prev : undefined),
-  })
+export const useSearch = (q: string) => useQuery({ queryKey: ['search', q], queryFn: () => api.search(q), enabled: !!q.trim() })
 // Owner and creator see different lists, so the role is part of the key. No role yet, no request.
 export const useAttention = () => {
   const { data: me } = useMe()
@@ -55,7 +48,7 @@ export async function withTransition(update: () => void) {
 }
 
 // The lists a clip write can change. 'view' (signed playback URLs) is never listed, so a playing video keeps its URL.
-export const CLIP_KEYS = [['clips'], ['clip'], ['dayCounts'], ['attention'], ['recent'], ['media'], ['search'], ['expiring'], ['storage']] as const
+export const CLIP_KEYS = [['clips'], ['clip'], ['dayCounts'], ['categoryCounts'], ['attention'], ['recent'], ['media'], ['search'], ['expiring'], ['storage']] as const
 type Keys = readonly (readonly unknown[])[]
 const refresh = (qc: QueryClient, keys: Keys) => {
   for (const queryKey of keys) void qc.invalidateQueries({ queryKey })

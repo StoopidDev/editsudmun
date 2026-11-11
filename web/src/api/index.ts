@@ -13,7 +13,7 @@ export { changePassword, login, logout, me } from './auth'
 
 // An update RLS refuses matches no rows instead of failing; treat that as not found.
 function one<T>(r: { data: T[] | null; error: PostgrestError | null }, missing = 'ไม่พบคลิป'): T {
-  const rows = ok(r) ?? []
+  const rows = ok(r)
   if (!rows.length) throw new Error(missing)
   return rows[0]
 }
@@ -23,13 +23,20 @@ const checkDate = (d: string) => {
   if (!isIsoDate(d)) throw new Error('วันที่ไม่ถูกต้อง')
 }
 
+// The generated DB types make status, kind, purpose and role plain strings (SQL check constraints).
+// These narrow just those fields; the rest of each row is checked by tsc against the select string.
+const narrowClip = <T extends { status: string }>(r: T) => ({ ...r, status: r.status as ClipStatus })
+const narrowMedia = <T extends { kind: string; purpose: string; status: string }>(r: T) => ({
+  ...r, kind: r.kind as ClipMedia['kind'], purpose: r.purpose as ClipMedia['purpose'], status: r.status as ClipMedia['status'],
+})
+const narrowProfile = <T extends { role: string }>(r: T) => ({ ...r, role: r.role as Role })
+
 // Clips
-// Each list selects only the columns it shows (the typed client checks them against the row types in
-// lib/types.ts). Cards show the number of reference images; counted in the same request.
+// Each list selects only the columns it shows; the typed client checks each select string against the
+// generated DB types. Cards show the reference image count, counted in the same request.
 const CARD = 'id, date, position, category_id, status, title, script, note, images:clip_media(count)'
 const ATTENTION = 'id, date, position, category_id, status, title, script, note, round, revision_note, images:clip_media(count)'
 type CardDb = Omit<ClipCardRow, 'imageCount'> & { images: { count: number }[] }
-type AttentionDb = CardDb & Pick<Clip, 'round' | 'revision_note'>
 const withCount = ({ images, ...c }: CardDb): ClipCardRow => ({ ...c, imageCount: images[0]?.count ?? 0 })
 
 export async function listClips(from: string, to: string): Promise<ClipCardRow[]> {
@@ -45,7 +52,7 @@ export async function listClips(from: string, to: string): Promise<ClipCardRow[]
       .order('date')
       .order('position'),
   )
-  return (rows as CardDb[]).map(withCount)
+  return rows.map((r) => withCount(narrowClip(r)))
 }
 
 // Month view: only what a day count needs.
@@ -53,14 +60,14 @@ export async function listDayCounts(from: string, to: string): Promise<ClipDayCo
   const rows = ok(
     await supabase.from('clips').select('id, date, category_id, status').gte('date', from).lte('date', to).is('deleted_at', null),
   )
-  return rows as ClipDayCount[]
+  return rows.map(narrowClip)
 }
 
 // brief_updated_at moves only when the brief itself changes, not on review or reorder.
 export async function listRecent(limit: number): Promise<ClipRecent[]> {
   return ok(
     await supabase.from('clips').select('id, title, category_id, brief_updated_at').is('deleted_at', null).order('brief_updated_at', { ascending: false }).limit(limit),
-  ) as ClipRecent[]
+  )
 }
 
 // Owner: work waiting for review. Creator: changes requested, or todo past its date.
@@ -70,7 +77,8 @@ export async function listAttention(role: Role): Promise<AttentionRow[]> {
   const today = todayIso()
   let q = supabase.from('clips').select(ATTENTION).is('deleted_at', null).eq('images.purpose', 'reference').eq('images.kind', 'image')
   q = role === 'owner' ? q.eq('status', 'submitted') : q.or(`status.eq.revision,and(status.eq.todo,date.lt.${today})`)
-  const rows = (ok(await q) as AttentionDb[]).flatMap((c) => {
+  const rows = ok(await q).flatMap((r) => {
+    const c = narrowClip(r)
     const attention = attentionOf(c, role, today)
     if (!attention) return []
     return [{ ...withCount(c), round: c.round, revision_note: c.revision_note, attention }]
@@ -79,12 +87,14 @@ export async function listAttention(role: Role): Promise<AttentionRow[]> {
 }
 
 export async function getClip(id: string): Promise<Clip | null> {
-  return ok(await supabase.from('clips').select('*').eq('id', id).is('deleted_at', null).maybeSingle()) as Clip | null
+  const row = ok(await supabase.from('clips').select('*').eq('id', id).is('deleted_at', null).maybeSingle())
+  return row && narrowClip(row)
 }
 
 export async function createClip(input: ClipInput): Promise<Clip> {
   checkDate(input.date)
-  return ok(await supabase.from('clips').insert(input).select().single()) as Clip
+  const row = narrowClip(ok(await supabase.from('clips').insert(input).select('*').single()))
+  return row
 }
 
 // Only brief fields are editable here; status changes go through reviewClip.
@@ -92,7 +102,8 @@ const EDITABLE = ['date', 'category_id', 'title', 'script', 'note'] as const
 export async function updateClip(id: string, patch: Partial<ClipInput>): Promise<Clip> {
   if (patch.date !== undefined) checkDate(patch.date)
   const changes: Partial<ClipInput> = Object.fromEntries(EDITABLE.filter((k) => patch[k] !== undefined).map((k) => [k, patch[k]]))
-  return one(await supabase.from('clips').update(changes).eq('id', id).select()) as Clip
+  const row = narrowClip(one(await supabase.from('clips').update(changes).eq('id', id).select('*')))
+  return row
 }
 
 export async function softDeleteClip(id: string) {
@@ -109,13 +120,14 @@ export async function moveClip(id: string, dir: -1 | 1) {
 
 export async function copyClip(id: string, date: string): Promise<Clip> {
   checkDate(date)
-  return ok(await supabase.rpc('copy_clip', { p_id: id, p_date: date })) as Clip
+  return narrowClip(ok(await supabase.rpc('copy_clip', { p_id: id, p_date: date })))
 }
 
 export async function reviewClip(id: string, status: 'approved' | 'revision', note = ''): Promise<Clip> {
   if (status === 'revision' && !note.trim()) throw new Error('กรุณาระบุเหตุผลที่ขอแก้ไข')
   const revision_note = status === 'revision' ? note.trim() : ''
-  return one(await supabase.from('clips').update({ status, revision_note }).eq('id', id).select()) as Clip
+  const row = narrowClip(one(await supabase.from('clips').update({ status, revision_note }).eq('id', id).select('*')))
+  return row
 }
 
 // Undo of a review: put back the earlier status and note (owner, plain update; the round
@@ -124,15 +136,16 @@ export async function restoreReview(id: string, status: ClipStatus, note: string
   one(await supabase.from('clips').update({ status, revision_note: note }).eq('id', id).select('id'))
 }
 
-// Pages of 50 at most: the caller asks for `limit` rows and shows "ดูเพิ่ม" for more.
-export async function search(q: string, limit: number): Promise<ClipSearchRow[]> {
+// search_clips returns at most SEARCH_CAP rows (its limit is in the SQL function; raising it is backend work).
+export const SEARCH_CAP = 50
+export async function search(q: string): Promise<ClipSearchRow[]> {
   if (!q.trim()) return []
-  return ok(await supabase.rpc('search_clips', { p_q: q }).select('id, date, category_id, title, script, note').range(0, limit - 1)) as ClipSearchRow[]
+  return ok(await supabase.rpc('search_clips', { p_q: q }).select('id, date, category_id, title, script, note').range(0, SEARCH_CAP - 1))
 }
 
 // Media
 export async function listMedia(clipId: string): Promise<ClipMedia[]> {
-  return ok(await supabase.from('clip_media').select('*').eq('clip_id', clipId).order('created_at')) as ClipMedia[]
+  return ok(await supabase.from('clip_media').select('*').eq('clip_id', clipId).order('created_at')).map(narrowMedia)
 }
 
 export async function deleteMedia(id: string) {
@@ -155,23 +168,23 @@ export async function listExpiring() {
       .eq('status', 'ready')
       .is('clip.deleted_at', null)
       .order('expires_at'),
-  ) as { id: string; file_name: string; expires_at: string; clip: { id: string; title: string } }[]
+  )
   return rows.map((m) => ({ id: m.id, file_name: m.file_name, clip_id: m.clip.id, clip_title: m.clip.title, days: daysLeft(m.expires_at) }))
 }
 
 export async function storageUsedBytes(): Promise<number> {
-  const row = ok(await supabase.from('storage_usage').select('total_bytes').single()) as { total_bytes: number }
-  return row.total_bytes
+  const row = ok(await supabase.from('storage_usage').select('total_bytes').single())
+  return row.total_bytes ?? 0
 }
 
 // Categories
 export async function listCategories(): Promise<Category[]> {
-  return ok(await supabase.from('categories').select('*').order('position')) as Category[]
+  return ok(await supabase.from('categories').select('*').order('position'))
 }
 
 // shortcut: counts in the browser from one column; move to a grouped view if clips grow past ~50k.
 export async function categoryCounts(): Promise<Record<string, number>> {
-  const rows = ok(await supabase.from('clips').select('category_id').is('deleted_at', null)) as { category_id: string }[]
+  const rows = ok(await supabase.from('clips').select('category_id').is('deleted_at', null))
   const counts: Record<string, number> = {}
   for (const r of rows) counts[r.category_id] = (counts[r.category_id] ?? 0) + 1
   return counts
@@ -181,8 +194,8 @@ export async function createCategory(name: string, color: string): Promise<Categ
   const trimmed = name.trim()
   if (!trimmed) throw new Error('กรุณากรอกชื่อประเภท')
   const last = ok(await supabase.from('categories').select('position').order('position', { ascending: false }).limit(1))
-  const position = ((last as { position: number }[])[0]?.position ?? -1) + 1
-  return ok(await supabase.from('categories').insert({ name: trimmed, color, position }).select().single()) as Category
+  const position = (last[0]?.position ?? -1) + 1
+  return ok(await supabase.from('categories').insert({ name: trimmed, color, position }).select().single())
 }
 
 export async function updateCategory(id: string, patch: Pick<Category, 'name' | 'color'>) {
@@ -269,7 +282,7 @@ export async function viewUrls(mediaIds: string[], opts: { download?: boolean } 
 const manageUsers = <T>(body: object) => callFunction<T>('manage-users', body)
 
 export async function listUsers(): Promise<Profile[]> {
-  return ok(await supabase.from('profiles').select('*').order('created_at')) as Profile[]
+  return ok(await supabase.from('profiles').select('*').order('created_at')).map(narrowProfile)
 }
 
 export async function createCreator(display_name: string, email: string) {

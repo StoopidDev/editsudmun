@@ -109,7 +109,13 @@ function CreatorDetail({ id }: { id: string }) {
                 <FileTile key={f.id} file={f} clipDate={clip.date} url={urls[f.id]}
                   onOpen={urls[f.id] ? (el) => lb.openAt(refViews, refViews.findIndex((v) => v.id === f.id), el) : undefined} />
               ))}
-              {hidden > 0 && <MoreTile count={hidden} onOpen={(el) => lb.openAt(refViews, Math.min(TILE_CAP - 1, refViews.length - 1), el)} />}
+              {hidden > 0 && (
+                <MoreTile count={hidden} onOpen={(el) => {
+                  // The "+n" tile opens at the first hidden file; none if that file has no URL yet.
+                  const i = refViews.findIndex((v) => v.id === refs[TILE_CAP - 1].id)
+                  if (i >= 0) lb.openAt(refViews, i, el)
+                }} />
+              )}
             </div>
             {minDays !== null && (
               <p className="text-xs font-light text-sub">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {minDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>

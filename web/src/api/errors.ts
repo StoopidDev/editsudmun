@@ -10,7 +10,8 @@ export function thai(e: PostgrestError): Error {
   return new Error('เกิดข้อผิดพลาด ลองอีกครั้ง')
 }
 
-export function ok<T>({ data, error }: { data: T; error: PostgrestError | null }): T {
+// data is set whenever error is null, except for maybeSingle (no row): that caller checks for null itself.
+export function ok<T>({ data, error }: { data: T; error: PostgrestError | null }): NonNullable<T> {
   if (error) throw thai(error)
-  return data
+  return data as NonNullable<T>
 }

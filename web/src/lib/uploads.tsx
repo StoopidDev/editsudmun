@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { CLIP_KEYS } from '@/api/queries'
 import type { ClipMedia } from '@/lib/types'
 import { Ctx, enqueue, OfflineCtx, type Hub, type Uploader } from './upload-state'
 
@@ -45,15 +46,15 @@ export function UploadProvider({ children }: { children: ReactNode }) {
       clearTimeout(timer)
     }
     // One uploader for the app's lifetime; it is never destroyed, only its window listeners are removed.
-    // The QueryClient is a module constant in main.tsx, so capturing it once is safe.
+    // The QueryClient comes from lib/queryClient.ts (a module constant), so capturing it once is safe.
     start.current = () => {
       if (loading) return
       loading = true
       cancelWait()
       void import('./uploader').then(({ createUploader }) => {
-        const u = createUploader((m) => {
-          void qc.invalidateQueries({ queryKey: ['media', m.clip_id] })
-          void qc.invalidateQueries({ queryKey: ['clip', m.clip_id] }) // status may move to submitted
+        // A finished file can move the clip's status (submitted) and its lists, so refresh all of them.
+        const u = createUploader(() => {
+          for (const queryKey of CLIP_KEYS) void qc.invalidateQueries({ queryKey })
         })
         uppyRef.current = u
         for (const p of pending.current) enqueue(u, p.files, p.clipId, p.purpose)

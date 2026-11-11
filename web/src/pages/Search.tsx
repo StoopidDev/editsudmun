@@ -1,14 +1,10 @@
-import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { SEARCH_CAP } from '@/api/index'
 import { useSearch } from '@/api/queries'
 import { CategoryBadge, Delayed, Skeleton } from '@/components/bits'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { dayLabel, fromIso, shortDate } from '@/lib/dates'
 import { snippet } from '@/lib/search'
-
-// Results come in pages of 50; "ดูเพิ่ม" asks for the next page.
-const PAGE = 50
 
 export function Search() {
   const [params, setParams] = useSearchParams()
@@ -24,15 +20,13 @@ export function Search() {
   )
 }
 
-// Keyed by the query, so a new search starts again at one page.
+// Keyed by the query, so a new search starts a new request.
 function Results({ q }: { q: string }) {
-  const [limit, setLimit] = useState(PAGE)
-  const { data = [], isFetching, isError } = useSearch(q, limit)
-  const full = data.length === limit
+  const { data = [], isFetching, isError } = useSearch(q)
 
   return (
     <>
-      <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isFetching && !isError && <span className="text-sm font-normal text-sub">{full ? `${data.length}+` : data.length} คลิป</span>}</h1>
+      <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isFetching && !isError && <span className="text-sm font-normal text-sub">{data.length === SEARCH_CAP ? `${SEARCH_CAP}+` : data.length} คลิป</span>}</h1>
       {isFetching && data.length === 0 && (
         <Delayed><div className="flex flex-col gap-3"><Skeleton className="h-20" /><Skeleton className="h-20" /><Skeleton className="h-20" /></div></Delayed>
       )}
@@ -48,9 +42,6 @@ function Results({ q }: { q: string }) {
           </Link>
         )
       })}
-      {full && !isFetching && (
-        <Button variant="outline" className="self-center" onClick={() => setLimit(limit + PAGE)}>ดูเพิ่ม</Button>
-      )}
       {!isFetching && !isError && data.length === 0 && (
         <div className="py-16 text-center">
           <p className="font-bold">ไม่พบคลิปที่ตรงกับ “{q}”</p>
