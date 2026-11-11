@@ -65,3 +65,5 @@ export const uploadStatus = (r: { error: string | null; paused: boolean; retries
 // or the server's part_count will not match the parts Uppy sends (lib.test.ts checks this).
 export const MULTIPART_AT = 100 * 1024 ** 2
 export const PART_BYTES = 50 * 1024 ** 2
+// Part numbers 1..n for a file of `size` bytes, as Uppy cuts it into PART_BYTES chunks.
+export const partNumbers = (size: number) => Array.from({ length: Math.max(1, Math.ceil(size / PART_BYTES)) }, (_, i) => i + 1)

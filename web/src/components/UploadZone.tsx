@@ -72,7 +72,12 @@ export function UploadZone({ clipId, purpose, ensureClipId }: {
     if (bad.length) { setRefused((r) => [...r, ...bad]); setAnnounce(bad[0].message) }
     if (!good.length) return
     const id = clipId || (await ensureClipId?.()) || ''
-    if (id) add(good, id)
+    if (!id) return
+    const failed = add(good, id)
+    if (failed.length) {
+      setRefused((r) => [...r, ...failed.map((f) => ({ key: ++seq.current, name: f.name, message: f.message, tooBig: false }))])
+      setAnnounce(failed[0].message)
+    }
   }
 
   const cancel = (id: string) => { cancelled.current.add(id); remove(id) }
@@ -81,7 +86,7 @@ export function UploadZone({ clipId, purpose, ensureClipId }: {
     <div className="flex flex-col gap-2">
       <label
         onDragOver={(e: DragEvent) => { e.preventDefault(); setOver(true) }}
-        onDragLeave={() => setOver(false)}
+        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false) }}
         onDrop={(e: DragEvent) => { e.preventDefault(); setOver(false); void onFiles(e.dataTransfer.files) }}
         className={`flex h-15 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-card border bg-surface px-3 text-center text-xs transition-colors duration-150 focus-within:ring-2 focus-within:ring-brand/50 ${over ? 'border-brand bg-today' : 'border-line'}`}
       >

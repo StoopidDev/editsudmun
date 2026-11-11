@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
-import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, progressLabel, roundCount, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
+import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
 import { contrast, nextColor, readableOn } from './color'
@@ -184,6 +184,12 @@ describe('draft', () => {
 describe('upload helpers', () => {
   it('labels upload progress', () => {
     expect(progressLabel(1.2 * 1024 ** 3, 1.8 * 1024 ** 3)).toBe('1.2 GB / 1.8 GB · 66%')
+  })
+  it('lists part numbers for a file size', () => {
+    expect(partNumbers(0)).toEqual([1])
+    expect(partNumbers(PART_BYTES)).toEqual([1])
+    expect(partNumbers(PART_BYTES + 1)).toEqual([1, 2])
+    expect(partNumbers(3 * PART_BYTES)).toEqual([1, 2, 3])
   })
   it('picks the row state: failed beats paused beats retrying', () => {
     const base = { error: null, paused: false, retries: 0, offline: false }
