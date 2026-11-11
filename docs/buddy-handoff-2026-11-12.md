@@ -34,6 +34,15 @@ No new endpoints, tables or columns. Everything goes through `web/src/api/index.
 3. **Drag-to-reorder** (frames `74:13259`) is not built: it needs a bulk reorder RPC. Up/down in the clip menu works.
 4. **Notifications** (frames named "แจ้งเตือน") are not built: they need a table and the client's yes.
 
+5. **Speed, backend side** (plan `docs/superpowers/plans/2026-11-12-frontend-speed.md` §B):
+   1. **Thumbnails.** Reference images are shown from the original file (up to 50 MB) in a 103×68 tile. Add a resized ~400 px WebP (Cloudflare Images or a resize step after `media-upload complete`) and return it from `media-view` as e.g. `thumb_url`; the frontend will use it when present.
+   2. **Search cap.** `search_clips` has `limit 50` inside the SQL (`supabase/migrations/20261105150000_functions.sql:233`). The frontend shows "50+ คลิป" at 50 and no paging. To page, drop the inner limit; the frontend then adds "ดูเพิ่ม" with `.range()`.
+   3. **Month view row cap.** The month view selects `id, date, category_id, status` per clip; PostgREST's default 1000-row cap truncates it at 50-70 clips/day. A grouped RPC (`date, category_id, count`) fixes it.
+   4. **Category counts.** `categoryCounts()` downloads one row per clip ever. Add a view or RPC grouped by `category_id` (where `deleted_at is null`).
+   5. **Card preview.** Cards still download the whole script for a 2-line preview. A generated `script_preview` (`left(script, 160)`) and `has_note` would let lists skip `script` and `note`.
+   6. **Indexes to confirm:** `clips (date, position) where deleted_at is null`, `clips (status) where deleted_at is null`, `clips (brief_updated_at desc)`, `clip_media (clip_id, created_at)`, `clip_media (expires_at) where status = 'ready'`.
+   7. **Lighthouse with data:** Home and clip detail, mobile, Slow 4G; target Performance ≥ 90, LCP ≤ 2.5 s. Also count requests on route changes (should be none within 30 s).
+
 ## 3. Assumptions to confirm
 
 - Server part size is 50 MB for files of 100 MB or more, and the server never needs multipart below 100 MB (the client only asks for multipart from 100 MB).
@@ -48,8 +57,13 @@ No new endpoints, tables or columns. Everything goes through `web/src/api/index.
 - A failed multipart that is neither retried nor cancelled stays in R2 until the 1-day lifecycle abort.
 - Any change in a clip's ready files re-signs all its URLs, so thumbnails reload; the 45-min re-sign restarts a playing video.
 - Colour changes from Figma for contrast (WCAG 4.5:1): light warning text `#b35c00` to `#9a4f00`; dark brand fill `#0088ff` to `#0071e3`; dark approved chip text `#34c759` (not read from the dark frame).
+- `npm audit --omit=dev` is clean (the `shadcn` CLI is now a dev dependency).
 - `npm run build` without `VITE_SUPABASE_*` builds an empty app (`src/api/supabase.ts` throws at load and the bundler drops everything). Build with real or dummy values; consider failing at runtime instead.
-- `npm audit` flags `deepmerge` and `minimatch` through the `shadcn` CLI package (not shipped to the browser).
+- Bundle (JS, gzip): before one 311 kB file for every page; now login 193 kB, Home 239 kB (targets were 150 and 230; react-dom + react-router alone are ~100 kB). Uppy (25 kB) loads on idle or the first dropped file. Next saving: replace `@supabase/supabase-js` with `auth-js` + `postgrest-js` + `functions-js` (about 25 kB on every page; storage and realtime are bundled but unused) — needs a dev login to prove sessions survive (`storageKey`).
+- A logged-out visit to an app URL downloads the app shell and page chunks (~55 kB) before redirecting to `/login` (route `lazy` resolves before the guard renders).
+- `/assets/*` is cached for a year (`web/public/_headers`); a tab left open across a deploy reloads once when a chunk is missing (`vite:preloadError` in `main.tsx`).
+- Data stays fresh 30 s (`staleTime`), `me` until sign-out (an `onAuthStateChange` SIGNED_OUT listener clears it); writes invalidate only clip-related lists (`CLIP_KEYS` in `api/queries.ts`).
+- Files queued before the uploader chunk loads: a refusal at flush time is not shown (no Uppy restrictions exist, so none expected). Logout cancels running uploads; their abort calls may race the sign-out.
 - Not checked in a browser with data: every screen, dark mode, animations, drawer swipe, uploads. The app boots with dummy env, redirects to `/login`, applies the dark theme from the system setting and logs no console errors.
 
 ## 5. How to check it
