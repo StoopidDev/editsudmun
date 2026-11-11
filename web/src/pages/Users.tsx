@@ -51,10 +51,10 @@ export function Users() {
       {temp && <TempPassword temp={temp} onClose={() => setTemp(null)} />}
 
       <ConfirmDialog open={!!resetting} title={`รีเซ็ตรหัสผ่าน ${lastResetting?.display_name}?`} body="รหัสผ่านเดิมจะใช้ไม่ได้ทันที" confirm="รีเซ็ต"
-        onConfirm={() => resetting && reset.mutate(resetting.id, { onSuccess: (password) => setTemp({ email: resetting.email, password }) })} onClose={() => setResetting(null)} />
+        onConfirm={async () => { if (resetting) setTemp({ email: resetting.email, password: await reset.mutateAsync(resetting.id) }) }} loading={reset.isPending} onClose={() => setResetting(null)} />
 
       <ConfirmDialog open={!!deleting} title={`ลบบัญชี ${lastDeleting?.display_name}?`} body="ผู้ใช้นี้จะเข้าสู่ระบบไม่ได้อีก" confirm="ลบบัญชี"
-        onConfirm={() => deleting && remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
+        onConfirm={() => deleting && remove.mutateAsync(deleting.id)} loading={remove.isPending} onClose={() => setDeleting(null)} />
     </div>
   )
 }
@@ -79,7 +79,7 @@ function CreateDialog({ onClose, onDone }: { onClose: () => void; onDone: (email
           <div className="grid gap-1"><Label htmlFor="email">อีเมล</Label><Input id="email" name="email" type="email" required /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>ยกเลิก</Button>
-            <Button type="submit" disabled={create.isPending}>สร้างบัญชี</Button>
+            <Button type="submit" loading={create.isPending}>สร้างบัญชี</Button>
           </DialogFooter>
         </form>
       </DialogContent>

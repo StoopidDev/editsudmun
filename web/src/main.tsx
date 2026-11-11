@@ -17,6 +17,6 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
-    <Toaster position="bottom-center" theme="light" />
+    <Toaster position="bottom-center" theme="light" mobileOffset={{ bottom: 80 }} />
   </QueryClientProvider>,
 )

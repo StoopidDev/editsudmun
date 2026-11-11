@@ -87,8 +87,8 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         <div className="flex flex-wrap gap-2">
           {clipId
             ? <Button variant="outline" onClick={() => setCopying(true)}><Copy />คัดลอกไปวันอื่น</Button>
-            : <Button variant="outline" onClick={() => submit(true)} disabled={save.isPending || cats.length === 0 || !!draft}>บันทึกและเพิ่มต่อ</Button>}
-          <Button onClick={() => submit()} disabled={save.isPending || cats.length === 0 || !!draft}>บันทึก</Button>
+            : <Button variant="outline" onClick={() => submit(true)} loading={save.isPending} disabled={cats.length === 0 || !!draft}>บันทึกและเพิ่มต่อ</Button>}
+          <Button onClick={() => submit()} loading={save.isPending} disabled={cats.length === 0 || !!draft}>บันทึก</Button>
         </div>
       </div>
 
@@ -153,7 +153,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
 
       {copying && clipId && <CopyDialog clip={{ id: clipId, title: form.title, date: form.date }} onClose={() => setCopying(false)} />}
       <ConfirmDialog open={!!deletingFile} title={`ลบไฟล์ “${lastFile?.file_name}”?`} body="ลบแล้วกู้คืนไม่ได้" confirm="ลบ"
-        onConfirm={() => deletingFile && removeFile.mutate(deletingFile.id)} onClose={() => setDeletingFile(null)} />
+        onConfirm={() => deletingFile && removeFile.mutateAsync(deletingFile.id)} loading={removeFile.isPending} onClose={() => setDeletingFile(null)} />
     </div>
   )
 }

@@ -49,7 +49,7 @@ export function Login() {
           </div>
         </div>
         {act.error && <p id="login-error" role="alert" className="text-sm text-danger">{act.error.message}</p>}
-        <Button type="submit" disabled={act.isPending}>{act.isPending ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</Button>
+        <Button type="submit" loading={act.isPending}>{act.isPending ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</Button>
         <p className="text-center text-xs text-sub">ลืมรหัสผ่าน? ติดต่อเจ้าของช่องเพื่อรีเซ็ต</p>
       </form>
     </div>

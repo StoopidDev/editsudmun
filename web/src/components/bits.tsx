@@ -54,8 +54,8 @@ export function UploadDisabled({ label }: { label: string }) {
 }
 
 export function ConfirmDialog(props: {
-  open: boolean; title: string; body: ReactNode; confirm: string
-  onConfirm: () => void; onClose: () => void
+  open: boolean; title: string; body: ReactNode; confirm: string; loading?: boolean
+  onConfirm: () => unknown; onClose: () => void
 }) {
   return (
     <Dialog open={props.open} onOpenChange={(o) => !o && props.onClose()}>
@@ -65,8 +65,11 @@ export function ConfirmDialog(props: {
           <DialogDescription>{props.body}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={props.onClose}>ยกเลิก</Button>
-          <Button className="bg-danger text-white hover:bg-danger/90" onClick={() => { props.onConfirm(); props.onClose() }}>{props.confirm}</Button>
+          <Button variant="outline" onClick={props.onClose} disabled={props.loading}>ยกเลิก</Button>
+          <Button className="bg-danger text-white hover:bg-danger/90" loading={props.loading}
+            onClick={async () => {
+              try { await props.onConfirm(); props.onClose() } catch { /* useAct shows the toast; keep the dialog open */ }
+            }}>{props.confirm}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

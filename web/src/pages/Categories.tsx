@@ -51,7 +51,7 @@ export function Categories() {
       )}
       {editing && <CategoryDialog editing={editing} used={cats.map((c) => c.color)} onClose={() => setEditing(null)} />}
       <ConfirmDialog open={!!deleting} title={`ลบประเภท “${lastDeleting?.name}”?`} body="ลบแล้วกู้คืนไม่ได้" confirm="ลบ"
-        onConfirm={() => deleting && remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
+        onConfirm={() => deleting && remove.mutateAsync(deleting.id)} loading={remove.isPending} onClose={() => setDeleting(null)} />
     </div>
   )
 }
@@ -78,7 +78,7 @@ function CategoryDialog({ editing, used, onClose }: { editing: Category | 'new';
           <div className="grid gap-1"><Label htmlFor="color">สี</Label><input id="color" name="color" type="color" defaultValue={current?.color ?? nextColor(used)} className="h-9 w-16" /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>ยกเลิก</Button>
-            <Button type="submit" disabled={save.isPending}>บันทึก</Button>
+            <Button type="submit" loading={save.isPending}>บันทึก</Button>
           </DialogFooter>
         </form>
       </DialogContent>

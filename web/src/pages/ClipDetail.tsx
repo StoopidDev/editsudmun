@@ -82,7 +82,7 @@ function CreatorDetail({ id }: { id: string }) {
                   </div>
                 </div>
                 {me && canWithdraw(m, me.id) && (
-                  <Button variant="outline" className="min-h-11 border-danger text-danger md:min-h-0" disabled={withdraw.isPending} onClick={() => withdraw.mutate(m.id)}>
+                  <Button variant="outline" className="min-h-11 border-danger text-danger md:min-h-0" loading={withdraw.isPending} onClick={() => withdraw.mutate(m.id)}>
                     ถอนไฟล์นี้ (เหลือ {withdrawMinutesLeft(m)} นาที)
                   </Button>
                 )}

@@ -75,7 +75,7 @@ export function Review({ clipId }: { clipId: string }) {
           <Textarea autoFocus rows={3} aria-label="เหตุผลที่ขอแก้ไข" placeholder="เหตุผลที่ขอแก้ไข (ครีเอเตอร์จะเห็นข้อความนี้)" value={reason} onChange={(e) => setReason(e.target.value)} />
           <span className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setAsking(false)}>ยกเลิก</Button>
-            <Button disabled={review.isPending || !reason.trim()} onClick={requestChanges}>ส่งคำขอแก้ไข</Button>
+            <Button loading={review.isPending} disabled={!reason.trim()} onClick={requestChanges}>ส่งคำขอแก้ไข</Button>
           </span>
         </div>
       ) : (
@@ -83,12 +83,12 @@ export function Review({ clipId }: { clipId: string }) {
           <span className="text-xs">สถานะ: <StatusChip status={clip.status} /></span>
           <span className="flex gap-2">
             <Button variant="outline" className="border-warn-line text-warn-text" disabled={rounds.length === 0} onClick={() => setAsking(true)}>ขอแก้ไข</Button>
-            <Button className="bg-success text-white hover:bg-success/90" disabled={review.isPending || rounds.length === 0 || clip.status === 'approved'} onClick={approve}>อนุมัติ</Button>
+            <Button className="bg-success text-white hover:bg-success/90" loading={review.isPending} disabled={rounds.length === 0 || clip.status === 'approved'} onClick={approve}>อนุมัติ</Button>
           </span>
         </div>
       )}
       <ConfirmDialog open={!!deleting} title={`ลบไฟล์ “${lastDeleting?.file_name}”?`} body="ไฟล์ที่ครีเอเตอร์ส่งเป็นหลักฐาน ลบแล้วกู้คืนไม่ได้" confirm="ลบ"
-        onConfirm={() => deleting && remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
+        onConfirm={() => deleting && remove.mutateAsync(deleting.id)} loading={remove.isPending} onClose={() => setDeleting(null)} />
     </section>
   )
 }
