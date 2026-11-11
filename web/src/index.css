@@ -182,7 +182,7 @@ body {
 
 /* Feedback on pointer-down, not on click (apple-design §1). */
 @utility press {
-  transition: transform var(--duration-press) var(--ease-out-quint), box-shadow 150ms var(--ease-out-quint), background-color var(--duration-state), border-color 150ms, opacity var(--duration-state);
+  transition: transform var(--duration-press) var(--ease-out-quint), box-shadow 150ms var(--ease-out-quint), background-color var(--duration-state), border-color 150ms, color 150ms, opacity var(--duration-state);
   &:active:not(:disabled):not([aria-haspopup]) { transform: scale(0.97); }
 }
 
@@ -201,7 +201,7 @@ body {
 }
 /* Inset shadow, not background: fills (brand, today, surface) keep their colour. Transition list matches press so either utility yields the same result. */
 @utility hover-tint {
-  transition: transform var(--duration-press) var(--ease-out-quint), box-shadow 150ms var(--ease-out-quint), background-color var(--duration-state), border-color 150ms, opacity var(--duration-state);
+  transition: transform var(--duration-press) var(--ease-out-quint), box-shadow 150ms var(--ease-out-quint), background-color var(--duration-state), border-color 150ms, color 150ms, opacity var(--duration-state);
   @media (hover: hover) and (pointer: fine) { &:hover { box-shadow: inset 0 0 0 100vmax color-mix(in oklab, var(--c-ink) 6%, transparent); } }
 }
 

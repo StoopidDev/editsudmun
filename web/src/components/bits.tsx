@@ -106,5 +106,5 @@ export function Delayed({ children }: { children: ReactNode }) {
     const t = setTimeout(() => setShow(true), 150)
     return () => clearTimeout(t)
   }, [])
-  return show ? <div role="status" aria-label="กำลังโหลด">{children}</div> : null
+  return show ? <div role="status"><span className="sr-only">กำลังโหลด</span>{children}</div> : null
 }
