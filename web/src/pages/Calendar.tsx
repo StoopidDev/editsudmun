@@ -1,29 +1,30 @@
 import { useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { addDays, addMonths, isSameMonth, isValid } from 'date-fns'
+import { addDays, addMonths, isSameMonth } from 'date-fns'
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { useCategories, useClips, useMe, withTransition } from '@/api/queries'
+import { useCategories, useClips, useDayCounts, useMe, withTransition } from '@/api/queries'
 import { ClipCard } from '@/components/ClipCard'
 import { DayDrawer } from '@/components/DayDrawer'
 import { Delayed, Skeleton } from '@/components/bits'
 import { Button } from '@/components/ui/button'
 import { readableOn } from '@/lib/color'
-import { dayLabel, fromIso, fullDate, monthGrid, monthLabel, rangeLabel, shortDate, toIso, todayIso, weekDays } from '@/lib/dates'
-import type { ClipCardRow } from '@/lib/types'
+import { calendarView, dayLabel, fullDate, monthLabel, rangeLabel, shortDate, toIso, todayIso } from '@/lib/dates'
+import type { ClipCardRow, ClipDayCount } from '@/lib/types'
 
 const MAX_CARDS = 4
 const SHORT_DAYS = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา']
 
 export function Calendar() {
   const [params, setParams] = useSearchParams()
-  const view = params.get('view') === 'month' ? 'month' : 'week'
-  const parsed = fromIso(params.get('date') ?? '')
-  const date = isValid(parsed) ? parsed : fromIso(todayIso())
+  const { view, date, days } = calendarView(params)
   const dateIso = toIso(date)
-  const days = view === 'week' ? weekDays(date) : monthGrid(date)
   const { data: me } = useMe()
   const owner = me?.role === 'owner'
-  const clips = useClips(toIso(days[0]), toIso(days[days.length - 1]))
+  const from = toIso(days[0])
+  const to = toIso(days[days.length - 1])
+  // Only the view on screen loads: the week's cards, or the month's per-day counts.
+  const clips = useClips(from, to, view === 'week')
+  const counts = useDayCounts(from, to, view === 'month')
   const [drawer, setDrawer] = useState<string | null>(null)
   const dirTimer = useRef(0)
 
@@ -37,6 +38,7 @@ export function Calendar() {
     void withTransition(() => go({ date: toIso(view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)) }))
   }
   const forDay = (iso: string) => clips.data?.filter((c) => c.date === iso) ?? []
+  const countOf = (iso: string) => counts.data?.filter((c) => c.date === iso) ?? []
 
   return (
     <div className="flex flex-col gap-4">
@@ -62,7 +64,7 @@ export function Calendar() {
             <div className="hidden xl:block"><Week days={days} loading={clips.isPending} forDay={forDay} owner={owner} onOpen={setDrawer} /></div>
           </>
         )
-        : <Month days={days} anchor={date} forDay={forDay} onPick={(iso) => go({ view: 'week', date: iso })} />}
+        : <Month days={days} anchor={date} forDay={countOf} onPick={(iso) => go({ view: 'week', date: iso })} />}
 
       {drawer && <DayDrawer date={drawer} onClose={() => setDrawer(null)} />}
       {owner && (
@@ -138,7 +140,7 @@ function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => Clip
   )
 }
 
-function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipCardRow[]; onPick: (iso: string) => void }) {
+function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipDayCount[]; onPick: (iso: string) => void }) {
   const { data: cats = [] } = useCategories()
   const today = todayIso()
   return (

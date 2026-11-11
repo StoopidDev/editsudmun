@@ -71,6 +71,10 @@ export const partNumbers = (size: number) => Array.from({ length: Math.max(1, Ma
 // Ready files only: the server marks a row ready after it checked the object, and only those have a playable URL.
 export const readyIds = (files: ClipMedia[]) => files.filter((f) => f.status === 'ready').map((f) => f.id)
 
+// A reference grid shows at most TILE_CAP tiles; with more files the last tile is "+n" for the ones it hides.
+export const TILE_CAP = 6
+export const shownTiles = <T,>(files: T[]): T[] => (files.length > TILE_CAP ? files.slice(0, TILE_CAP - 1) : files)
+
 // Splits a list into runs of `size` (the API takes at most 100 ids per call).
 export const chunk = <T,>(list: T[], size: number): T[][] =>
   Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size))

@@ -19,5 +19,9 @@ export type ClipMedia = Narrow<
   { kind: 'image' | 'video'; purpose: 'reference' | 'submission'; status: 'pending' | 'ready' }
 >
 
-export type ClipCardRow = Clip & { imageCount: number }
+// What each list reads (the select strings in api/index.ts match these; the typed client checks them).
+export type ClipCardRow = Pick<Clip, 'id' | 'date' | 'position' | 'category_id' | 'status' | 'title' | 'script' | 'note'> & { imageCount: number }
+export type ClipDayCount = Pick<Clip, 'id' | 'date' | 'category_id' | 'status'>
+export type ClipRecent = Pick<Clip, 'id' | 'title' | 'category_id' | 'brief_updated_at'>
+export type ClipSearchRow = Pick<Clip, 'id' | 'date' | 'category_id' | 'title' | 'script' | 'note'>
 export type ClipInput = Pick<Clip, 'date' | 'category_id' | 'title' | 'script' | 'note'>

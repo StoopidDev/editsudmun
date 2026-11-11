@@ -6,7 +6,7 @@ import { useAct, useCategories, useClip, useDeleteClip, useMedia } from '@/api/q
 import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
 import { CopyDialog } from '@/components/CopyDialog'
-import { ConfirmDialog, Delayed, FileTile, Skeleton } from '@/components/bits'
+import { ConfirmDialog, Delayed, FileTile, MoreTile, Skeleton } from '@/components/bits'
 import { DownloadAll } from '@/components/media'
 import { useLightbox } from '@/components/useLightbox'
 import { UploadZone } from '@/components/UploadZone'
@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { fromIso, fullDate, isIsoDate, todayIso } from '@/lib/dates'
 import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from '@/lib/draft'
-import { daysLeft, readyIds, WARN_DAYS } from '@/lib/media'
+import { daysLeft, readyIds, shownTiles, TILE_CAP, WARN_DAYS } from '@/lib/media'
 import type { ClipInput, ClipMedia } from '@/lib/types'
 import { useLast } from '@/lib/useLast'
 import { Review } from './Review'
@@ -169,6 +169,8 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
 
   const refs = media.filter((m) => m.purpose === 'reference')
   const refViews = viewables(refs, urls)
+  const tiles = shownTiles(refs)
+  const hidden = refs.length - tiles.length
   const expiring = media.filter((m) => daysLeft(m.expires_at) <= WARN_DAYS)
   // Files R2 keeps 30 days from upload; on a saved clip the soonest-expiring reference sets the line.
   const refDays = refs.length ? Math.min(...refs.map((f) => daysLeft(f.expires_at))) : 30
@@ -242,10 +244,11 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           <section className="flex flex-col gap-2 rounded-card border border-line p-3">
             <h2 className="text-sm font-bold">ไฟล์อ้างอิง ({refs.length})</h2>
             <div className="grid grid-cols-2 gap-2">
-              {refs.map((f) => (
+              {tiles.map((f) => (
                 <FileTile key={f.id} file={f} clipDate={form.date} url={urls[f.id]} onDelete={() => setDeletingFile(f)}
                   onOpen={urls[f.id] ? (el) => lb.openAt(refViews, refViews.findIndex((v) => v.id === f.id), el) : undefined} />
               ))}
+              {hidden > 0 && <MoreTile count={hidden} onOpen={(el) => lb.openAt(refViews, Math.min(TILE_CAP - 1, refViews.length - 1), el)} />}
             </div>
             <UploadZone clipId={clipId ?? ''} purpose="reference" ensureClipId={ensureClip} parked={parked} setParked={setParked} />
             <p className="text-xs text-sub">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {refDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>

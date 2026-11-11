@@ -13,12 +13,15 @@ import { useLast } from '@/lib/useLast'
 
 type Editing = Category | 'new' | null
 
+// A category write changes the category list, its counts, and the clips that carry it.
+const CATEGORY_KEYS = [['categories'], ['categoryCounts'], ['clips']] as const
+
 export function Categories() {
   const { data: cats = [], isPending } = useCategories()
   const { data: counts = {} } = useCategoryCounts()
   const [editing, setEditing] = useState<Editing>(null)
   const [deleting, setDeleting] = useState<Category | null>(null)
-  const remove = useAct(api.deleteCategory)
+  const remove = useAct(api.deleteCategory, CATEGORY_KEYS)
   const lastDeleting = useLast(deleting)
 
   return (
@@ -59,7 +62,7 @@ export function Categories() {
 function CategoryDialog({ editing, used, onClose }: { editing: Category | 'new'; used: string[]; onClose: () => void }) {
   const current = editing === 'new' ? null : editing
   const save = useAct(({ name, color }: { name: string; color: string }) =>
-    current ? api.updateCategory(current.id, { name, color }) : api.createCategory(name, color).then(() => undefined))
+    current ? api.updateCategory(current.id, { name, color }) : api.createCategory(name, color).then(() => undefined), CATEGORY_KEYS)
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()

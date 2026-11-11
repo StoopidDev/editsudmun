@@ -13,14 +13,17 @@ import { Label } from '@/components/ui/label'
 import type { Profile } from '@/lib/types'
 import { useLast } from '@/lib/useLast'
 
+// User writes change only the user list.
+const USER_KEYS = [['users']] as const
+
 export function Users() {
   const { data: users = [] } = useUsers()
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Profile | null>(null)
   const [resetting, setResetting] = useState<Profile | null>(null)
   const [temp, setTemp] = useState<{ email: string; password: string } | null>(null)
-  const reset = useAct(api.resetPassword)
-  const remove = useAct(api.deleteUser)
+  const reset = useAct(api.resetPassword, USER_KEYS)
+  const remove = useAct(api.deleteUser, USER_KEYS)
   const lastDeleting = useLast(deleting)
   const lastResetting = useLast(resetting)
 
@@ -60,7 +63,7 @@ export function Users() {
 }
 
 function CreateDialog({ onClose, onDone }: { onClose: () => void; onDone: (email: string, password: string) => void }) {
-  const create = useAct(({ name, email }: { name: string; email: string }) => api.createCreator(name, email))
+  const create = useAct(({ name, email }: { name: string; email: string }) => api.createCreator(name, email), USER_KEYS)
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)

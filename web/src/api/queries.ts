@@ -1,19 +1,42 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { queryOptions, skipToken, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as api from './index'
-import { notViews, useMe } from './queries-auth'
+import { useMe } from './queries-auth'
 import type { Clip, ClipCardRow } from '@/lib/types'
 
-export { notViews, useMe }
-export const useClips = (from: string, to: string, enabled = true) =>
-  useQuery({ queryKey: ['clips', from, to], queryFn: () => api.listClips(from, to), enabled })
-export const useRecent = (limit: number) => useQuery({ queryKey: ['recent', limit], queryFn: () => api.listRecent(limit) })
-export const useClip = (id: string) => useQuery({ queryKey: ['clip', id], queryFn: () => api.getClip(id) })
-export const useMedia = (clipId: string) => useQuery({ queryKey: ['media', clipId], queryFn: () => api.listMedia(clipId) })
-export const useSearch = (q: string) => useQuery({ queryKey: ['search', q], queryFn: () => api.search(q), enabled: !!q.trim() })
-export const useAttention = () => useQuery({ queryKey: ['attention'], queryFn: api.listAttention })
+export { useMe }
+
+// Query options: the hooks below and the route loaders (router.tsx) share them, so a prefetch fills the hook's entry.
+export const clipsQuery = (from: string, to: string) =>
+  queryOptions({ queryKey: ['clips', from, to], queryFn: () => api.listClips(from, to) })
+export const dayCountsQuery = (from: string, to: string) =>
+  queryOptions({ queryKey: ['dayCounts', from, to], queryFn: () => api.listDayCounts(from, to) })
+export const clipQuery = (id: string) => queryOptions({ queryKey: ['clip', id], queryFn: () => api.getClip(id) })
+export const mediaQuery = (id: string) => queryOptions({ queryKey: ['media', id], queryFn: () => api.listMedia(id) })
+export const recentQuery = (limit: number) => queryOptions({ queryKey: ['recent', limit], queryFn: () => api.listRecent(limit) })
+export const categoriesQuery = queryOptions({ queryKey: ['categories'], queryFn: api.listCategories, staleTime: 5 * 60_000 })
+
+export const useClips = (from: string, to: string, enabled = true) => useQuery({ ...clipsQuery(from, to), enabled })
+export const useDayCounts = (from: string, to: string, enabled = true) => useQuery({ ...dayCountsQuery(from, to), enabled })
+export const useRecent = (limit: number) => useQuery(recentQuery(limit))
+export const useClip = (id: string) => useQuery(clipQuery(id))
+export const useMedia = (clipId: string) => useQuery(mediaQuery(clipId))
+// Each page of results is its own cache entry. While "ดูเพิ่ม" loads the previous page stays, but never another search's.
+export const useSearch = (q: string, limit: number) =>
+  useQuery({
+    queryKey: ['search', q, limit],
+    queryFn: () => api.search(q, limit),
+    enabled: !!q.trim(),
+    placeholderData: (prev, prevQuery) => (prevQuery?.queryKey[1] === q ? prev : undefined),
+  })
+// Owner and creator see different lists, so the role is part of the key. No role yet, no request.
+export const useAttention = () => {
+  const { data: me } = useMe()
+  const role = me?.role
+  return useQuery({ queryKey: ['attention', role], queryFn: role ? () => api.listAttention(role) : skipToken })
+}
 export const useExpiring = (enabled: boolean) => useQuery({ queryKey: ['expiring'], queryFn: api.listExpiring, enabled })
-export const useCategories = () => useQuery({ queryKey: ['categories'], queryFn: api.listCategories })
+export const useCategories = () => useQuery(categoriesQuery)
 export const useCategoryCounts = () => useQuery({ queryKey: ['categoryCounts'], queryFn: api.categoryCounts })
 export const useUsers = () => useQuery({ queryKey: ['users'], queryFn: api.listUsers })
 export const useStorage = (enabled: boolean) =>
@@ -31,12 +54,19 @@ export async function withTransition(update: () => void) {
   await t.updateCallbackDone.catch(() => {})
 }
 
-// shortcut: every write refetches everything; narrow the invalidation if a real backend makes this slow.
-export function useAct<A, R>(fn: (arg: A) => Promise<R>) {
+// The lists a clip write can change. 'view' (signed playback URLs) is never listed, so a playing video keeps its URL.
+export const CLIP_KEYS = [['clips'], ['clip'], ['dayCounts'], ['attention'], ['recent'], ['media'], ['search'], ['expiring'], ['storage']] as const
+type Keys = readonly (readonly unknown[])[]
+const refresh = (qc: QueryClient, keys: Keys) => {
+  for (const queryKey of keys) void qc.invalidateQueries({ queryKey })
+}
+
+// Each caller names the lists its write changes; the default is the clip lists.
+export function useAct<A, R>(fn: (arg: A) => Promise<R>, keys: Keys = CLIP_KEYS) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => qc.invalidateQueries(notViews),
+    onSuccess: () => refresh(qc, keys),
     onError: (e: Error) => toast.error(e.message),
   })
 }
@@ -69,7 +99,8 @@ function apply(qc: QueryClient, p: Patch) {
 }
 
 // Every clip write shows at once in one View Transition; the server only confirms it. On error the cache
-// goes back and the error is toasted. Refetch after settle, so the server's answer wins.
+// goes back and the error is toasted. Refetch after settle, so the server's answer wins. Month counts
+// ('dayCounts') are not patched; they refetch on settle with the other clip lists.
 // scope: writes in the same scope run one after another (move twice in a row keeps both).
 export function useOptimisticAct<A>(fn: (a: A) => Promise<unknown>, patch: (a: A) => Patch, scope?: { id: string }) {
   const qc = useQueryClient()
@@ -87,9 +118,7 @@ export function useOptimisticAct<A>(fn: (a: A) => Promise<unknown>, patch: (a: A
       if (ctx) restore(qc, ctx.before)
       toast.error(e.message)
     },
-    onSettled: () => {
-      void qc.invalidateQueries(notViews)
-    },
+    onSettled: () => refresh(qc, CLIP_KEYS),
   })
 }
 
@@ -133,7 +162,7 @@ export function useDeleteClip(onDeleted?: () => void) {
         label: 'เลิกทำ',
         onClick: () => {
           if (row) undoDelete.mutate(row)
-          else void api.restoreClip(id).then(() => qc.invalidateQueries(notViews), (e: Error) => toast.error(e.message))
+          else void api.restoreClip(id).then(() => refresh(qc, CLIP_KEYS), (e: Error) => toast.error(e.message))
         },
       },
     })

@@ -1,18 +1,13 @@
-import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
-import { toast } from 'sonner'
 import '@fontsource-variable/geist'
 import '@fontsource-variable/noto-sans-thai'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ThemedToaster } from './components/ThemedToaster'
+import { queryClient } from './lib/queryClient'
 import { router } from './router'
 import './index.css'
-
-const queryClient = new QueryClient({
-  queryCache: new QueryCache({ onError: (e) => toast.error(e.message) }),
-  defaultOptions: { queries: { retry: false } },
-})
 
 // After a deploy an open tab asks for chunk files that no longer exist: reload once to get the new index.html.
 window.addEventListener('vite:preloadError', (e) => {

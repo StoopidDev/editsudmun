@@ -2,8 +2,8 @@
 import { resolve } from 'node:path'
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
-import { canWithdraw, chunk, daysLeft, expiresBeforeClip, formatDuration, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
+import { calendarView, dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
+import { canWithdraw, chunk, daysLeft, expiresBeforeClip, formatDuration, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, shownTiles, TILE_CAP, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
 import { swapInDay } from './order'
@@ -250,3 +250,35 @@ describe('order', () => {
     expect(out.map((x) => x.position)).toEqual([0, 1, 2])
   })
 })
+
+describe('calendarView', () => {
+  it('shows a week of seven days from ?date, starting Monday', () => {
+    const v = calendarView(new URLSearchParams('view=week&date=2026-11-12'))
+    expect(v.view).toBe('week')
+    expect(toIsoDay(v.days[0])).toBe('2026-11-09')
+    expect(v.days).toHaveLength(7)
+  })
+  it('shows whole weeks around the month for ?view=month', () => {
+    const v = calendarView(new URLSearchParams('view=month&date=2026-11-12'))
+    expect(v.view).toBe('month')
+    expect(toIsoDay(v.days[0])).toBe('2026-10-26')
+    expect(toIsoDay(v.days[v.days.length - 1])).toBe('2026-12-06')
+  })
+  it('falls back to today and the week view for a bad date or view', () => {
+    const v = calendarView(new URLSearchParams('view=year&date=nope'))
+    expect(v.view).toBe('week')
+    expect(v.days).toHaveLength(7)
+  })
+})
+
+describe('shownTiles', () => {
+  it('shows every file up to the cap', () => {
+    expect(shownTiles([1, 2, 3, 4, 5, 6])).toHaveLength(TILE_CAP)
+  })
+  it('leaves the sixth tile for "+n" when there are more files', () => {
+    const files = [1, 2, 3, 4, 5, 6, 7, 8]
+    expect(shownTiles(files)).toEqual([1, 2, 3, 4, 5])
+  })
+})
+
+const toIsoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

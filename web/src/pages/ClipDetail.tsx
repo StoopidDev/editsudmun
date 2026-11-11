@@ -5,13 +5,13 @@ import * as api from '@/api/index'
 import { useAct, useClip, useMe, useMedia } from '@/api/queries'
 import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
-import { CategoryBadge, Delayed, FileTile, Skeleton, StatusChip } from '@/components/bits'
+import { CategoryBadge, Delayed, FileTile, MoreTile, Skeleton, StatusChip } from '@/components/bits'
 import { useLightbox } from '@/components/useLightbox'
 import { useViewUrls, viewables } from '@/lib/viewer'
 import { UploadZone } from '@/components/UploadZone'
 import { Button } from '@/components/ui/button'
 import { fromIso, fullDate, sentAt } from '@/lib/dates'
-import { canWithdraw, daysLeft, formatSize, readyIds, roundCount, WITHDRAW_MS, withRounds, withdrawMinutesLeft } from '@/lib/media'
+import { canWithdraw, daysLeft, formatSize, readyIds, roundCount, shownTiles, TILE_CAP, WITHDRAW_MS, withRounds, withdrawMinutesLeft } from '@/lib/media'
 import { ClipForm } from './ClipForm'
 
 export function ClipDetail() {
@@ -67,6 +67,8 @@ function CreatorDetail({ id }: { id: string }) {
   const refs = media.filter((m) => m.purpose === 'reference')
   const rounds = withRounds(media.filter((m) => m.purpose === 'submission'))
   const refViews = viewables(refs, urls)
+  const tiles = shownTiles(refs)
+  const hidden = refs.length - tiles.length
   const subViews = viewables(rounds, urls)
   const minDays = refs.length ? Math.min(...refs.map((f) => daysLeft(f.expires_at))) : null
   const anyWithdraw = !!me && rounds.some((m) => canWithdraw(m, me.id, now))
@@ -103,10 +105,11 @@ function CreatorDetail({ id }: { id: string }) {
               <span className="text-xs font-light text-sub">แตะรูปเพื่อดูขยาย</span>
             </h2>
             <div className="grid grid-cols-3 gap-2">
-              {refs.map((f) => (
+              {tiles.map((f) => (
                 <FileTile key={f.id} file={f} clipDate={clip.date} url={urls[f.id]}
                   onOpen={urls[f.id] ? (el) => lb.openAt(refViews, refViews.findIndex((v) => v.id === f.id), el) : undefined} />
               ))}
+              {hidden > 0 && <MoreTile count={hidden} onOpen={(el) => lb.openAt(refViews, Math.min(TILE_CAP - 1, refViews.length - 1), el)} />}
             </div>
             {minDays !== null && (
               <p className="text-xs font-light text-sub">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {minDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>

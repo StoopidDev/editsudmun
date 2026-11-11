@@ -51,6 +51,19 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
   const isVideo = file.kind === 'video'
   const early = expiresBeforeClip(file.expires_at, clipDate)
   const [loaded, setLoaded] = useState(false)
+  // A video's metadata (first frame, duration) is fetched only once its tile is near the screen.
+  const tile = useRef<HTMLDivElement>(null)
+  // Without IntersectionObserver (old browsers, tests) the metadata loads at once.
+  const [near, setNear] = useState(() => !('IntersectionObserver' in window))
+  useEffect(() => {
+    const el = tile.current
+    if (!el || !isVideo || near) return
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setNear(true); io.disconnect() }
+    }, { rootMargin: '200px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [isVideo, near])
   // Remember which URL failed (e.g. HEIC in Chrome, or an expired link): a fresh URL gets a new try.
   const [brokenUrl, setBrokenUrl] = useState<string | null>(null)
   const broken = !!url && brokenUrl === url
@@ -58,9 +71,9 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
   const dur = seconds === null ? '' : formatDuration(seconds)
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <div className={`relative aspect-[103/68] overflow-hidden rounded-card ${isVideo ? 'bg-video' : 'bg-surface'}`}>
+      <div ref={tile} className={`relative aspect-[103/68] overflow-hidden rounded-card ${isVideo ? 'bg-video' : 'bg-surface'}`}>
         {url && !isVideo && !broken && (
-          <img src={url} alt="" loading="lazy" decoding="async" onLoad={() => setLoaded(true)} onError={() => setBrokenUrl(url)}
+          <img src={url} alt="" width={103} height={68} loading="lazy" fetchPriority="low" decoding="async" onLoad={() => setLoaded(true)} onError={() => setBrokenUrl(url)}
             className={`absolute inset-0 size-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`} />
         )}
         {broken && (
@@ -71,7 +84,7 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
         )}
         {url && isVideo && isPlayable(file.mime) && (
           // Metadata only: the first frame is the thumbnail and loadedmetadata gives the duration.
-          <video src={url} preload="metadata" muted playsInline onLoadedMetadata={(e) => setSeconds(e.currentTarget.duration)}
+          <video src={url} preload={near ? 'metadata' : 'none'} muted playsInline onLoadedMetadata={(e) => setSeconds(e.currentTarget.duration)}
             className="absolute inset-0 size-full object-cover" />
         )}
         {isVideo && <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-white"><span className="flex size-8 items-center justify-center rounded-full bg-black/40"><Play size={14} /></span></span>}
@@ -89,6 +102,16 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
         {early ? 'ลบก่อนถึงวันคลิป' : `ลบใน ${daysLeft(file.expires_at)} วัน`}
       </span>
     </div>
+  )
+}
+
+// The sixth tile of a reference grid when there are more files: opens the lightbox on the first hidden one.
+export function MoreTile({ count, onOpen }: { count: number; onOpen: (el: HTMLElement) => void }) {
+  return (
+    <button type="button" aria-label={`ดูไฟล์อีก ${count} ไฟล์`} onClick={(e) => onOpen(e.currentTarget)}
+      className="press hover-tint flex aspect-[103/68] items-center justify-center rounded-card bg-surface text-sm font-bold text-sub">
+      +{count}
+    </button>
   )
 }
 

@@ -1,22 +1,39 @@
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useSearch } from '@/api/queries'
 import { CategoryBadge, Delayed, Skeleton } from '@/components/bits'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { dayLabel, fromIso, shortDate } from '@/lib/dates'
 import { snippet } from '@/lib/search'
 
+// Results come in pages of 50; "ดูเพิ่ม" asks for the next page.
+const PAGE = 50
+
 export function Search() {
   const [params, setParams] = useSearchParams()
   const q = params.get('q') ?? ''
-  const { data = [], isFetching, isError } = useSearch(q)
 
   return (
     <div className="flex flex-col gap-3">
       {/* The full sidebar starts at lg, so this input is the only search box below it. */}
       <Input key={q} className="lg:hidden" aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
       {!q && <p className="py-16 text-center text-sm text-sub">พิมพ์ชื่อคลิปหรือคำในสคริปต์ แล้วกด Enter</p>}
-      {q && <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isFetching && !isError && <span className="text-sm font-normal text-sub">{data.length} คลิป</span>}</h1>}
-      {q && isFetching && data.length === 0 && (
+      {q && <Results key={q} q={q} />}
+    </div>
+  )
+}
+
+// Keyed by the query, so a new search starts again at one page.
+function Results({ q }: { q: string }) {
+  const [limit, setLimit] = useState(PAGE)
+  const { data = [], isFetching, isError } = useSearch(q, limit)
+  const full = data.length === limit
+
+  return (
+    <>
+      <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isFetching && !isError && <span className="text-sm font-normal text-sub">{full ? `${data.length}+` : data.length} คลิป</span>}</h1>
+      {isFetching && data.length === 0 && (
         <Delayed><div className="flex flex-col gap-3"><Skeleton className="h-20" /><Skeleton className="h-20" /><Skeleton className="h-20" /></div></Delayed>
       )}
       {data.map((c) => {
@@ -31,12 +48,15 @@ export function Search() {
           </Link>
         )
       })}
-      {q && !isFetching && !isError && data.length === 0 && (
+      {full && !isFetching && (
+        <Button variant="outline" className="self-center" onClick={() => setLimit(limit + PAGE)}>ดูเพิ่ม</Button>
+      )}
+      {!isFetching && !isError && data.length === 0 && (
         <div className="py-16 text-center">
           <p className="font-bold">ไม่พบคลิปที่ตรงกับ “{q}”</p>
           <p className="text-sm text-sub">ลองคำอื่น หรือเช็กการสะกด</p>
         </div>
       )}
-    </div>
+    </>
   )
 }

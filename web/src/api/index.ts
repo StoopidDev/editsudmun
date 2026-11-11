@@ -5,8 +5,7 @@ import { addDays } from 'date-fns'
 import { attentionOf, type Attention } from '@/lib/attention'
 import { isIsoDate, todayIso } from '@/lib/dates'
 import { daysLeft, uploadProblem, WARN_DAYS } from '@/lib/media'
-import type { Category, Clip, ClipCardRow, ClipInput, ClipMedia, ClipStatus, Profile } from '@/lib/types'
-import { me } from './auth'
+import type { Category, Clip, ClipCardRow, ClipDayCount, ClipInput, ClipMedia, ClipRecent, ClipSearchRow, ClipStatus, Profile, Role } from '@/lib/types'
 import { ok } from './errors'
 import { supabase } from './supabase'
 
@@ -25,10 +24,13 @@ const checkDate = (d: string) => {
 }
 
 // Clips
-// Cards show the number of reference images; counted in the same request.
-const CARD = '*, images:clip_media(count)'
-type CardRow = Clip & { images: { count: number }[] }
-const toCard = ({ images, ...c }: CardRow): ClipCardRow => ({ ...c, imageCount: images[0]?.count ?? 0 })
+// Each list selects only the columns it shows (the typed client checks them against the row types in
+// lib/types.ts). Cards show the number of reference images; counted in the same request.
+const CARD = 'id, date, position, category_id, status, title, script, note, images:clip_media(count)'
+const ATTENTION = 'id, date, position, category_id, status, title, script, note, round, revision_note, images:clip_media(count)'
+type CardDb = Omit<ClipCardRow, 'imageCount'> & { images: { count: number }[] }
+type AttentionDb = CardDb & Pick<Clip, 'round' | 'revision_note'>
+const withCount = ({ images, ...c }: CardDb): ClipCardRow => ({ ...c, imageCount: images[0]?.count ?? 0 })
 
 export async function listClips(from: string, to: string): Promise<ClipCardRow[]> {
   const rows = ok(
@@ -43,27 +45,35 @@ export async function listClips(from: string, to: string): Promise<ClipCardRow[]
       .order('date')
       .order('position'),
   )
-  return (rows as CardRow[]).map(toCard)
+  return (rows as CardDb[]).map(withCount)
+}
+
+// Month view: only what a day count needs.
+export async function listDayCounts(from: string, to: string): Promise<ClipDayCount[]> {
+  const rows = ok(
+    await supabase.from('clips').select('id, date, category_id, status').gte('date', from).lte('date', to).is('deleted_at', null),
+  )
+  return rows as ClipDayCount[]
 }
 
 // brief_updated_at moves only when the brief itself changes, not on review or reorder.
-export async function listRecent(limit: number): Promise<Clip[]> {
+export async function listRecent(limit: number): Promise<ClipRecent[]> {
   return ok(
-    await supabase.from('clips').select('*').is('deleted_at', null).order('brief_updated_at', { ascending: false }).limit(limit),
-  ) as Clip[]
+    await supabase.from('clips').select('id, title, category_id, brief_updated_at').is('deleted_at', null).order('brief_updated_at', { ascending: false }).limit(limit),
+  ) as ClipRecent[]
 }
 
 // Owner: work waiting for review. Creator: changes requested, or todo past its date.
 const RANK: Record<Attention, number> = { revision: 0, review: 1, overdue: 2 }
-export async function listAttention(): Promise<(ClipCardRow & { attention: Attention })[]> {
-  const user = await me()
-  if (!user) throw new Error('กรุณาเข้าสู่ระบบ')
+export type AttentionRow = ClipCardRow & Pick<Clip, 'round' | 'revision_note'> & { attention: Attention }
+export async function listAttention(role: Role): Promise<AttentionRow[]> {
   const today = todayIso()
-  let q = supabase.from('clips').select(CARD).is('deleted_at', null).eq('images.purpose', 'reference').eq('images.kind', 'image')
-  q = user.role === 'owner' ? q.eq('status', 'submitted') : q.or(`status.eq.revision,and(status.eq.todo,date.lt.${today})`)
-  const rows = (ok(await q) as CardRow[]).flatMap((c) => {
-    const attention = attentionOf(c as Clip, user.role, today)
-    return attention ? [{ ...toCard(c), attention }] : []
+  let q = supabase.from('clips').select(ATTENTION).is('deleted_at', null).eq('images.purpose', 'reference').eq('images.kind', 'image')
+  q = role === 'owner' ? q.eq('status', 'submitted') : q.or(`status.eq.revision,and(status.eq.todo,date.lt.${today})`)
+  const rows = (ok(await q) as AttentionDb[]).flatMap((c) => {
+    const attention = attentionOf(c, role, today)
+    if (!attention) return []
+    return [{ ...withCount(c), round: c.round, revision_note: c.revision_note, attention }]
   })
   return rows.sort((a, b) => RANK[a.attention] - RANK[b.attention] || a.date.localeCompare(b.date) || a.position - b.position)
 }
@@ -114,9 +124,10 @@ export async function restoreReview(id: string, status: ClipStatus, note: string
   one(await supabase.from('clips').update({ status, revision_note: note }).eq('id', id).select('id'))
 }
 
-export async function search(q: string): Promise<Clip[]> {
+// Pages of 50 at most: the caller asks for `limit` rows and shows "ดูเพิ่ม" for more.
+export async function search(q: string, limit: number): Promise<ClipSearchRow[]> {
   if (!q.trim()) return []
-  return ok(await supabase.rpc('search_clips', { p_q: q })) as Clip[]
+  return ok(await supabase.rpc('search_clips', { p_q: q }).select('id, date, category_id, title, script, note').range(0, limit - 1)) as ClipSearchRow[]
 }
 
 // Media

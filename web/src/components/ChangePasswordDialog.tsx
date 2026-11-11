@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
-  const change = useAct(({ current, next }: { current: string; next: string }) => api.changePassword(current, next))
+  const change = useAct(({ current, next }: { current: string; next: string }) => api.changePassword(current, next), [])
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
