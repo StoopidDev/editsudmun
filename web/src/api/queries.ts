@@ -1,4 +1,4 @@
-import { queryOptions, skipToken, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { queryOptions, skipToken, useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as api from './index'
 import { useMe } from './queries-auth'
@@ -21,7 +21,18 @@ export const useDayCounts = (from: string, to: string, enabled = true) => useQue
 export const useRecent = (limit: number) => useQuery(recentQuery(limit))
 export const useClip = (id: string) => useQuery(clipQuery(id))
 export const useMedia = (clipId: string) => useQuery(mediaQuery(clipId))
-export const useSearch = (q: string) => useQuery({ queryKey: ['search', q], queryFn: () => api.search(q), enabled: !!q.trim() })
+// Pages of SEARCH_PAGE results; "ดูเพิ่ม" calls fetchNextPage until every match is loaded.
+export const useSearch = (q: string) =>
+  useInfiniteQuery({
+    queryKey: ['search', q],
+    queryFn: ({ pageParam }) => api.search(q, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (last, pages) => {
+      const loaded = pages.reduce((n, p) => n + p.rows.length, 0)
+      return last.rows.length > 0 && loaded < last.total ? loaded : undefined
+    },
+    enabled: !!q.trim(),
+  })
 // Owner and creator see different lists, so the role is part of the key. No role yet, no request.
 export const useAttention = () => {
   const { data: me } = useMe()

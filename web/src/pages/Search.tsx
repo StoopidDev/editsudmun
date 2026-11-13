@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom'
-import { SEARCH_CAP } from '@/api/index'
 import { useSearch } from '@/api/queries'
 import { CategoryBadge, Delayed, Skeleton } from '@/components/bits'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { dayLabel, fromIso, shortDate } from '@/lib/dates'
 import { snippet } from '@/lib/search'
@@ -22,11 +22,13 @@ export function Search() {
 
 // Keyed by the query, so a new search starts a new request.
 function Results({ q }: { q: string }) {
-  const { data = [], isFetching, isError } = useSearch(q)
+  const { data: pages, isPending, isFetching, isError, hasNextPage, fetchNextPage, isFetchingNextPage } = useSearch(q)
+  const data = pages?.pages.flatMap((p) => p.rows) ?? []
+  const total = pages?.pages[0]?.total ?? 0
 
   return (
     <>
-      <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isFetching && !isError && <span className="text-sm font-normal text-sub">{data.length === SEARCH_CAP ? `${SEARCH_CAP}+` : data.length} คลิป</span>}</h1>
+      <h1 className="text-lg font-bold">ผลการค้นหา “{q}” {!isPending && !isError && <span className="text-sm font-normal text-sub">{total} คลิป</span>}</h1>
       {isFetching && data.length === 0 && (
         <Delayed><div className="flex flex-col gap-3"><Skeleton className="h-20" /><Skeleton className="h-20" /><Skeleton className="h-20" /></div></Delayed>
       )}
@@ -42,6 +44,11 @@ function Results({ q }: { q: string }) {
           </Link>
         )
       })}
+      {hasNextPage && (
+        <Button variant="outline" className="self-center" loading={isFetchingNextPage} onClick={() => void fetchNextPage()}>
+          ดูเพิ่ม ({total - data.length} คลิป)
+        </Button>
+      )}
       {!isFetching && !isError && data.length === 0 && (
         <div className="py-16 text-center">
           <p className="font-bold">ไม่พบคลิปที่ตรงกับ “{q}”</p>

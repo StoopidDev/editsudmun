@@ -197,6 +197,22 @@ describe('soft delete', () => {
   })
 })
 
+describe('search paging', () => {
+  it('returns every match in pages with an exact total and no overlap', async () => {
+    const word = `หน้า${tag}`
+    for (let i = 0; i < 3; i++) await newClip(`${word} ${i}`, '2031-04-01')
+    const page = (from: number, to: number) =>
+      creator.rpc('search_clips', { p_q: word }, { count: 'exact' }).select('id').range(from, to)
+    const first = await page(0, 1)
+    const second = await page(2, 3)
+    expect(first.count).toBe(3)
+    expect(first.data).toHaveLength(2)
+    expect(second.data).toHaveLength(1)
+    const ids = [first.data, second.data].flatMap((rows) => (rows as { id: string }[]).map((r) => r.id))
+    expect(new Set(ids).size).toBe(3)
+  })
+})
+
 describe('card preview columns', () => {
   it('script_preview is the first 160 characters and has_note follows note; clients cannot write them', async () => {
     const script = 'ก'.repeat(200)
