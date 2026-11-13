@@ -36,7 +36,7 @@ function ThemeButton({ className = '', label }: { className?: string; label?: bo
   const name = dark ? 'โหมดสว่าง' : 'โหมดมืด'
   return (
     <button type="button" onClick={toggleTheme} aria-label={name} title={name}
-      className={`press hover-tint flex h-8 min-w-8 max-md:min-h-11 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
+      className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-8 min-w-8 max-md:min-h-11 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
       <Icon size={18} />{label && <span className="text-sm font-light">{name}</span>}
     </button>
   )
@@ -87,16 +87,16 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
   return (
     <div className={`flex h-full flex-col gap-4 bg-surface p-3 ${rail ? '' : 'min-w-60'}`}>
       <div className={`flex items-center ${rail ? 'flex-col' : 'justify-between'}`}>
-        {!rail && <Link viewTransition to="/" className="px-2 py-2 text-xl font-light">Channel's Tool</Link>}
+        {!rail && <Link viewTransition to="/" className="rounded-card px-2 py-2 text-xl font-light focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">Channel's Tool</Link>}
         {onToggle && (
           <button type="button" onClick={onToggle} aria-label={rail ? 'แสดงเมนู' : 'ซ่อนเมนู'} aria-expanded={!rail}
-            className="hover-tint hidden size-8 items-center justify-center rounded-card text-sub lg:flex"><PanelLeft size={18} /></button>
+            className="hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand hidden size-8 items-center justify-center rounded-card text-sub lg:flex"><PanelLeft size={18} /></button>
         )}
       </div>
       {rail ? (
-        <Link viewTransition to="/search" aria-label="ค้นหา" className="flex justify-center p-2"><Search size={18} /></Link>
+        <Link viewTransition to="/search" aria-label="ค้นหา" className="flex justify-center rounded-card p-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><Search size={18} /></Link>
       ) : (
-        <form onSubmit={submit} className="flex items-center gap-2 rounded-card border border-line bg-grid px-2 py-1.5">
+        <form onSubmit={submit} className="flex items-center gap-2 rounded-card border border-line bg-bg px-2 py-1.5 focus-within:border-ink">
           <Search size={16} />
           <input ref={input} name="q" defaultValue={params.get('q') ?? ''} placeholder="ค้นหาคลิป..." aria-label="ค้นหาคลิป" className="w-full bg-transparent text-sm outline-none" />
           <kbd className="hidden shrink-0 rounded bg-bg px-1 text-xs whitespace-nowrap text-sub lg:inline">Ctrl K</kbd>
@@ -105,7 +105,7 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
       <nav className="flex flex-col gap-1">
         {NAV.filter((n) => !n.owner || me?.role === 'owner').map(({ to, label, icon: Icon }) => (
           <NavLink viewTransition key={to} to={to} end={to === '/'} onClick={onNavigate} aria-label={label}
-            className={({ isActive }) => `press hover-tint flex items-center gap-2 rounded-card px-2 py-2 text-base font-light ${rail ? 'justify-center' : ''} ${isActive ? 'bg-brand text-white' : ''}`}>
+            className={({ isActive }) => `press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex items-center gap-2 rounded-card px-2 py-2 text-base font-light ${rail ? 'justify-center' : ''} ${isActive ? 'bg-brand text-white' : ''}`}>
             <Icon size={16} />{!rail && label}
           </NavLink>
         ))}
@@ -114,14 +114,14 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
       <div className={`mt-auto flex items-center gap-2 px-2 ${rail ? 'flex-col' : ''}`}>
         {rail && <ThemeButton />}
         <span className="flex size-[35px] items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
-        {rail && <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 items-center justify-center text-sub"><KeyRound size={16} /></button>}
-        {rail && <button onClick={logout} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center text-sub"><LogOut size={16} /></button>}
+        {rail && <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><KeyRound size={16} /></button>}
+        {rail && <button onClick={logout} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><LogOut size={16} /></button>}
         {!rail && (
           <div className="text-sm">
             <b>{me?.display_name}</b>
             <div className="text-xs text-sub">{me?.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</div>
-            <button onClick={() => setChanging(true)} className="block text-xs text-sub underline hover-pointer:no-underline">เปลี่ยนรหัสผ่าน</button>
-            <button onClick={logout} className="text-xs text-sub underline">ออกจากระบบ</button>
+            <button onClick={() => setChanging(true)} className="block rounded-card text-xs text-sub underline hover-pointer:no-underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">เปลี่ยนรหัสผ่าน</button>
+            <button onClick={logout} className="rounded-card text-xs text-sub underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">ออกจากระบบ</button>
           </div>
         )}
       </div>
@@ -158,7 +158,7 @@ export function AppShell() {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="flex h-16 items-center border-b border-line px-4">
             <div className="flex items-center gap-2">
-              <button className="flex min-h-11 min-w-11 items-center justify-center md:hidden" aria-label="เปิดเมนู" onClick={() => setOpen(true)}><Menu /></button>
+              <button className="flex min-h-11 min-w-11 items-center justify-center rounded-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand md:hidden" aria-label="เปิดเมนู" onClick={() => setOpen(true)}><Menu /></button>
               <span className="text-xl font-light">{title}</span>
             </div>
             <div className="ml-auto hidden lg:block"><ThemeButton /></div>
@@ -168,8 +168,13 @@ export function AppShell() {
         <nav aria-label="เมนูหลัก" className="fixed inset-x-0 bottom-0 z-20 flex h-16 border-t border-line bg-bg md:hidden">
           {TABS.map(({ to, label, icon: Icon }) => (
             <NavLink viewTransition key={to} to={to} end={to === '/'}
-              className={({ isActive }) => `press flex flex-1 flex-col items-center justify-center gap-0.5 text-xs ${isActive ? 'font-bold text-brand' : 'text-sub'}`}>
-              <Icon size={20} />{label}
+              className={({ isActive }) => `press relative flex flex-1 flex-col items-center justify-center gap-0.5 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${isActive ? 'font-bold text-brand' : 'text-sub'}`}>
+              {({ isActive }) => (
+                <>
+                  <span aria-hidden className={`absolute inset-x-4 top-0 h-0.5 origin-center rounded-full bg-brand transition-transform duration-200 ${isActive ? 'scale-x-100' : 'scale-x-0'}`} />
+                  <Icon size={20} />{label}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>

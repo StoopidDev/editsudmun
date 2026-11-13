@@ -49,7 +49,7 @@ export function Calendar() {
         <Button variant="outline" onClick={() => go({ date: todayIso() })}>วันนี้</Button>
         <div className="flex rounded-card border border-line p-0.5">
           {(['week', 'month'] as const).map((v) => (
-            <button key={v} aria-pressed={view === v} onClick={() => go({ view: v })} className={`rounded-md px-3 py-1 text-sm max-md:min-h-11 ${view === v ? 'bg-brand text-white' : ''}`}>
+            <button key={v} aria-pressed={view === v} onClick={() => go({ view: v })} className={`rounded-md px-3 py-1 text-sm max-md:min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${view === v ? 'bg-brand text-white' : ''}`}>
               {v === 'week' ? 'สัปดาห์' : 'เดือน'}
             </button>
           ))}
@@ -68,7 +68,7 @@ export function Calendar() {
 
       {drawer && <DayDrawer date={drawer} onClose={() => setDrawer(null)} />}
       {owner && (
-        <Link viewTransition to={`/clips/new?date=${dateIso}`} aria-label="เพิ่มคลิป" className="fixed right-4 bottom-20 z-10 flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-md md:hidden">
+        <Link viewTransition to={`/clips/new?date=${dateIso}`} aria-label="เพิ่มคลิป" className="fixed right-4 bottom-20 z-10 flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-md md:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
           <Plus />
         </Link>
       )}
@@ -89,7 +89,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
           const hasClips = p.forDay(iso).length > 0
           return (
             <button key={iso} type="button" aria-pressed={sel} aria-label={fullDate(d)} onClick={() => p.onPick(iso)}
-              className={`flex h-[62px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-card ${sel ? 'bg-brand text-white' : 'bg-surface'} ${iso === today && !sel ? 'ring-1 ring-brand' : ''}`}>
+              className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-[62px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-card ${sel ? 'bg-brand text-white' : 'bg-surface'} ${iso === today && !sel ? 'ring-1 ring-brand' : ''}`}>
               <span className="text-xs">{SHORT_DAYS[(d.getDay() + 6) % 7]}</span>
               <b className="text-base">{d.getDate()}</b>
               <span className={`size-[5px] rounded-full ${hasClips ? (sel ? 'bg-white' : 'bg-brand') : ''}`} />
@@ -99,13 +99,13 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
       </div>
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-bold">{dayLabel(p.selected)} {shortDate(p.selected)} · {list.length} คลิป</h2>
-        <button type="button" onClick={() => p.onOpen(selIso)} className="min-h-11 px-2 text-sm text-brand hover-pointer:underline underline-offset-4">ดูทั้งวัน</button>
+        <button type="button" onClick={() => p.onOpen(selIso)} className="min-h-11 px-2 text-sm text-brand hover-pointer:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">ดูทั้งวัน</button>
       </div>
       {p.loading && <Delayed><Skeleton className="h-20" /></Delayed>}
-      {list.map((c) => <ClipCard key={c.id} clip={c} />)}
+      {list.map((c, i) => <ClipCard key={c.id} clip={c} enterIndex={i} />)}
       {!p.loading && !p.failed && list.length === 0 && <p className="py-2 text-center text-sm text-sub">ไม่มีคลิป</p>}
       {p.owner && (
-        <Link viewTransition to={`/clips/new?date=${selIso}`} className="rounded-card border border-dashed border-line py-3 text-center text-sm text-sub">+ เพิ่มคลิป</Link>
+        <Link viewTransition to={`/clips/new?date=${selIso}`} className="rounded-card border border-dashed border-line py-3 text-center text-sm text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
       )}
     </div>
   )
@@ -121,17 +121,17 @@ function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => Clip
         const isToday = iso === today
         return (
           <section key={iso} className={`flex flex-col gap-2 rounded-card p-2 min-h-[70vh] ${isToday ? 'border border-brand bg-today' : 'bg-surface'}`}>
-            <button onClick={() => p.onOpen(iso)} className={`press hover-tint rounded-card py-1 text-center ${isToday ? 'bg-brand text-white' : ''}`}>
+            <button onClick={() => p.onOpen(iso)} className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand rounded-card py-1 text-center ${isToday ? 'bg-brand text-white' : ''}`}>
               <span className="text-xs">{dayLabel(d)}</span><br /><b className="text-xl">{d.getDate()}</b><br />
               <span className="text-xs">{list.length} คลิป</span>
             </button>
             {p.loading && <Delayed><Skeleton className="h-20" /></Delayed>}
-            {list.slice(0, MAX_CARDS).map((c) => <ClipCard key={c.id} clip={c} />)}
+            {list.slice(0, MAX_CARDS).map((c, i) => <ClipCard key={c.id} clip={c} enterIndex={i} />)}
             {list.length > MAX_CARDS && (
-              <button onClick={() => p.onOpen(iso)} className="text-xs text-brand hover-pointer:underline underline-offset-4">ดูเพิ่มอีก {list.length - MAX_CARDS} คลิป</button>
+              <button onClick={() => p.onOpen(iso)} className="text-xs text-brand hover-pointer:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">ดูเพิ่มอีก {list.length - MAX_CARDS} คลิป</button>
             )}
             {p.owner && (
-              <Link viewTransition to={`/clips/new?date=${iso}`} className="rounded-card border border-dashed border-line py-1 text-center text-xs text-sub">+ เพิ่มคลิป</Link>
+              <Link viewTransition to={`/clips/new?date=${iso}`} className="rounded-card border border-dashed border-line py-1 text-center text-xs text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
             )}
           </section>
         )
@@ -153,7 +153,7 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipDay
         const total = list.reduce((sum, x) => sum + x.n, 0)
         const inMonth = isSameMonth(d, p.anchor)
         return (
-          <button key={iso} onClick={() => p.onPick(iso)} className={`press hover-tint flex min-h-20 flex-col gap-1 border-r border-b border-grid p-1 text-left md:min-h-28 ${iso === today ? 'bg-today' : inMonth ? '' : 'bg-surface opacity-60'}`}>
+          <button key={iso} onClick={() => p.onPick(iso)} className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex min-h-20 flex-col gap-1 border-r border-b border-grid p-1 text-left md:min-h-28${iso === today ? 'bg-today' : inMonth ? '' : 'bg-surface opacity-60'}`}>
             <span className="flex justify-between text-xs"><b>{d.getDate()}</b>{total > 0 && <span className="hidden text-sub sm:inline">{total} คลิป</span>}</span>
             {cats.map((c) => {
               const n = list.find((x) => x.category_id === c.id)?.n ?? 0

@@ -37,7 +37,7 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
   const exit = { onOpenChange: (o: boolean) => !o && setOpen(false), onOpenChangeComplete: (o: boolean) => !o && onClose() }
 
   const chip = (id: string | null, label: string, n: number) => (
-    <button key={id ?? 'all'} onClick={() => setFilter(id)} aria-pressed={filter === id} className={`press hover-tint rounded-full border border-line px-3 py-1 text-xs ${filter === id ? 'bg-brand text-white' : ''}`}>
+    <button key={id ?? 'all'} onClick={() => setFilter(id)} aria-pressed={filter === id} className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand rounded-full border border-line px-3 py-1 text-xs ${filter === id ? 'bg-brand text-white' : ''}`}>
       {label} {n}
     </button>
   )

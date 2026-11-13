@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type CSSProperties, type FormEvent } from 'react'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
 import * as api from '@/api/index'
 import { useAct, useCategories, useCategoryCounts } from '@/api/queries'
@@ -37,8 +37,8 @@ export function Categories() {
           <div className="hidden grid-cols-[40px_1fr_120px_140px] bg-surface p-3 text-xs text-sub md:grid">
             <span>สี</span><span>ชื่อประเภท</span><span>จำนวนคลิป</span><span className="text-right">การจัดการ</span>
           </div>
-          {cats.map((c) => (
-            <div key={c.id} className="grid grid-cols-[32px_1fr_auto] items-center gap-y-1 border-t border-grid p-3 md:grid-cols-[40px_1fr_120px_140px]">
+          {cats.map((c, i) => (
+            <div key={c.id} className="enter grid grid-cols-[32px_1fr_auto] items-center gap-y-1 border-t border-grid p-3 md:grid-cols-[40px_1fr_120px_140px]" style={{ '--i': i } as CSSProperties}>
               <span className="size-3 rounded-full" style={{ background: c.color }} />
               <b className="text-sm">{c.name}</b>
               <span className="text-sm max-md:hidden">{counts[c.id] ?? 0}</span>

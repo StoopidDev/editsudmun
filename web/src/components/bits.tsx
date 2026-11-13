@@ -15,7 +15,7 @@ export function CategoryBadge({ categoryId }: { categoryId: string }) {
   const cat = data?.find((c) => c.id === categoryId)
   if (!cat) return null
   return (
-    <span className="inline-block rounded-md px-2 py-0.5 text-xs font-bold" style={{ background: cat.color, color: readableOn(cat.color) }}>
+    <span className="inline-block rounded-md px-2 py-0.5 text-xs font-bold transition-colors duration-200" style={{ background: cat.color, color: readableOn(cat.color) }}>
       {cat.name}
     </span>
   )
@@ -91,10 +91,10 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
         {(!url || (!isVideo && !loaded && !broken)) && <Skeleton className="absolute inset-0 rounded-none" />}
         {onOpen && (
           <button type="button" aria-label={`เปิด ${file.file_name}`} disabled={!url}
-            onClick={(e) => onOpen(e.currentTarget)} className="hover-tint absolute inset-0 rounded-card focus-visible:ring-2 focus-visible:ring-brand" />
+            onClick={(e) => onOpen(e.currentTarget)} className="press hover-tint absolute inset-0 rounded-card focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand" />
         )}
         {onDelete && (
-          <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 z-10 size-5 rounded-full bg-avatar text-xs text-white opacity-70 transition-opacity hover-pointer:opacity-100 before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
+          <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 z-10 size-5 rounded-full bg-avatar text-xs text-white opacity-70 transition-opacity hover-pointer:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
         )}
       </div>
       <span className="block truncate text-xs">{file.file_name}{dur && ` · ${dur}`}</span>
@@ -109,7 +109,7 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
 export function MoreTile({ count, onOpen }: { count: number; onOpen: (el: HTMLElement) => void }) {
   return (
     <button type="button" aria-label={`ดูไฟล์อีก ${count} ไฟล์`} onClick={(e) => onOpen(e.currentTarget)}
-      className="press hover-tint flex aspect-[103/68] items-center justify-center rounded-card bg-surface text-sm font-bold text-sub">
+      className="press hover-tint flex aspect-[103/68] items-center justify-center rounded-card bg-surface text-sm font-bold text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
       +{count}
     </button>
   )
@@ -128,7 +128,7 @@ export function ConfirmDialog(props: {
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={props.onClose} disabled={props.loading}>ยกเลิก</Button>
-          <Button className="bg-danger text-white hover:bg-danger/90" loading={props.loading}
+          <Button className="bg-danger-fill text-white hover-pointer:bg-danger-fill/90" loading={props.loading}
             onClick={async () => {
               try { await props.onConfirm(); props.onClose() } catch { /* useAct shows the toast; keep the dialog open */ }
             }}>{props.confirm}</Button>
@@ -146,9 +146,9 @@ export function DayStrip({ value, onChange }: { value: string; onChange: (iso: s
       <div className="grid flex-1 grid-cols-7 gap-1">
         {weekDays(anchor).map((d) => {
           const iso = toIso(d)
-          const cls = iso === value ? 'bg-brand text-white' : iso === todayIso() ? 'border border-brand bg-today' : 'bg-surface'
+          const cls = iso === value ? 'bg-brand text-white' : iso === todayIso() ? 'border border-brand bg-today cell-hover' : 'bg-surface cell-hover'
           return (
-            <button key={iso} onClick={() => onChange(iso)} className={`press rounded-card p-2 text-center text-xs ${cls}`}>
+            <button key={iso} onClick={() => onChange(iso)} className={`press rounded-card p-2 text-center text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${cls}`}>
               {dayLabel(d)}<br /><b className="text-base">{d.getDate()}</b>
             </button>
           )

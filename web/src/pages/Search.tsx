@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useSearch } from '@/api/queries'
 import { CategoryBadge, Delayed, Skeleton } from '@/components/bits'
@@ -32,16 +33,18 @@ function Results({ q }: { q: string }) {
       {isFetching && data.length === 0 && (
         <Delayed><div className="flex flex-col gap-3"><Skeleton className="h-20" /><Skeleton className="h-20" /><Skeleton className="h-20" /></div></Delayed>
       )}
-      {data.map((c) => {
+      {data.map((c, i) => {
         const hay = [c.script, c.note, c.title].find((t) => t.toLowerCase().includes(q.trim().toLowerCase())) ?? c.script
         const s = snippet(hay, q)
         const d = fromIso(c.date)
         return (
-          <Link viewTransition key={c.id} to={`/clips/${c.id}`} className="press hover-tint hover-pointer:border-ink/40 flex flex-col gap-1 rounded-card border border-line p-3">
-            <div className="flex justify-between text-xs text-sub"><CategoryBadge categoryId={c.category_id} />{dayLabel(d)} {shortDate(d)}</div>
-            <b>{c.title}</b>
-            <p className="text-xs text-sub">{s.before}<mark className="bg-note-line text-ink">{s.match}</mark>{s.after}</p>
-          </Link>
+          <div key={c.id} className="enter" style={{ '--i': i } as CSSProperties}>
+            <Link viewTransition to={`/clips/${c.id}`} className="press hover-tint hover-pointer:border-ink/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex flex-col gap-1 rounded-card border border-line p-3">
+              <div className="flex justify-between text-xs text-sub"><CategoryBadge categoryId={c.category_id} />{dayLabel(d)} {shortDate(d)}</div>
+              <b>{c.title}</b>
+              <p className="text-xs text-sub">{s.before}<mark className="bg-note-line text-ink">{s.match}</mark>{s.after}</p>
+            </Link>
+          </div>
         )
       })}
       {hasNextPage && (

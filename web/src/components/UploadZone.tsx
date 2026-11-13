@@ -95,7 +95,7 @@ export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setPark
         onDragOver={(e: DragEvent) => { e.preventDefault(); setOver(true) }}
         onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false) }}
         onDrop={(e: DragEvent) => { e.preventDefault(); setOver(false); void onFiles(e.dataTransfer.files) }}
-        className={`flex h-15 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-card border bg-surface px-3 text-center text-xs transition-colors duration-150 focus-within:ring-2 focus-within:ring-brand/50 ${over ? 'border-brand bg-today' : 'border-line'}`}
+        className={`flex h-15 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-card border bg-surface px-3 text-center text-xs transition-colors duration-200 focus-within:ring-2 focus-within:ring-brand/50 ${over ? 'border-brand bg-today' : 'border-line'}`}
       >
         <input
           ref={inputRef}
@@ -125,12 +125,12 @@ export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setPark
         <div key={f.key} className="flex flex-col gap-1 rounded-card border border-danger bg-danger/10 p-3">
           <div className="flex items-baseline justify-between gap-2">
             <span className="truncate text-sm font-bold text-ink">{f.name}</span>
-            <button type="button" className="press shrink-0 text-xs text-sub hover-pointer:underline underline-offset-4"
+            <button type="button" className="press shrink-0 text-xs text-sub hover-pointer:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               onClick={() => setRefused((r) => r.filter((x) => x.key !== f.key))}>ลบออก</button>
           </div>
           <span className="text-xs text-danger">{f.message}</span>
           {f.tooBig && (
-            <button type="button" className="press self-start text-xs text-brand-text hover-pointer:underline underline-offset-4"
+            <button type="button" className="press self-start text-xs text-brand-text hover-pointer:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               onClick={() => { setRefused((r) => r.filter((x) => x.key !== f.key)); inputRef.current?.click() }}>เลือกไฟล์ใหม่</button>
           )}
         </div>
@@ -142,7 +142,7 @@ export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setPark
           {parked.map((f, i) => (
             <div key={`${i}-${f.name}`} className="flex items-baseline justify-between gap-2 rounded-card border border-line bg-surface p-3">
               <span className="truncate text-sm text-ink">{f.name}</span>
-              <button type="button" className="press shrink-0 text-xs text-sub hover-pointer:underline underline-offset-4"
+              <button type="button" className="press shrink-0 text-xs text-sub hover-pointer:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                 onClick={() => setParked?.((p) => p.filter((_, j) => j !== i))}>ลบออก</button>
             </div>
           ))}
@@ -166,7 +166,7 @@ function Row({ row, leaving, onLeft, onPause, onRetry, onRemove }: {
   const right = failed ? `อัปไม่สำเร็จที่ ${row.percent}%`
     : warn ? `${row.offline ? 'เน็ตหลุด · ' : ''}กำลังลองใหม่ (ครั้งที่ ${Math.max(1, row.retries)})`
     : progressLabel(row.sent, row.size)
-  const link = 'press shrink-0 text-xs hover-pointer:underline underline-offset-4'
+  const link = 'press shrink-0 text-xs hover-pointer:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
 
   return (
     <div

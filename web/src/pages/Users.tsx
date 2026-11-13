@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type CSSProperties, type FormEvent } from 'react'
 import { format, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { KeyRound, Plus, Trash2 } from 'lucide-react'
@@ -34,8 +34,8 @@ export function Users() {
         <Button className="min-h-11 md:min-h-0" onClick={() => setCreating(true)}><Plus />สร้างบัญชีครีเอเตอร์</Button>
       </div>
       <div className="overflow-hidden rounded-card border border-line">
-        {users.map((u) => (
-          <div key={u.id} className="grid items-center gap-2 border-t border-grid p-3 first:border-t-0 md:grid-cols-[1fr_1.5fr_100px_120px_auto]">
+        {users.map((u, i) => (
+          <div key={u.id} className="enter grid items-center gap-2 border-t border-grid p-3 first:border-t-0 md:grid-cols-[1fr_1.5fr_100px_120px_auto]" style={{ '--i': i } as CSSProperties}>
             <b className="text-sm">{u.display_name}</b>
             <span className="truncate text-sm text-sub">{u.email}</span>
             <span className={`w-fit rounded-full px-2 py-0.5 text-xs font-bold ${u.role === 'owner' ? 'bg-today text-brand-text' : 'bg-surface text-sub'}`}>{u.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</span>

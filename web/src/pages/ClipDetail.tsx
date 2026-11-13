@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { FileText, Play } from 'lucide-react'
 import * as api from '@/api/index'
@@ -62,7 +62,7 @@ function CreatorDetail({ id }: { id: string }) {
       </div>
     </Delayed>
   )
-  if (!clip) return <p>ไม่พบคลิป <Link viewTransition to="/calendar" className="text-brand">กลับปฏิทิน</Link></p>
+  if (!clip) return <p>ไม่พบคลิป <Link viewTransition to="/calendar" className="text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">กลับปฏิทิน</Link></p>
 
   const refs = media.filter((m) => m.purpose === 'reference')
   const rounds = withRounds(media.filter((m) => m.purpose === 'submission'))
@@ -129,17 +129,17 @@ function CreatorDetail({ id }: { id: string }) {
             </h2>
             <UploadZone clipId={id} purpose="submission" />
             <h3 className="text-xs font-bold">ส่งแล้ว ({roundCount(rounds)} รอบ)</h3>
-            {rounds.map((m) => {
+            {rounds.map((m, i) => {
               const left = withdrawMinutesLeft(m, now)
               const open = !!me && canWithdraw(m, me.id, now)
               const view = subViews.findIndex((v) => v.id === m.id)
               return (
-                <div key={m.id} className="flex flex-col gap-2 rounded-card border border-grid p-2">
+                <div key={m.id} style={{ '--i': i } as CSSProperties} className="enter flex flex-col gap-2 rounded-card border border-grid p-2">
                   <div className="flex min-h-[58px] items-center gap-2">
                     {view >= 0 && (
                       <button type="button" aria-label={`เปิด ${m.file_name}`}
                         onClick={(e) => lb.openAt(subViews, view, e.currentTarget)}
-                        className="press flex size-8 shrink-0 items-center justify-center rounded-full bg-today text-brand">
+                        className="press flex size-8 shrink-0 items-center justify-center rounded-full bg-today text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
                         <Play size={14} />
                       </button>
                     )}

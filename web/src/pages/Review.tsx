@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { toast } from 'sonner'
 import * as api from '@/api/index'
 import { useAct, useClip, useMedia, useOptimisticAct } from '@/api/queries'
@@ -90,8 +90,8 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
               {curUrl && <b className="pointer-events-none absolute top-3 left-3 rounded bg-black/50 px-2 py-1 text-xs">รอบ {current.round} · {current.file_name}</b>}
             </div>
             <div className="flex flex-col gap-2">
-              {rounds.map((m) => (
-                <div key={m.id} className={`flex min-w-0 items-center gap-2 rounded-card border p-2 text-sm ${m.id === current.id ? 'border-brand bg-today' : 'border-grid'}`}>
+              {rounds.map((m, i) => (
+                <div key={m.id} style={{ '--i': i } as CSSProperties} className={`enter flex min-w-0 items-center gap-2 rounded-card border p-2 text-sm ${m.id === current.id ? 'border-brand bg-today' : 'border-grid'}`}>
                   <span className="shrink-0 rounded bg-bg px-1 text-xs font-bold">รอบ {m.round}</span>
                   <div className="min-w-0 flex-1">
                     <b className="block truncate">{m.file_name}</b>
@@ -100,9 +100,9 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
                     </span>
                   </div>
                   {isPlayable(m.mime)
-                    ? <button aria-label={`เล่น ${m.file_name}`} disabled={!urls[m.id]} className="press min-h-11 px-2 text-xs text-brand disabled:text-sub md:min-h-0" onClick={() => setSelected(m.id)}>{m.id === current.id ? 'กำลังเล่น' : 'เล่น'}</button>
-                    : <button aria-label={`ดาวน์โหลด ${m.file_name}`} disabled={!urls[m.id]} className="press min-h-11 px-2 text-xs text-brand disabled:text-sub md:min-h-0" onClick={() => downloadOne(m.id).catch((e: Error) => toast.error(e.message))}>ดาวน์โหลด</button>}
-                  <button aria-label={`ลบ ${m.file_name}`} className="press min-h-11 px-2 text-xs text-danger md:min-h-0" onClick={() => setDeleting(m)}>ลบ</button>
+                    ? <button aria-label={`เล่น ${m.file_name}`} disabled={!urls[m.id]} className="press min-h-11 px-2 text-xs text-brand disabled:text-sub md:min-h-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand" onClick={() => setSelected(m.id)}>{m.id === current.id ? 'กำลังเล่น' : 'เล่น'}</button>
+                    : <button aria-label={`ดาวน์โหลด ${m.file_name}`} disabled={!urls[m.id]} className="press min-h-11 px-2 text-xs text-brand disabled:text-sub md:min-h-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand" onClick={() => downloadOne(m.id).catch((e: Error) => toast.error(e.message))}>ดาวน์โหลด</button>}
+                  <button aria-label={`ลบ ${m.file_name}`} className="press min-h-11 px-2 text-xs text-danger md:min-h-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand" onClick={() => setDeleting(m)}>ลบ</button>
                 </div>
               ))}
             </div>
@@ -126,7 +126,7 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
           <span className="text-xs">สถานะ: <StatusChip status={clip.status} transitionName={`status-${clipId}`} drawCheck /></span>
           <span className="flex gap-2">
             <Button ref={askRef} variant="outline" className="border-warn-line text-warn-text" disabled={rounds.length === 0} onClick={() => setAsking(true)}>ขอแก้ไข</Button>
-            <Button className="bg-success text-white hover:bg-success/90" loading={review.isPending} disabled={rounds.length === 0 || clip.status === 'approved'} onClick={approve}>
+            <Button className="bg-success text-white hover-pointer:bg-success/90" loading={review.isPending} disabled={rounds.length === 0 || clip.status === 'approved'} onClick={approve}>
               {clip.status === 'approved' ? 'อนุมัติแล้ว ✓' : 'อนุมัติ'}
             </Button>
           </span>

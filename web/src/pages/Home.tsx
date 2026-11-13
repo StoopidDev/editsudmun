@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
@@ -38,11 +39,11 @@ export function Home() {
       </div>
 
       {todo.length > 0 && (
-        <section className="flex flex-col gap-2">
+        <section className="enter flex flex-col gap-2" style={{ '--i': 0 } as CSSProperties}>
           <h2 className="text-lg font-bold">งานของฉัน ({todo.length})</h2>
           <div className="flex max-h-72 flex-col gap-2 overflow-y-auto">
             {todo.map((c) => (
-              <Link viewTransition key={c.id} to={`/clips/${c.id}`} onClick={(e) => shareTitle(e, c.id)} className="press flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3">
+              <Link viewTransition key={c.id} to={`/clips/${c.id}`} onClick={(e) => shareTitle(e, c.id)} className="press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3">
                 <div className="flex items-center justify-between gap-2 text-xs text-sub">
                   <CategoryBadge categoryId={c.category_id} />
                   <span className="font-bold text-warn-text">{ATTENTION_LABEL[c.attention]} · {shortDate(fromIso(c.date))}</span>
@@ -57,10 +58,10 @@ export function Home() {
       )}
 
       {dying.length > 0 && (
-        <section role="status" className="flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3 text-sm">
+        <section role="status" className="enter flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3 text-sm" style={{ '--i': 1 } as CSSProperties}>
           <b>มี {dying.length} ไฟล์ใกล้ถูกลบ</b>
           {dying.map((f) => (
-            <Link viewTransition key={f.id} to={`/clips/${f.clip_id}`} className="truncate text-xs underline">
+            <Link viewTransition key={f.id} to={`/clips/${f.clip_id}`} className="truncate text-xs underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
               {f.file_name} · {f.clip_title} · ลบใน {f.days} วัน
             </Link>
           ))}
@@ -68,19 +69,21 @@ export function Home() {
         </section>
       )}
 
-      <section className="flex flex-col gap-2">
+      <section className="enter flex flex-col gap-2" style={{ '--i': 2 } as CSSProperties}>
         <div className="flex justify-between">
           <h2 className="text-lg">วันนี้ · {fullDate(now)}</h2>
-          <Link viewTransition to="/calendar" className="flex items-center gap-1 text-sm text-brand hover-pointer:underline underline-offset-4">เปิดปฏิทิน<ArrowRight size={14} /></Link>
+          <Link viewTransition to="/calendar" className="flex items-center gap-1 text-sm text-brand hover-pointer:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">เปิดปฏิทิน<ArrowRight size={14} /></Link>
         </div>
         {week.isPending ? (<Delayed><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /></div></Delayed>) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {todays.map((c, i) => (
-              <ClipCard key={c.id} clip={c} variant="today" index={i + 1} total={todays.length} />
+              <div key={c.id} className="enter" style={{ '--i': i } as CSSProperties}>
+                <ClipCard clip={c} variant="today" index={i + 1} total={todays.length} />
+              </div>
             ))}
             {todays.length === 0 && !owner && !week.isError && <p className="text-sm text-sub">วันนี้ไม่มีคลิป</p>}
             {owner && (
-              <Link viewTransition to={`/clips/new?date=${today}`} className="press hover-tint flex min-h-24 flex-col items-center justify-center rounded-card border border-dashed border-line text-sm text-sub">
+              <Link viewTransition to={`/clips/new?date=${today}`} className="press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex min-h-24 flex-col items-center justify-center rounded-card border border-dashed border-line text-sm text-sub">
                 <Plus size={16} />เพิ่มคลิปวันนี้
               </Link>
             )}
@@ -88,17 +91,17 @@ export function Home() {
         )}
       </section>
 
-      <section className="flex flex-col gap-2">
+      <section className="enter flex flex-col gap-2" style={{ '--i': 3 } as CSSProperties}>
         <div className="flex justify-between">
           <h2 className="text-lg">สัปดาห์นี้</h2>
-          <span className="text-sm text-sub">{rangeLabel(now)} · <Link viewTransition to="/calendar" className="text-brand hover-pointer:underline underline-offset-4">ดูทั้งหมด</Link></span>
+          <span className="text-sm text-sub">{rangeLabel(now)} · <Link viewTransition to="/calendar" className="text-brand hover-pointer:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">ดูทั้งหมด</Link></span>
         </div>
         <div className="grid grid-cols-7 overflow-hidden rounded-card border border-line">
           {days.map((d) => {
             const iso = toIso(d)
             const list = week.data?.filter((c) => c.date === iso) ?? []
             return (
-              <Link viewTransition key={iso} to={`/calendar?date=${iso}`} className={`flex min-h-16 flex-col gap-1 border-r border-grid p-1 last:border-r-0 sm:min-h-24 sm:p-2 ${iso === today ? 'bg-today' : ''}`}>
+              <Link viewTransition key={iso} to={`/calendar?date=${iso}`} className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex min-h-16 flex-col gap-1 border-r border-grid p-1 last:border-r-0 sm:min-h-24 sm:p-2 ${iso === today ? 'bg-today' : ''}`}>
                 <span className={`rounded-card text-center text-xs ${iso === today ? 'bg-brand text-white' : ''}`}>{dayLabel(d)}<br /><b className="text-base">{d.getDate()}</b></span>
                 {list.slice(0, 3).map((c) => {
                   const bg = color(c.category_id) ?? '#5f5f5f'
@@ -114,11 +117,11 @@ export function Home() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-2">
+      <section className="enter flex flex-col gap-2" style={{ '--i': 4 } as CSSProperties}>
         <h2 className="text-lg">แก้ไขล่าสุด</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {recent.data?.map((c) => (
-            <Link viewTransition key={c.id} to={`/clips/${c.id}`} onClick={(e) => shareTitle(e, c.id)} className="press hover-tint hover-pointer:border-ink/40 flex flex-col gap-1 rounded-card border border-line p-3">
+            <Link viewTransition key={c.id} to={`/clips/${c.id}`} onClick={(e) => shareTitle(e, c.id)} className="press hover-tint hover-pointer:border-ink/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex flex-col gap-1 rounded-card border border-line p-3">
               <div className="flex justify-between text-xs text-sub">
                 <CategoryBadge categoryId={c.category_id} />
                 {formatDistanceToNow(parseISO(c.brief_updated_at), { locale: th, addSuffix: true })}
@@ -131,7 +134,7 @@ export function Home() {
       </section>
 
       {owner && storage.data !== undefined && (
-        <section className="rounded-card border border-line p-3">
+        <section className="enter rounded-card border border-line p-3" style={{ '--i': 5 } as CSSProperties}>
           <h2 className="text-lg">พื้นที่จัดเก็บ</h2>
           <p className="text-sm text-sub">ใช้ไปแล้ว {formatSize(storage.data)}</p>
         </section>

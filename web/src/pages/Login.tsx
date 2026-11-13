@@ -33,7 +33,7 @@ export function Login() {
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-surface p-4">
-      <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 rounded-card bg-bg p-8">
+      <form onSubmit={submit} className="enter flex w-full max-w-sm flex-col gap-4 rounded-card bg-bg p-8">
         <h1 className="text-center text-xl">Channel's Tool</h1>
         <div className="grid gap-1">
           <Label htmlFor="email">อีเมล</Label>
@@ -43,7 +43,7 @@ export function Login() {
           <Label htmlFor="password">รหัสผ่าน</Label>
           <div className="relative">
             <Input id="password" name="password" type={show ? 'text' : 'password'} required autoComplete="current-password" aria-invalid={!!act.error} aria-describedby={act.error ? 'login-error' : undefined} />
-            <button type="button" aria-label={show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={show} onClick={() => setShow(!show)} className="absolute top-2 right-2 text-sub">
+            <button type="button" aria-label={show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={show} onClick={() => setShow(!show)} className="absolute top-2 right-2 text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
               {show ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
