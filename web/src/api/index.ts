@@ -142,11 +142,15 @@ export async function restoreReview(id: string, status: ClipStatus, note: string
   one(await supabase.from('clips').update({ status, revision_note: note }).eq('id', id).select('id'))
 }
 
-// search_clips returns at most SEARCH_CAP rows (its limit is in the SQL function; raising it is backend work).
-export const SEARCH_CAP = 50
-export async function search(q: string): Promise<ClipSearchRow[]> {
-  if (!q.trim()) return []
-  return ok(await supabase.rpc('search_clips', { p_q: q }).select('id, date, category_id, title, script, note').range(0, SEARCH_CAP - 1))
+// One page of search results, newest day first, with the total number of matches.
+export const SEARCH_PAGE = 50
+export async function search(q: string, offset = 0): Promise<{ rows: ClipSearchRow[]; total: number }> {
+  if (!q.trim()) return { rows: [], total: 0 }
+  const r = await supabase
+    .rpc('search_clips', { p_q: q }, { count: 'exact' })
+    .select('id, date, category_id, title, script, note')
+    .range(offset, offset + SEARCH_PAGE - 1)
+  return { rows: ok(r), total: r.count ?? 0 }
 }
 
 // Media
