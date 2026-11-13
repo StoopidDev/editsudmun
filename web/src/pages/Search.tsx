@@ -6,7 +6,8 @@ import { CategoryBadge, Delayed, Skeleton } from '@/components/bits'
 import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { dayLabel, fromIso, shortDate } from '@/lib/dates'
+import { DateLabel } from '@/components/DateLabel'
+import { fromIso } from '@/lib/dates'
 import { snippet } from '@/lib/search'
 
 export function Search() {
@@ -42,7 +43,7 @@ function Results({ q }: { q: string }) {
         return (
           <div key={c.id} className="enter" style={{ '--i': i } as CSSProperties}>
             <Link viewTransition to={`/clips/${c.id}`} className="press hover-tint hover-pointer:border-ink/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex flex-col gap-1 rounded-card border border-line p-3">
-              <div className="flex justify-between text-xs text-sub tabular-nums"><CategoryBadge categoryId={c.category_id} />{dayLabel(d)} {shortDate(d)}</div>
+              <div className="flex justify-between text-xs text-sub tabular-nums"><CategoryBadge categoryId={c.category_id} /><DateLabel date={d} variant="compact" /></div>
               <b>{c.title}</b>
               <p className="max-w-[65ch] text-xs text-sub">{s.before}<mark className="bg-note-line text-ink">{s.match}</mark>{s.after}</p>
             </Link>

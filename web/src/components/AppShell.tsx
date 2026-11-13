@@ -84,8 +84,8 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
           <Link viewTransition to="/" aria-label="กลับสู่หน้าหลัก" title="กลับสู่หน้าหลัก"
             className="group relative block overflow-hidden rounded-card px-2 py-2 text-xl font-normal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
             {/* Title slides out to the left, the hint slides in from the right; both reverse on leave. Pointer devices and keyboard focus only. */}
-            <span className="block transition-transform duration-[260ms] ease-(--ease-drawer) group-focus-visible:-translate-x-full hover-pointer:group-hover:-translate-x-full">Channel's Tool</span>
-            <span aria-hidden className="absolute inset-0 flex translate-x-full items-center px-2 text-base whitespace-nowrap text-brand-text transition-transform duration-[260ms] ease-(--ease-drawer) group-focus-visible:translate-x-0 hover-pointer:group-hover:translate-x-0">กลับสู่หน้าหลัก</span>
+            <span className="block transition-transform duration-[260ms] ease-(--ease-drawer) group-focus-visible:-translate-x-[calc(100%+0.5rem)] group-hover:-translate-x-[calc(100%+0.5rem)]">Channel's Tool</span>
+            <span aria-hidden className="absolute inset-0 flex translate-x-full items-center px-2 text-base whitespace-nowrap text-brand-text transition-transform duration-[260ms] ease-(--ease-drawer) group-focus-visible:translate-x-0 group-hover:translate-x-0">กลับสู่หน้าหลัก</span>
           </Link>
         )}
         {onToggle && (

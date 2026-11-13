@@ -7,6 +7,7 @@ import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
 import { CopyDialog } from '@/components/CopyDialog'
 import { ConfirmDialog, Delayed, FileTile, Skeleton } from '@/components/bits'
+import { DateLabel } from '@/components/DateLabel'
 import { DownloadAll } from '@/components/media'
 import { useLightbox } from '@/components/useLightbox'
 import { UploadZone } from '@/components/UploadZone'
@@ -39,7 +40,7 @@ function ThaiDateField({ id, value, onChange }: { id: string; value: string; onC
     <div className="relative">
       <button type="button" id={id} onClick={open} aria-label={`วัน ${isIsoDate(value) ? fullDate(fromIso(value)) : ''}`}
         className="flex h-9 w-full items-center justify-between rounded-md border border-line bg-bg px-2.5 text-left text-sm font-normal max-md:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
-        {isIsoDate(value) ? fullDate(fromIso(value)) : ''}
+        {isIsoDate(value) && <DateLabel date={value} />}
         <ChevronDown size={16} aria-hidden className="text-sub" />
       </button>
       <input ref={picker} type="date" value={value} tabIndex={-1} aria-hidden

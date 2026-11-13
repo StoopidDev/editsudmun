@@ -277,7 +277,6 @@ body {
 
 @keyframes row-out { to { opacity: 0; } }
 
-/* Route crossfade; week change slides 24 px in the direction set on <html data-dir>. Reduced motion shortens these. */
 /* Page change stacks: the app chrome (sidebar, header, tab bar) is named so it stays put, and only the page area (name "page") animates.
    The new page drops in from under the header and covers the old one, which sinks and dims a little. The group clips to the page area, so nothing draws over the header. */
 ::view-transition-group(page) { overflow: clip; }
@@ -291,16 +290,6 @@ body {
 /* Local writes (moves, approvals) animate only the changed element, so the page does not crossfade. */
 :root[data-vt='local']::view-transition-old(root), :root[data-vt='local']::view-transition-new(root),
 :root[data-vt='local']::view-transition-old(page), :root[data-vt='local']::view-transition-new(page) { animation: none; }
-/* The calendar grid is named only while the user moves inside the calendar (data-dir set), so it slides; a route change never names it. */
-:root[data-dir] .cal-grid { view-transition-name: cal; }
-::view-transition-group(cal) { overflow: clip; }
-:root[data-dir]::view-transition-old(cal) { animation: 160ms var(--ease-in-quint) both slide-out; }
-:root[data-dir]::view-transition-new(cal) { animation: 260ms var(--ease-out-quint) both slide-in; }
-/* "Back to today" sets data-jump as well: a longer slide, so the distance travelled reads. */
-:root[data-jump] { --dist: 72px; }
-@keyframes slide-out { to { opacity: 0; transform: translateX(calc(var(--d, 1) * var(--dist, 24px) * -1)); } }
-@keyframes slide-in { from { opacity: 0; transform: translateX(calc(var(--d, 1) * var(--dist, 24px))); } }
-:root[data-dir='prev'] { --d: -1; }
 
 /* Approve moment: the tick draws in over 240 ms (pathLength 1 keeps the dash length at 1). */
 .check-draw { stroke-dasharray: 1; animation: check-draw 240ms var(--ease-out-quint) both; }

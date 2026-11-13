@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
-import { CalendarOff, CheckCircle2, ChevronRight, Plus } from 'lucide-react'
+import { Clapperboard, CheckCircle2, ChevronRight, Clock, Plus } from 'lucide-react'
 import { useAttention, useCategories, useClips, useExpiring, useMe, useRecent, useStorage } from '@/api/queries'
 import { shareTitle } from '@/lib/viewTransition'
 import { CategoryBadge, Delayed, Skeleton } from '@/components/bits'
@@ -11,7 +11,8 @@ import { EmptyState } from '@/components/EmptyState'
 import { DownloadAll } from '@/components/media'
 import { ATTENTION_LABEL } from '@/lib/attention'
 import { Button } from '@/components/ui/button'
-import { dayLabel, fromIso, fullDate, rangeLabel, shortDate, toIso, todayIso, weekDays } from '@/lib/dates'
+import { DateLabel } from '@/components/DateLabel'
+import { dayLabel, fromIso, rangeLabel, toIso, todayIso, weekDays } from '@/lib/dates'
 import { readableOn } from '@/lib/color'
 import { formatSize } from '@/lib/media'
 
@@ -50,7 +51,7 @@ export function Home() {
                 <Link viewTransition key={c.id} to={`/clips/${c.id}`} onClick={(e) => shareTitle(e, c.id)} className="press focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3">
                   <div className="flex items-center justify-between gap-2 text-xs text-sub">
                     <CategoryBadge categoryId={c.category_id} />
-                    <span className="font-bold text-warn-text tabular-nums">{ATTENTION_LABEL[c.attention]} · {shortDate(fromIso(c.date))}</span>
+                    <span className="font-bold text-warn-text tabular-nums">{ATTENTION_LABEL[c.attention]} · <DateLabel date={c.date} variant="compact" /></span>
                   </div>
                   <b data-title className="text-sm">{c.title}</b>
                   {c.attention === 'review' && <span className="text-xs text-sub tabular-nums">ครีเอเตอร์ส่งงานแล้ว {c.round} รอบ</span>}
@@ -77,7 +78,7 @@ export function Home() {
 
       <section className="enter flex flex-col gap-2" style={{ '--i': 2 } as CSSProperties}>
         <div className="flex justify-between">
-          <h2 className="text-lg tabular-nums">วันนี้ · {fullDate(now)}</h2>
+          <h2 className="text-lg tabular-nums">วันนี้ <span className="text-sub">·</span> <DateLabel date={now} relative={false} /></h2>
           <Link viewTransition to="/calendar" className="link-action text-sm max-md:min-h-11">เปิดปฏิทิน<ChevronRight size={14} aria-hidden /></Link>
         </div>
         {week.isPending ? (<Delayed><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /></div></Delayed>) : (
@@ -87,7 +88,7 @@ export function Home() {
                 <ClipCard clip={c} variant="today" index={i + 1} total={todays.length} />
               </div>
             ))}
-            {todays.length === 0 && !owner && !week.isError && <EmptyState icon={CalendarOff} title="วันนี้ยังไม่มีคลิป" hint="เจ้าของยังไม่ได้ใส่งานของวันนี้" className="col-span-full rounded-card border border-dashed border-line" />}
+            {todays.length === 0 && !owner && !week.isError && <EmptyState icon={Clapperboard} title="วันนี้ยังไม่มีคลิป" hint="เจ้าของยังไม่ได้ใส่งานของวันนี้" className="col-span-full rounded-card border border-dashed border-line" />}
             {owner && (
               <Link viewTransition to={`/clips/new?date=${today}`} className="press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex min-h-24 flex-col items-center justify-center rounded-card border border-dashed border-line text-sm text-sub">
                 {todays.length === 0 && !week.isError && <span>ยังไม่มีคลิปในวันนี้</span>}
@@ -108,7 +109,7 @@ export function Home() {
             const iso = toIso(d)
             const list = week.data?.filter((c) => c.date === iso) ?? []
             return (
-              <Link viewTransition key={iso} to={`/calendar?date=${iso}`} className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand aspect-square min-h-0 overflow-hidden flex flex-col gap-1 border-r border-grid p-1 last:border-r-0 sm:p-2 ${iso === today ? 'bg-today' : ''}`}>
+              <Link viewTransition key={iso} to={`/calendar?view=week&date=${iso}`} className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand aspect-square min-h-0 overflow-hidden flex flex-col gap-1 border-r border-grid p-1 last:border-r-0 sm:p-2 ${iso === today ? 'bg-today' : ''}`}>
                 <span className={`rounded-card text-center text-xs ${iso === today ? 'bg-brand text-white' : ''}`}>{dayLabel(d)}<br /><b className="text-base tabular-nums">{d.getDate()}</b></span>
                 {list.slice(0, 3).map((c) => {
                   const bg = color(c.category_id) ?? '#5f5f5f'
@@ -127,7 +128,7 @@ export function Home() {
       <section className="enter flex flex-col gap-2" style={{ '--i': 4 } as CSSProperties}>
         <h2 className="text-lg">แก้ไขล่าสุด</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {recent.data?.length === 0 && <EmptyState title="ยังไม่มีคลิปที่แก้ไข" hint="คลิปที่เพิ่งแก้ไขจะแสดงที่นี่" className="rounded-card border border-dashed border-line" />}
+          {recent.data?.length === 0 && <EmptyState icon={Clock} title="ยังไม่มีคลิปที่แก้ไข" hint="คลิปที่เพิ่งแก้ไขจะแสดงที่นี่" className="rounded-card border border-dashed border-line" />}
           {recent.data?.map((c) => (
             <Link viewTransition key={c.id} to={`/clips/${c.id}`} onClick={(e) => shareTitle(e, c.id)} className="press hover-tint hover-pointer:border-ink/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex flex-col gap-1 rounded-card border border-line p-3">
               <div className="flex justify-between text-xs text-sub tabular-nums">

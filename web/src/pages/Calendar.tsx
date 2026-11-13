@@ -1,30 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { addDays, addMonths, isSameMonth } from 'date-fns'
-import { ArrowLeft, ArrowRight, CalendarOff, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
-import { useCategories, useClips, useDayCounts, useMe, withTransition } from '@/api/queries'
+import { ArrowLeft, ArrowRight, Clapperboard, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { clipsQuery, dayCountsQuery, useCategories, useClips, useDayCounts, useMe } from '@/api/queries'
 import { ClipCard } from '@/components/ClipCard'
 import { DayDrawer } from '@/components/DayDrawer'
 import { EmptyState } from '@/components/EmptyState'
 import { Delayed, Skeleton } from '@/components/bits'
+import { DateLabel } from '@/components/DateLabel'
 import { Button } from '@/components/ui/button'
 import { Segmented } from '@/components/ui/segmented'
 import { readableOn } from '@/lib/color'
-import { calendarView, dayLabel, fullDate, monthLabel, rangeLabel, shortDate, toIso, todayIso } from '@/lib/dates'
+import { calendarView, dayLabel, fullDate, monthGrid, monthLabel, monthShort, rangeLabel, rememberView, toIso, todayIso, weekDays } from '@/lib/dates'
 import type { ClipCardRow, ClipDayCount } from '@/lib/types'
 
 const MAX_CARDS = 4
 const SHORT_DAYS = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา']
-
-let dirTimer = 0
-// The slide reads data-dir while it runs; clear it afterwards so later transitions do not inherit it.
-function slide(dir: 'next' | 'prev', jump: boolean, clearAfter: number) {
-  const root = document.documentElement
-  root.dataset.dir = dir
-  if (jump) root.dataset.jump = '1'
-  clearTimeout(dirTimer)
-  dirTimer = window.setTimeout(() => { delete root.dataset.dir; delete root.dataset.jump }, clearAfter)
-}
 
 export function Calendar() {
   const [params, setParams] = useSearchParams()
@@ -40,16 +32,20 @@ export function Calendar() {
   const [drawer, setDrawer] = useState<string | null>(null)
 
   const go = (next: { view?: string; date?: string }) => setParams({ view, date: dateIso, ...next })
-  // Later weeks slide in from the right, earlier from the left (CSS reads data-dir; data-jump makes it a long slide).
-  const step = (n: number) => {
-    slide(n > 0 ? 'next' : 'prev', false, 600)
-    void withTransition(() => go({ date: toIso(view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)) }))
-  }
-  // Back to today: a 72 px slide in the direction of today.
-  const backToToday = () => {
-    slide(todayIso() > dateIso ? 'next' : 'prev', true, 700)
-    void withTransition(() => go({ date: todayIso() }))
-  }
+  // The grid stays put when you step: only the labels change, and neighbouring ranges are prefetched so the cards are ready.
+  const step = (n: number) => go({ date: toIso(view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)) })
+  const backToToday = () => go({ date: todayIso() })
+  const qc = useQueryClient()
+  useEffect(() => {
+    rememberView(view)
+    for (const n of [-1, 1]) {
+      const d = view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)
+      const ds = view === 'week' ? weekDays(d) : monthGrid(d)
+      const [f, t] = [toIso(ds[0]), toIso(ds[ds.length - 1])]
+      if (view === 'week') void qc.prefetchQuery(clipsQuery(f, t))
+      else void qc.prefetchQuery(dayCountsQuery(f, t))
+    }
+  }, [view, dateIso]) // eslint-disable-line react-hooks/exhaustive-deps
   const todayLater = todayIso() > dateIso
   const away = view === 'week' ? !days.some((d) => toIso(d) === todayIso()) : todayIso().slice(0, 7) !== dateIso.slice(0, 7)
   const forDay = (iso: string) => clips.data?.filter((c) => c.date === iso) ?? []
@@ -103,7 +99,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
   const selIso = toIso(p.selected)
   const list = p.forDay(selIso)
   return (
-    <div className="cal-grid flex min-w-0 flex-col gap-3 xl:hidden">
+    <div className="flex min-w-0 flex-col gap-3 xl:hidden">
       <div className="grid grid-cols-7 gap-1">
         {p.days.map((d) => {
           const iso = toIso(d)
@@ -120,13 +116,13 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
         })}
       </div>
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold tabular-nums">{dayLabel(p.selected)} {shortDate(p.selected)} · {list.length} คลิป</h2>
+        <h2 className="text-sm font-bold tabular-nums"><DateLabel date={p.selected} /> <span className="text-sub">·</span> {list.length} คลิป</h2>
         <button type="button" onClick={() => p.onOpen(selIso)} className="link-action min-h-11 px-2 text-sm tabular-nums">ดูทั้งวัน<ChevronRight size={14} aria-hidden /></button>
       </div>
       {p.loading && <Delayed><Skeleton className="h-20" /></Delayed>}
       {list.map((c, i) => <ClipCard key={c.id} clip={c} enterIndex={i} />)}
       {!p.loading && !p.failed && list.length === 0 && (
-        <EmptyState icon={CalendarOff} title="ยังไม่มีคลิปในวันนี้" hint={p.owner ? 'กด “เพิ่มคลิป” ด้านล่างเพื่อเริ่มวางแผน' : 'เจ้าของยังไม่ได้ใส่งานของวันนี้'} />
+        <EmptyState icon={Clapperboard} title="ยังไม่มีคลิปในวันนี้" hint={p.owner ? 'กด “เพิ่มคลิป” ด้านล่างเพื่อเริ่มวางแผน' : 'เจ้าของยังไม่ได้ใส่งานของวันนี้'} />
       )}
       {p.owner && (
         <Link viewTransition to={`/clips/new?date=${selIso}`} className="max-md:min-h-11 rounded-card border border-dashed border-line py-3 text-center text-sm text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
@@ -138,7 +134,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
 function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => ClipCardRow[]; owner: boolean; onOpen: (iso: string) => void }) {
   const today = todayIso()
   return (
-    <div className="cal-grid grid grid-cols-7 gap-2">
+    <div className="grid grid-cols-7 gap-2">
       {p.days.map((d) => {
         const iso = toIso(d)
         const list = p.forDay(iso)
@@ -172,37 +168,45 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipDay
   const today = todayIso()
   return (
     <>
-    <div className="cal-grid grid grid-cols-7 overflow-hidden rounded-card border border-line">
-      {p.days.slice(0, 7).map((d) => <div key={d.getDay()} className="border-b border-grid py-1 text-center text-xs text-sub">{dayLabel(d)}</div>)}
-      {p.days.map((d) => {
-        const iso = toIso(d)
-        const list = p.forDay(iso)
-        const total = list.reduce((sum, x) => sum + x.n, 0)
-        const inMonth = isSameMonth(d, p.anchor)
-        return (
-          <button key={iso} onClick={() => p.onPick(iso)} className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex min-h-20 flex-col gap-1 border-r border-b border-grid p-1 text-left md:min-h-28${iso === today ? 'bg-today' : inMonth ? '' : 'bg-surface opacity-60'}`}>
-            <span className="flex justify-between text-xs tabular-nums"><b>{d.getDate()}</b>{total > 0 && <span className="hidden text-sub sm:inline">{total} คลิป</span>}</span>
-            {cats.map((c) => {
-              const n = list.find((x) => x.category_id === c.id)?.n ?? 0
-              return n > 0 && (
-                <span key={c.id} className="flex justify-between rounded px-1 text-xs font-bold" style={{ background: c.color, color: readableOn(c.color) }}>
-                  <span className="hidden truncate sm:inline">{c.name}</span>
-                  <span className="sm:hidden">{c.name.slice(0, 1)}</span>
-                  <span className="tabular-nums">{n}</span>
+      <div>
+        <div className="grid grid-cols-7 pb-1 text-center text-xs text-sub">{p.days.slice(0, 7).map((d) => <div key={d.getDay()}>{dayLabel(d)}</div>)}</div>
+        {/* Always 6 weeks of square cells; days of the neighbouring months fill the spare ones, faded. */}
+        <div className="grid grid-cols-7 overflow-hidden rounded-card border border-line">
+          {p.days.map((d, i) => {
+            const iso = toIso(d)
+            const list = p.forDay(iso)
+            const total = list.reduce((sum, x) => sum + x.n, 0)
+            const inMonth = isSameMonth(d, p.anchor)
+            const isToday = iso === today
+            return (
+              <button key={iso} onClick={() => p.onPick(iso)} aria-label={fullDate(d)}
+                className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex aspect-square min-w-0 flex-col gap-1 overflow-hidden border-grid p-1 text-left ${i % 7 < 6 ? 'border-r' : ''} ${i < 35 ? 'border-b' : ''} ${isToday ? 'bg-today' : inMonth ? '' : 'bg-surface'}`}>
+                <span className="flex items-start justify-between text-xs tabular-nums">
+                  <b className={isToday ? 'grid size-6 place-items-center rounded-full bg-brand text-white' : inMonth ? '' : 'font-normal text-sub'}>{d.getDate()}{!inMonth && d.getDate() === 1 ? ` ${monthShort(d)}` : ''}</b>
+                  {total > 0 && <span className="hidden text-sub sm:inline">{total} คลิป</span>}
                 </span>
-              )
-            })}
-          </button>
-        )
-      })}
-    </div>
-    <div className="flex flex-wrap gap-3 text-xs text-sub sm:hidden">
-      {cats.map((c) => (
-        <span key={c.id} className="flex items-center gap-1">
-          <span className="size-3 rounded-full" style={{ background: c.color }} />{c.name}
-        </span>
-      ))}
-    </div>
+                {cats.map((c) => {
+                  const n = list.find((x) => x.category_id === c.id)?.n ?? 0
+                  return n > 0 && (
+                    <span key={c.id} className={`flex justify-between rounded px-1 text-xs font-bold ${inMonth ? '' : 'opacity-60'}`} style={{ background: c.color, color: readableOn(c.color) }}>
+                      <span className="hidden truncate sm:inline">{c.name}</span>
+                      <span className="sm:hidden">{c.name.slice(0, 1)}</span>
+                      <span className="tabular-nums">{n}</span>
+                    </span>
+                  )
+                })}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-3 text-xs text-sub sm:hidden">
+        {cats.map((c) => (
+          <span key={c.id} className="flex items-center gap-1">
+            <span className="size-3 rounded-full" style={{ background: c.color }} />{c.name}
+          </span>
+        ))}
+      </div>
     </>
   )
 }

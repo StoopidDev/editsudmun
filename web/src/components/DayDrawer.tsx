@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Drawer } from '@base-ui/react/drawer'
-import { ArrowDown, ArrowUp, CalendarX, Check, Copy, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Clapperboard, Check, Copy, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
 import * as api from '@/api/index'
 import { useCategories, useClips, useDeleteClip, useMe, useOptimisticAct } from '@/api/queries'
 import { CopyDialog } from '@/components/CopyDialog'
@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
-import { fromIso, fullDate } from '@/lib/dates'
+import { DateLabel } from '@/components/DateLabel'
 import { swapInDay } from '@/lib/order'
 import { useMediaQuery } from '@/lib/useMediaQuery'
 import type { ClipCardRow } from '@/lib/types'
@@ -52,7 +52,7 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
 
   const body = (
     <>
-      <Title className="text-base font-medium">{fullDate(fromIso(date))}</Title>
+      <Title className="text-base"><DateLabel date={date} className="text-base" /></Title>
       <Desc className="text-sm text-sub">{clips.length} คลิป</Desc>
       <div className="flex flex-wrap gap-2">
         {chip(null, 'ทั้งหมด', clips.length)}
@@ -83,7 +83,7 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
           </div>
         ))}
         {shown.length === 0 && (
-          <EmptyState icon={CalendarX} title="ยังไม่มีคลิปในวันนี้"
+          <EmptyState icon={Clapperboard} title="ยังไม่มีคลิปในวันนี้"
             hint={filter ? 'ลองเลือกประเภทอื่น หรือกด “ทั้งหมด”' : owner ? 'กด “เพิ่มคลิป” เพื่อเริ่มวางแผนวันนี้' : 'เจ้าของยังไม่ได้ใส่งานของวันนี้'} />
         )}
       </div>

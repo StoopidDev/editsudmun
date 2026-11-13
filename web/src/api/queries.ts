@@ -1,4 +1,4 @@
-import { queryOptions, skipToken, useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { keepPreviousData, queryOptions, skipToken, useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as api from './index'
 import { useMe } from './queries-auth'
@@ -17,8 +17,8 @@ export const mediaQuery = (id: string) => queryOptions({ queryKey: ['media', id]
 export const recentQuery = (limit: number) => queryOptions({ queryKey: ['recent', limit], queryFn: () => api.listRecent(limit) })
 export const categoriesQuery = queryOptions({ queryKey: ['categories'], queryFn: api.listCategories, staleTime: 5 * 60_000 })
 
-export const useClips = (from: string, to: string, enabled = true) => useQuery({ ...clipsQuery(from, to), enabled })
-export const useDayCounts = (from: string, to: string, enabled = true) => useQuery({ ...dayCountsQuery(from, to), enabled })
+export const useClips = (from: string, to: string, enabled = true) => useQuery({ ...clipsQuery(from, to), enabled, placeholderData: keepPreviousData })
+export const useDayCounts = (from: string, to: string, enabled = true) => useQuery({ ...dayCountsQuery(from, to), enabled, placeholderData: keepPreviousData })
 export const useRecent = (limit: number) => useQuery(recentQuery(limit))
 export const useClip = (id: string) => useQuery(clipQuery(id))
 export const useMedia = (clipId: string) => useQuery(mediaQuery(clipId))

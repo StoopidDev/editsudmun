@@ -10,7 +10,8 @@ import { useLightbox } from '@/components/useLightbox'
 import { useViewUrls, viewables } from '@/lib/viewer'
 import { UploadZone } from '@/components/UploadZone'
 import { Button } from '@/components/ui/button'
-import { fromIso, fullDate, sentAt } from '@/lib/dates'
+import { DateLabel } from '@/components/DateLabel'
+import { sentAt } from '@/lib/dates'
 import { canWithdraw, daysLeft, formatSize, readyIds, roundCount, shownTiles, TILE_CAP, WITHDRAW_MS, withRounds, withdrawMinutesLeft } from '@/lib/media'
 import { ClipForm } from './ClipForm'
 
@@ -83,7 +84,7 @@ function CreatorDetail({ id }: { id: string }) {
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-3 max-lg:contents">
           <div className="flex items-center gap-2 text-sm font-normal text-sub">
-            <CategoryBadge categoryId={clip.category_id} />{fullDate(fromIso(clip.date))}<StatusChip status={clip.status} />
+            <CategoryBadge categoryId={clip.category_id} /><DateLabel date={clip.date} /><StatusChip status={clip.status} />
           </div>
           <h1 className="text-[32px] leading-[1.3] font-bold" style={{ viewTransitionName: `title-${id}` }}>{clip.title}</h1>
           {clip.status === 'revision' && (

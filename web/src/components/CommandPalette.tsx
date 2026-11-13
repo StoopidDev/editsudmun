@@ -4,7 +4,8 @@ import { Calendar, Home, Plus, Search, Tag, Users } from 'lucide-react'
 import { useMe, useSearch } from '@/api/queries'
 import { CategoryBadge, Delayed, Skeleton } from '@/components/bits'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { dayLabel, fromIso, shortDate } from '@/lib/dates'
+import { DateLabel } from '@/components/DateLabel'
+import { fromIso } from '@/lib/dates'
 import { snippet } from '@/lib/search'
 
 const SHORTCUTS = [
@@ -117,7 +118,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                           </div>
                           <p className="mt-0.5 truncate text-xs text-sub">{s.before}<mark className="bg-note-line text-ink">{s.match}</mark>{s.after}</p>
                         </div>
-                        <span className="shrink-0 text-xs text-sub tabular-nums">{dayLabel(d)} {shortDate(d)}</span>
+                        <span className="shrink-0 text-xs text-sub tabular-nums"><DateLabel date={d} variant="compact" /></span>
                       </>)
                     })}
                   </div>
