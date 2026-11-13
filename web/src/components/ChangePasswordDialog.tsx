@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
-  const change = useAct(({ current, next }: { current: string; next: string }) => api.changePassword(current, next))
+  const change = useAct(({ current, next }: { current: string; next: string }) => api.changePassword(current, next), [])
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
@@ -25,7 +25,7 @@ export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
           <div className="grid gap-1"><Label htmlFor="next">รหัสผ่านใหม่ (อย่างน้อย 12 ตัว มีตัวพิมพ์เล็ก ใหญ่ และตัวเลข)</Label><Input id="next" name="next" type="password" required minLength={12} autoComplete="new-password" /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>ยกเลิก</Button>
-            <Button type="submit" disabled={change.isPending}>บันทึก</Button>
+            <Button type="submit" loading={change.isPending}>บันทึก</Button>
           </DialogFooter>
         </form>
       </DialogContent>

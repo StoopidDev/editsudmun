@@ -8,7 +8,7 @@ export function ClipPager({ clipId, date }: { clipId: string; date: string }) {
   const { data: day = [] } = useClips(date, date)
   const i = day.findIndex((c) => c.id === clipId)
   // replace: paging through a day must not fill the history, so Back returns to the list.
-  const go = (id: string) => nav(`/clips/${id}`, { replace: true })
+  const go = (id: string) => nav(`/clips/${id}`, { replace: true, viewTransition: true })
   return (
     <div className="flex items-center gap-2 text-xs text-sub">
       {i >= 0 && <span>คลิป {i + 1} จาก {day.length} ของวันนั้น</span>}

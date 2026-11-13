@@ -13,14 +13,17 @@ import { Label } from '@/components/ui/label'
 import type { Profile } from '@/lib/types'
 import { useLast } from '@/lib/useLast'
 
+// User writes change only the user list.
+const USER_KEYS = [['users']] as const
+
 export function Users() {
   const { data: users = [] } = useUsers()
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Profile | null>(null)
   const [resetting, setResetting] = useState<Profile | null>(null)
   const [temp, setTemp] = useState<{ email: string; password: string } | null>(null)
-  const reset = useAct(api.resetPassword)
-  const remove = useAct(api.deleteUser)
+  const reset = useAct(api.resetPassword, USER_KEYS)
+  const remove = useAct(api.deleteUser, USER_KEYS)
   const lastDeleting = useLast(deleting)
   const lastResetting = useLast(resetting)
 
@@ -35,7 +38,7 @@ export function Users() {
           <div key={u.id} className="grid items-center gap-2 border-t border-grid p-3 first:border-t-0 md:grid-cols-[1fr_1.5fr_100px_120px_auto]">
             <b className="text-sm">{u.display_name}</b>
             <span className="truncate text-sm text-sub">{u.email}</span>
-            <span className={`w-fit rounded-full px-2 py-0.5 text-xs font-bold ${u.role === 'owner' ? 'bg-today text-[#0066cc]' : 'bg-surface text-sub'}`}>{u.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</span>
+            <span className={`w-fit rounded-full px-2 py-0.5 text-xs font-bold ${u.role === 'owner' ? 'bg-today text-brand-text' : 'bg-surface text-sub'}`}>{u.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</span>
             <span className="text-sm text-sub">{format(parseISO(u.created_at), 'd MMM yyyy', { locale: th })}</span>
             <span className="flex gap-1">
               <Button variant="ghost" className="min-h-11 md:min-h-0" disabled={u.role === 'owner'} aria-label={`รีเซ็ตรหัสผ่าน ${u.display_name}`} onClick={() => setResetting(u)}><KeyRound />รีเซ็ตรหัสผ่าน</Button>
@@ -51,16 +54,16 @@ export function Users() {
       {temp && <TempPassword temp={temp} onClose={() => setTemp(null)} />}
 
       <ConfirmDialog open={!!resetting} title={`รีเซ็ตรหัสผ่าน ${lastResetting?.display_name}?`} body="รหัสผ่านเดิมจะใช้ไม่ได้ทันที" confirm="รีเซ็ต"
-        onConfirm={() => resetting && reset.mutate(resetting.id, { onSuccess: (password) => setTemp({ email: resetting.email, password }) })} onClose={() => setResetting(null)} />
+        onConfirm={async () => { if (resetting) setTemp({ email: resetting.email, password: await reset.mutateAsync(resetting.id) }) }} loading={reset.isPending} onClose={() => setResetting(null)} />
 
       <ConfirmDialog open={!!deleting} title={`ลบบัญชี ${lastDeleting?.display_name}?`} body="ผู้ใช้นี้จะเข้าสู่ระบบไม่ได้อีก" confirm="ลบบัญชี"
-        onConfirm={() => deleting && remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
+        onConfirm={() => deleting && remove.mutateAsync(deleting.id)} loading={remove.isPending} onClose={() => setDeleting(null)} />
     </div>
   )
 }
 
 function CreateDialog({ onClose, onDone }: { onClose: () => void; onDone: (email: string, password: string) => void }) {
-  const create = useAct(({ name, email }: { name: string; email: string }) => api.createCreator(name, email))
+  const create = useAct(({ name, email }: { name: string; email: string }) => api.createCreator(name, email), USER_KEYS)
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
@@ -79,7 +82,7 @@ function CreateDialog({ onClose, onDone }: { onClose: () => void; onDone: (email
           <div className="grid gap-1"><Label htmlFor="email">อีเมล</Label><Input id="email" name="email" type="email" required /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>ยกเลิก</Button>
-            <Button type="submit" disabled={create.isPending}>สร้างบัญชี</Button>
+            <Button type="submit" loading={create.isPending}>สร้างบัญชี</Button>
           </DialogFooter>
         </form>
       </DialogContent>

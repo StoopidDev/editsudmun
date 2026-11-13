@@ -20,3 +20,12 @@ export const rangeLabel = (d: Date) => {
   const [a, b] = [weekStart(d), addDays(weekStart(d), 6)]
   return `${shortDate(a)} – ${shortDate(b)} ${format(b, 'yyyy')}`
 }
+export const sentAt = (iso: string) => format(parseISO(iso), 'd MMM HH:mm', { locale: th })
+
+// The calendar's view and its days, from the URL (?view=month, ?date=yyyy-MM-dd). A missing or bad date means today.
+export function calendarView(params: URLSearchParams) {
+  const view = params.get('view') === 'month' ? 'month' : 'week'
+  const parsed = fromIso(params.get('date') ?? '')
+  const date = isValid(parsed) ? parsed : fromIso(todayIso())
+  return { view, date, days: view === 'week' ? weekDays(date) : monthGrid(date) }
+}

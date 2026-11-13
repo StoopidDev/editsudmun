@@ -1,7 +1,7 @@
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import type { ClipMedia } from './types'
 
-const WITHDRAW_MS = 10 * 60 * 1000
+export const WITHDRAW_MS = 10 * 60 * 1000
 export const WARN_DAYS = 7
 
 // Mirrors supabase/functions/_shared/media.ts so the UI can refuse a file before uploading;
@@ -29,7 +29,7 @@ export const daysLeft = (expires_at: string, now = new Date()) =>
 // Mirrors the clip_media delete policy in supabase/migrations.
 export const withdrawMinutesLeft = (m: ClipMedia, now = new Date()) =>
   m.ready_at
-    ? Math.max(0, Math.ceil((parseISO(m.ready_at).getTime() + WITHDRAW_MS - now.getTime()) / 60000))
+    ? Math.min(WITHDRAW_MS / 60000, Math.max(0, Math.ceil((parseISO(m.ready_at).getTime() + WITHDRAW_MS - now.getTime()) / 60000)))
     : WITHDRAW_MS / 60000
 
 export const canWithdraw = (m: ClipMedia, userId: string, now = new Date()) =>
@@ -53,3 +53,38 @@ export const formatSize = (bytes: number) => {
 
 // R2 lifecycle counts from upload, so a brief planned far ahead can lose its files first.
 export const expiresBeforeClip = (expires_at: string, clipDate: string) => expires_at.slice(0, 10) < clipDate
+
+export const progressLabel = (sent: number, size: number) =>
+  `${formatSize(sent)} / ${formatSize(size)} · ${size ? Math.floor((sent / size) * 100) : 0}%`
+
+// Which row style an in-flight upload gets. Offline or any automatic retry reads as retrying (orange).
+export const uploadStatus = (r: { error: string | null; paused: boolean; retries: number; offline: boolean }) =>
+  r.error ? 'failed' : r.paused ? 'paused' : r.offline || r.retries > 0 ? 'retrying' : 'uploading'
+
+// Uploader part rules. Must equal MULTIPART_THRESHOLD and PART_BYTES in supabase/functions/_shared/media.ts,
+// or the server's part_count will not match the parts Uppy sends (lib.test.ts checks this).
+export const MULTIPART_AT = 100 * 1024 ** 2
+export const PART_BYTES = 50 * 1024 ** 2
+// Part numbers 1..n for a file of `size` bytes, as Uppy cuts it into PART_BYTES chunks.
+export const partNumbers = (size: number) => Array.from({ length: Math.max(1, Math.ceil(size / PART_BYTES)) }, (_, i) => i + 1)
+
+// Ready files only: the server marks a row ready after it checked the object, and only those have a playable URL.
+export const readyIds = (files: ClipMedia[]) => files.filter((f) => f.status === 'ready').map((f) => f.id)
+
+// A reference grid shows at most TILE_CAP tiles; with more files the last tile is "+n" for the ones it hides.
+export const TILE_CAP = 6
+export const shownTiles = <T,>(files: T[]): T[] => (files.length > TILE_CAP ? files.slice(0, TILE_CAP - 1) : files)
+
+// Splits a list into runs of `size` (the API takes at most 100 ids per call).
+export const chunk = <T,>(list: T[], size: number): T[][] =>
+  Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size))
+
+// m:ss, or h:mm:ss from an hour up. Empty when the duration is unknown.
+export function formatDuration(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds < 0) return ''
+  const s = Math.floor(seconds)
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const ss = String(s % 60).padStart(2, '0')
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`
+}

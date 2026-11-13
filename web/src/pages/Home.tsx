@@ -3,7 +3,10 @@ import { formatDistanceToNow, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { ArrowRight, Plus } from 'lucide-react'
 import { useAttention, useCategories, useClips, useExpiring, useMe, useRecent, useStorage } from '@/api/queries'
-import { CategoryBadge, StatusChip } from '@/components/bits'
+import { shareTitle } from '@/lib/viewTransition'
+import { CategoryBadge, Delayed, Skeleton } from '@/components/bits'
+import { ClipCard } from '@/components/ClipCard'
+import { DownloadAll } from '@/components/media'
 import { ATTENTION_LABEL } from '@/lib/attention'
 import { Button } from '@/components/ui/button'
 import { dayLabel, fromIso, fullDate, rangeLabel, shortDate, toIso, todayIso, weekDays } from '@/lib/dates'
@@ -31,7 +34,7 @@ export function Home() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">ยินดีต้อนรับกลับมา</h1>
-        {owner && <Button nativeButton={false} render={<Link to={`/clips/new?date=${today}`} />}><Plus />เพิ่มคลิป</Button>}
+        {owner && <Button nativeButton={false} render={<Link viewTransition to={`/clips/new?date=${today}`} />}><Plus />เพิ่มคลิป</Button>}
       </div>
 
       {todo.length > 0 && (
@@ -39,12 +42,13 @@ export function Home() {
           <h2 className="text-lg font-bold">งานของฉัน ({todo.length})</h2>
           <div className="flex max-h-72 flex-col gap-2 overflow-y-auto">
             {todo.map((c) => (
-              <Link key={c.id} to={`/clips/${c.id}`} className="flex flex-col gap-1 rounded-card border border-[#ffb04d] bg-[#fff0e0] p-3">
+              <Link viewTransition key={c.id} to={`/clips/${c.id}`} onClick={(e) => shareTitle(e, c.id)} className="press flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3">
                 <div className="flex items-center justify-between gap-2 text-xs text-sub">
                   <CategoryBadge categoryId={c.category_id} />
-                  <span className="font-bold text-[#b35c00]">{ATTENTION_LABEL[c.attention]} · {shortDate(fromIso(c.date))}</span>
+                  <span className="font-bold text-warn-text">{ATTENTION_LABEL[c.attention]} · {shortDate(fromIso(c.date))}</span>
                 </div>
-                <b className="text-sm">{c.title}</b>
+                <b data-title className="text-sm">{c.title}</b>
+                {c.attention === 'review' && <span className="text-xs text-sub">ครีเอเตอร์ส่งงานแล้ว {c.round} รอบ</span>}
                 {c.attention === 'revision' && <p className="line-clamp-2 text-xs">{c.revision_note}</p>}
               </Link>
             ))}
@@ -53,36 +57,30 @@ export function Home() {
       )}
 
       {dying.length > 0 && (
-        <section role="status" className="flex flex-col gap-1 rounded-card border border-[#ffb04d] bg-[#fff0e0] p-3 text-sm">
+        <section role="status" className="flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3 text-sm">
           <b>มี {dying.length} ไฟล์ใกล้ถูกลบ</b>
           {dying.map((f) => (
-            <Link key={f.id} to={`/clips/${f.clip_id}`} className="truncate text-xs underline">
+            <Link viewTransition key={f.id} to={`/clips/${f.clip_id}`} className="truncate text-xs underline">
               {f.file_name} · {f.clip_title} · ลบใน {f.days} วัน
             </Link>
           ))}
+          <div className="self-start pt-1"><DownloadAll ids={dying.map((f) => f.id)} /></div>
         </section>
       )}
 
       <section className="flex flex-col gap-2">
         <div className="flex justify-between">
           <h2 className="text-lg">วันนี้ · {fullDate(now)}</h2>
-          <Link to="/calendar" className="flex items-center gap-1 text-sm text-brand">เปิดปฏิทิน<ArrowRight size={14} /></Link>
+          <Link viewTransition to="/calendar" className="flex items-center gap-1 text-sm text-brand hover-pointer:underline underline-offset-4">เปิดปฏิทิน<ArrowRight size={14} /></Link>
         </div>
-        {week.isPending ? <p className="text-sm text-sub">กำลังโหลด...</p> : (
+        {week.isPending ? (<Delayed><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /></div></Delayed>) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {todays.map((c, i) => (
-              <Link key={c.id} to={`/clips/${c.id}`} className="flex flex-col gap-1 rounded-card border border-line p-3 hover:bg-surface">
-                <div className="flex items-center justify-between gap-1 text-xs text-sub">
-                  <span className="flex flex-wrap items-center gap-1"><CategoryBadge categoryId={c.category_id} /><StatusChip status={c.status} /></span>
-                  คลิป {i + 1} จาก {todays.length}
-                </div>
-                <b>{c.title}</b>
-                <p className="line-clamp-2 text-xs text-sub">{c.script}</p>
-              </Link>
+              <ClipCard key={c.id} clip={c} variant="today" index={i + 1} total={todays.length} />
             ))}
             {todays.length === 0 && !owner && !week.isError && <p className="text-sm text-sub">วันนี้ไม่มีคลิป</p>}
             {owner && (
-              <Link to={`/clips/new?date=${today}`} className="flex min-h-24 flex-col items-center justify-center rounded-card border border-dashed border-line text-sm text-sub">
+              <Link viewTransition to={`/clips/new?date=${today}`} className="press hover-tint flex min-h-24 flex-col items-center justify-center rounded-card border border-dashed border-line text-sm text-sub">
                 <Plus size={16} />เพิ่มคลิปวันนี้
               </Link>
             )}
@@ -93,14 +91,14 @@ export function Home() {
       <section className="flex flex-col gap-2">
         <div className="flex justify-between">
           <h2 className="text-lg">สัปดาห์นี้</h2>
-          <span className="text-sm text-sub">{rangeLabel(now)} · <Link to="/calendar" className="text-brand">ดูทั้งหมด</Link></span>
+          <span className="text-sm text-sub">{rangeLabel(now)} · <Link viewTransition to="/calendar" className="text-brand hover-pointer:underline underline-offset-4">ดูทั้งหมด</Link></span>
         </div>
         <div className="grid grid-cols-7 overflow-hidden rounded-card border border-line">
           {days.map((d) => {
             const iso = toIso(d)
             const list = week.data?.filter((c) => c.date === iso) ?? []
             return (
-              <Link key={iso} to={`/calendar?date=${iso}`} className={`flex min-h-16 flex-col gap-1 border-r border-grid p-1 last:border-r-0 sm:min-h-24 sm:p-2 ${iso === today ? 'bg-today' : ''}`}>
+              <Link viewTransition key={iso} to={`/calendar?date=${iso}`} className={`flex min-h-16 flex-col gap-1 border-r border-grid p-1 last:border-r-0 sm:min-h-24 sm:p-2 ${iso === today ? 'bg-today' : ''}`}>
                 <span className={`rounded-card text-center text-xs ${iso === today ? 'bg-brand text-white' : ''}`}>{dayLabel(d)}<br /><b className="text-base">{d.getDate()}</b></span>
                 {list.slice(0, 3).map((c) => {
                   const bg = color(c.category_id) ?? '#5f5f5f'
@@ -120,12 +118,12 @@ export function Home() {
         <h2 className="text-lg">แก้ไขล่าสุด</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {recent.data?.map((c) => (
-            <Link key={c.id} to={`/clips/${c.id}`} className="flex flex-col gap-1 rounded-card border border-line p-3 hover:bg-surface">
+            <Link viewTransition key={c.id} to={`/clips/${c.id}`} onClick={(e) => shareTitle(e, c.id)} className="press hover-tint hover-pointer:border-ink/40 flex flex-col gap-1 rounded-card border border-line p-3">
               <div className="flex justify-between text-xs text-sub">
                 <CategoryBadge categoryId={c.category_id} />
                 {formatDistanceToNow(parseISO(c.brief_updated_at), { locale: th, addSuffix: true })}
               </div>
-              <b className="text-sm">{c.title}</b>
+              <b data-title className="text-sm">{c.title}</b>
               <span className="text-xs text-sub">อัปเดตล่าสุด</span>
             </Link>
           ))}

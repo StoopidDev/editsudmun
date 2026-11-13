@@ -23,7 +23,7 @@ export function CopyDialog({ clip, onClose }: { clip: Pick<Clip, 'id' | 'title' 
         <p className="text-sm text-brand">วันที่เลือก: {fullDate(fromIso(date))}</p>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>ยกเลิก</Button>
-          <Button disabled={copy.isPending} onClick={() => copy.mutate(undefined, { onSuccess: () => { toast.success('คัดลอกแล้ว'); onClose() } })}>คัดลอก</Button>
+          <Button loading={copy.isPending} onClick={() => copy.mutate(undefined, { onSuccess: () => { toast.success('คัดลอกแล้ว'); onClose() } })}>คัดลอก</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

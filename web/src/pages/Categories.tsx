@@ -13,12 +13,15 @@ import { useLast } from '@/lib/useLast'
 
 type Editing = Category | 'new' | null
 
+// A category write changes the category list, its counts, and the clips that carry it.
+const CATEGORY_KEYS = [['categories'], ['categoryCounts'], ['clips']] as const
+
 export function Categories() {
   const { data: cats = [], isPending } = useCategories()
   const { data: counts = {} } = useCategoryCounts()
   const [editing, setEditing] = useState<Editing>(null)
   const [deleting, setDeleting] = useState<Category | null>(null)
-  const remove = useAct(api.deleteCategory)
+  const remove = useAct(api.deleteCategory, CATEGORY_KEYS)
   const lastDeleting = useLast(deleting)
 
   return (
@@ -51,7 +54,7 @@ export function Categories() {
       )}
       {editing && <CategoryDialog editing={editing} used={cats.map((c) => c.color)} onClose={() => setEditing(null)} />}
       <ConfirmDialog open={!!deleting} title={`ลบประเภท “${lastDeleting?.name}”?`} body="ลบแล้วกู้คืนไม่ได้" confirm="ลบ"
-        onConfirm={() => deleting && remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
+        onConfirm={() => deleting && remove.mutateAsync(deleting.id)} loading={remove.isPending} onClose={() => setDeleting(null)} />
     </div>
   )
 }
@@ -59,7 +62,7 @@ export function Categories() {
 function CategoryDialog({ editing, used, onClose }: { editing: Category | 'new'; used: string[]; onClose: () => void }) {
   const current = editing === 'new' ? null : editing
   const save = useAct(({ name, color }: { name: string; color: string }) =>
-    current ? api.updateCategory(current.id, { name, color }) : api.createCategory(name, color).then(() => undefined))
+    current ? api.updateCategory(current.id, { name, color }) : api.createCategory(name, color).then(() => undefined), CATEGORY_KEYS)
 
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -78,7 +81,7 @@ function CategoryDialog({ editing, used, onClose }: { editing: Category | 'new';
           <div className="grid gap-1"><Label htmlFor="color">สี</Label><input id="color" name="color" type="color" defaultValue={current?.color ?? nextColor(used)} className="h-9 w-16" /></div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>ยกเลิก</Button>
-            <Button type="submit" disabled={save.isPending}>บันทึก</Button>
+            <Button type="submit" loading={save.isPending}>บันทึก</Button>
           </DialogFooter>
         </form>
       </DialogContent>

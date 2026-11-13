@@ -2,8 +2,8 @@ import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff } from 'lucide-react'
-import * as api from '@/api/index'
-import { useMe } from '@/api/queries'
+import * as api from '@/api/auth'
+import { notViews, useMe } from '@/api/queries-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,7 +16,7 @@ export function Login() {
   // Plain useMutation, not useAct: the error shows inline here, not as a toast.
   const act = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) => api.login(email, password),
-    onSuccess: () => qc.invalidateQueries(),
+    onSuccess: () => qc.invalidateQueries(notViews),
   })
 
   // Only same-app paths: a bare '//host' would be a protocol-relative URL.
@@ -33,7 +33,7 @@ export function Login() {
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-surface p-4">
-      <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 rounded-card bg-white p-8">
+      <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 rounded-card bg-bg p-8">
         <h1 className="text-center text-xl">Channel's Tool</h1>
         <div className="grid gap-1">
           <Label htmlFor="email">อีเมล</Label>
@@ -49,7 +49,7 @@ export function Login() {
           </div>
         </div>
         {act.error && <p id="login-error" role="alert" className="text-sm text-danger">{act.error.message}</p>}
-        <Button type="submit" disabled={act.isPending}>{act.isPending ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</Button>
+        <Button type="submit" loading={act.isPending}>{act.isPending ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</Button>
         <p className="text-center text-xs text-sub">ลืมรหัสผ่าน? ติดต่อเจ้าของช่องเพื่อรีเซ็ต</p>
       </form>
     </div>

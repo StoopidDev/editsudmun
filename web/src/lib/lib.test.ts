@@ -1,8 +1,12 @@
+/// <reference types="node" />
+import { resolve } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
-import { canWithdraw, daysLeft, expiresBeforeClip, formatSize, isPlayable, roundCount, uploadProblem, withdrawMinutesLeft, withRounds } from './media'
+import { calendarView, dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } from './dates'
+import { canWithdraw, chunk, daysLeft, expiresBeforeClip, formatDuration, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, shownTiles, TILE_CAP, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
+import { swapInDay } from './order'
 import { contrast, nextColor, readableOn } from './color'
 import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from './draft'
 import type { Clip, ClipMedia } from './types'
@@ -36,6 +40,16 @@ describe('dates', () => {
   })
 })
 
+describe('chunk', () => {
+  it('splits ids into runs of at most the size, keeping order', () => {
+    expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
+    expect(chunk(Array.from({ length: 250 }, (_, i) => i), 100).map((c) => c.length)).toEqual([100, 100, 50])
+  })
+  it('returns no runs for an empty list', () => {
+    expect(chunk([], 100)).toEqual([])
+  })
+})
+
 describe('media', () => {
   const now = new Date('2026-10-29T10:03:00.000Z')
   it('counts days left and never goes negative', () => {
@@ -49,6 +63,9 @@ describe('media', () => {
     expect(canWithdraw(media({}), 'u1', new Date('2026-10-29T10:10:00.000Z'))).toBe(false)
     expect(canWithdraw(media({ purpose: 'reference' }), 'u1', now)).toBe(false)
     expect(canWithdraw(media({ uploaded_by: null }), 'u1', now)).toBe(false)
+  })
+  it('caps the withdraw countdown at 10 minutes even if the upload time is in the future', () => {
+    expect(withdrawMinutesLeft(media({ ready_at: '2026-10-29T10:30:00.000Z' }), now)).toBe(10)
   })
   it('lets the uploader cancel a pending upload however long it took', () => {
     const pending = media({ status: 'pending', ready_at: null, created_at: '2026-10-29T08:00:00.000Z' })
@@ -119,6 +136,17 @@ describe('color', () => {
   })
 })
 
+describe('theme tokens', () => {
+  it('dark and light text tokens meet 4.5:1 on their backgrounds', () => {
+    const pairs = [
+      ['#1e1e1e', '#ffffff'], ['#5f5f5f', '#ffffff'], ['#5f5f5f', '#f5f5f5'], ['#f2f2f2', '#1b1b1d'],
+      ['#a0a0a5', '#1b1b1d'], ['#a0a0a5', '#262628'], ['#4da3ff', '#1b1b1d'], ['#ffb04d', '#3a2810'],
+      ['#9a4f00', '#fff0e0'], ['#34c759', '#12301c'], ['#ffffff', '#3a3a3c'], ['#ffffff', '#0071e3'], ['#ffffff', '#0066cc'],
+    ]
+    for (const [fg, bg] of pairs) expect(contrast(fg, bg), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
+  })
+})
+
 describe('attentionOf', () => {
   const today = '2026-10-29'
   it('sends submitted work to the owner', () => {
@@ -166,3 +194,91 @@ describe('draft', () => {
     expect(isBlank(form)).toBe(false)
   })
 })
+
+describe('upload helpers', () => {
+  it('labels upload progress', () => {
+    expect(progressLabel(1.2 * 1024 ** 3, 1.8 * 1024 ** 3)).toBe('1.2 GB / 1.8 GB · 66%')
+  })
+  it('lists part numbers for a file size', () => {
+    expect(partNumbers(0)).toEqual([1])
+    expect(partNumbers(PART_BYTES)).toEqual([1])
+    expect(partNumbers(PART_BYTES + 1)).toEqual([1, 2])
+    expect(partNumbers(3 * PART_BYTES)).toEqual([1, 2, 3])
+  })
+  it('picks the row state: failed beats paused beats retrying', () => {
+    const base = { error: null, paused: false, retries: 0, offline: false }
+    expect(uploadStatus(base)).toBe('uploading')
+    expect(uploadStatus({ ...base, offline: true })).toBe('retrying')
+    expect(uploadStatus({ ...base, retries: 2 })).toBe('retrying')
+    expect(uploadStatus({ ...base, paused: true, retries: 2 })).toBe('paused')
+    expect(uploadStatus({ ...base, error: 'x', retries: 2 })).toBe('failed')
+  })
+  it('uses the same multipart threshold and part size as the server', () => {
+    // npm test runs in web/, so the server file is one level up (read as text: it imports Deno).
+    const src = readFileSync(resolve(process.cwd(), '../supabase/functions/_shared/media.ts'), 'utf8')
+    const mb = (name: string) => Number(src.match(new RegExp(`const\\s+${name}\\s*=\\s*(\\d+)\\s*\\*\\s*1024\\s*\\*\\*\\s*2`))?.[1])
+    expect(mb('MULTIPART_THRESHOLD') * 1024 ** 2).toBe(MULTIPART_AT)
+    expect(mb('PART_BYTES') * 1024 ** 2).toBe(PART_BYTES)
+  })
+})
+
+describe('formatDuration', () => {
+  it('formats seconds as m:ss and h:mm:ss', () => {
+    expect(formatDuration(42)).toBe('0:42')
+    expect(formatDuration(65.9)).toBe('1:05')
+    expect(formatDuration(3725)).toBe('1:02:05')
+    expect(formatDuration(NaN)).toBe('')
+  })
+})
+
+describe('order', () => {
+  it('swaps a clip with its neighbour in the same day only', () => {
+    const r = [{ id: 'a', date: 'd1', position: 0 }, { id: 'b', date: 'd1', position: 1 }, { id: 'c', date: 'd2', position: 0 }]
+    expect(swapInDay(r, 'b', -1).map((x) => x.id)).toEqual(['b', 'a', 'c'])
+    expect(swapInDay(r, 'a', -1)).toEqual(r)
+    expect(swapInDay(r, 'c', 1)).toEqual(r)
+  })
+  it('moves down and keeps days in order', () => {
+    const r = [{ id: 'b', date: 'd2', position: 1 }, { id: 'a', date: 'd2', position: 0 }, { id: 'z', date: 'd1', position: 5 }]
+    expect(swapInDay(r, 'a', 1).map((x) => x.id)).toEqual(['z', 'b', 'a'])
+    expect(swapInDay(r, 'missing', 1)).toEqual(r)
+  })
+  it('gives unique positions when a day has duplicates', () => {
+    const r = [{ id: 'a', date: 'd1', position: 0 }, { id: 'b', date: 'd1', position: 0 }, { id: 'c', date: 'd1', position: 0 }]
+    const out = swapInDay(r, 'c', -1)
+    expect(out.map((x) => x.id)).toEqual(['a', 'c', 'b'])
+    expect(out.map((x) => x.position)).toEqual([0, 1, 2])
+  })
+})
+
+describe('calendarView', () => {
+  it('shows a week of seven days from ?date, starting Monday', () => {
+    const v = calendarView(new URLSearchParams('view=week&date=2026-11-12'))
+    expect(v.view).toBe('week')
+    expect(toIsoDay(v.days[0])).toBe('2026-11-09')
+    expect(v.days).toHaveLength(7)
+  })
+  it('shows whole weeks around the month for ?view=month', () => {
+    const v = calendarView(new URLSearchParams('view=month&date=2026-11-12'))
+    expect(v.view).toBe('month')
+    expect(toIsoDay(v.days[0])).toBe('2026-10-26')
+    expect(toIsoDay(v.days[v.days.length - 1])).toBe('2026-12-06')
+  })
+  it('falls back to today and the week view for a bad date or view', () => {
+    const v = calendarView(new URLSearchParams('view=year&date=nope'))
+    expect(v.view).toBe('week')
+    expect(v.days).toHaveLength(7)
+  })
+})
+
+describe('shownTiles', () => {
+  it('shows every file up to the cap', () => {
+    expect(shownTiles([1, 2, 3, 4, 5, 6])).toHaveLength(TILE_CAP)
+  })
+  it('leaves the sixth tile for "+n" when there are more files', () => {
+    const files = [1, 2, 3, 4, 5, 6, 7, 8]
+    expect(shownTiles(files)).toEqual([1, 2, 3, 4, 5])
+  })
+})
+
+const toIsoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
