@@ -33,7 +33,7 @@ export function Login() {
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-surface p-4">
-      <form onSubmit={submit} className="flex w-full max-w-sm flex-col gap-4 rounded-card bg-bg p-8">
+      <form onSubmit={submit} className="enter flex w-full max-w-sm flex-col gap-4 rounded-card bg-bg p-8">
         <h1 className="text-center text-xl">Channel's Tool</h1>
         <div className="grid gap-1">
           <Label htmlFor="email">อีเมล</Label>
@@ -42,9 +42,12 @@ export function Login() {
         <div className="grid gap-1">
           <Label htmlFor="password">รหัสผ่าน</Label>
           <div className="relative">
-            <Input id="password" name="password" type={show ? 'text' : 'password'} required autoComplete="current-password" aria-invalid={!!act.error} aria-describedby={act.error ? 'login-error' : undefined} />
-            <button type="button" aria-label={show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={show} onClick={() => setShow(!show)} className="absolute top-2 right-2 text-sub">
-              {show ? <EyeOff size={16} /> : <Eye size={16} />}
+            <Input id="password" name="password" type={show ? 'text' : 'password'} required autoComplete="current-password" aria-invalid={!!act.error} aria-describedby={act.error ? 'login-error' : undefined} className="pr-10" />
+            <button type="button" aria-label={show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={show} onClick={() => setShow(!show)} className="hover-tint absolute inset-y-0 right-0 flex w-9 items-center justify-center rounded-md text-sub max-md:w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+              <span className="relative block size-4">
+                <Eye aria-hidden="true" className={`absolute inset-0 size-4 transition-[opacity,scale,filter] duration-150 ease-out ${show ? 'opacity-0 scale-75 blur-xs' : 'opacity-100 scale-100 blur-none'}`} />
+                <EyeOff aria-hidden="true" className={`absolute inset-0 size-4 transition-[opacity,scale,filter] duration-150 ease-out ${show ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-75 blur-xs'}`} />
+              </span>
             </button>
           </div>
         </div>

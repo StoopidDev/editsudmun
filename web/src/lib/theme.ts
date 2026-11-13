@@ -9,11 +9,12 @@ function stored(): string | null {
 }
 
 export function setTheme(dark: boolean) {
-  const apply = () => root().classList.toggle('dark', dark)
   try { localStorage.setItem(KEY, dark ? 'dark' : 'light') } catch { /* per-browser convenience only */ }
-  // Ease the brightness jump: cross-fade the whole page, instant under reduced motion.
-  if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(apply)
-  else apply()
+  // Plain colour transition: index.css fades background, text and border for as long as this class is on <html>.
+  const r = root()
+  r.classList.add('theme-switching')
+  r.classList.toggle('dark', dark)
+  window.setTimeout(() => r.classList.remove('theme-switching'), 250)
 }
 
 export function toggleTheme() {

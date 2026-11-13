@@ -1,4 +1,4 @@
-import { queryOptions, skipToken, useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { keepPreviousData, queryOptions, skipToken, useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import * as api from './index'
 import { useMe } from './queries-auth'
@@ -11,13 +11,14 @@ export const clipsQuery = (from: string, to: string) =>
   queryOptions({ queryKey: ['clips', from, to], queryFn: () => api.listClips(from, to) })
 export const dayCountsQuery = (from: string, to: string) =>
   queryOptions({ queryKey: ['dayCounts', from, to], queryFn: () => api.listDayCounts(from, to) })
-export const clipQuery = (id: string) => queryOptions({ queryKey: ['clip', id], queryFn: () => api.getClip(id) })
-export const mediaQuery = (id: string) => queryOptions({ queryKey: ['media', id], queryFn: () => api.listMedia(id) })
+// The new-clip form passes '' (no clip yet); Postgres rejects an empty uuid with a 400, so those queries stay off.
+export const clipQuery = (id: string) => queryOptions({ queryKey: ['clip', id], queryFn: () => api.getClip(id), enabled: !!id })
+export const mediaQuery = (id: string) => queryOptions({ queryKey: ['media', id], queryFn: () => api.listMedia(id), enabled: !!id })
 export const recentQuery = (limit: number) => queryOptions({ queryKey: ['recent', limit], queryFn: () => api.listRecent(limit) })
 export const categoriesQuery = queryOptions({ queryKey: ['categories'], queryFn: api.listCategories, staleTime: 5 * 60_000 })
 
-export const useClips = (from: string, to: string, enabled = true) => useQuery({ ...clipsQuery(from, to), enabled })
-export const useDayCounts = (from: string, to: string, enabled = true) => useQuery({ ...dayCountsQuery(from, to), enabled })
+export const useClips = (from: string, to: string, enabled = true) => useQuery({ ...clipsQuery(from, to), enabled, placeholderData: keepPreviousData })
+export const useDayCounts = (from: string, to: string, enabled = true) => useQuery({ ...dayCountsQuery(from, to), enabled, placeholderData: keepPreviousData })
 export const useRecent = (limit: number) => useQuery(recentQuery(limit))
 export const useClip = (id: string) => useQuery(clipQuery(id))
 export const useMedia = (clipId: string) => useQuery(mediaQuery(clipId))
