@@ -76,7 +76,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const opt = (i: number, to: string, content: ReactNode) => (
     <div key={to} id={`${listId}-${i}`} role="option" aria-selected={i === active}
       onMouseEnter={() => setActive(i)} onClick={() => go(to)}
-      className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-card px-3 py-2 transition-[background-color,box-shadow] duration-100 ${i === active ? 'bg-[color-mix(in_oklab,var(--c-brand)_16%,transparent)]' : ''}`}>
+      className={`flex min-h-11 cursor-pointer items-center gap-3 rounded-[calc(var(--radius-xl)-0.5rem)] px-3 py-2 transition-[background-color,box-shadow] duration-100 ${i === active ? 'bg-[color-mix(in_oklab,var(--c-brand)_16%,transparent)]' : ''}`}>
       {content}
     </div>
   )

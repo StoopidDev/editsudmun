@@ -37,11 +37,11 @@ function ThemeButton({ className = '', label }: { className?: string; label?: bo
   const dark = useTheme()
   const name = dark ? 'โหมดสว่าง' : 'โหมดมืด'
   // Both icons stay mounted and crossfade (opacity, scale, blur) so the swap reads as one change, not a pop.
-  const icon = (on: boolean) => `absolute inset-0 transition-[opacity,scale,filter] duration-200 ease-out ${on ? 'opacity-100 scale-100 blur-[0px]' : 'opacity-0 scale-75 blur-[4px]'}`
+  const icon = (on: boolean) => `absolute inset-0 transition-[opacity,scale,filter] duration-200 ease-out ${on ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-75 blur-xs'}`
   return (
     <button type="button" onClick={toggleTheme} aria-label={name} title={name}
       className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-8 min-w-8 max-md:min-h-11 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
-      <span aria-hidden className="relative size-[18px] shrink-0">
+      <span aria-hidden className="relative size-4.5 shrink-0">
         <Sun size={18} className={icon(dark)} />
         <Moon size={18} className={icon(!dark)} />
       </span>
@@ -84,8 +84,8 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
           <Link viewTransition to="/" aria-label="กลับสู่หน้าหลัก" title="กลับสู่หน้าหลัก"
             className="group relative block overflow-hidden rounded-card px-2 py-2 text-xl font-normal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
             {/* Title slides out to the left, the hint slides in from the right; both reverse on leave. Pointer devices and keyboard focus only. */}
-            <span className="block transition-transform duration-[260ms] ease-(--ease-drawer) group-focus-visible:-translate-x-[calc(100%+0.5rem)] group-hover:-translate-x-[calc(100%+0.5rem)]">Channel's Tool</span>
-            <span aria-hidden className="absolute inset-0 flex translate-x-full items-center px-2 text-base whitespace-nowrap text-brand-text transition-transform duration-[260ms] ease-(--ease-drawer) group-focus-visible:translate-x-0 group-hover:translate-x-0">กลับสู่หน้าหลัก</span>
+            <span className="block transition-transform duration-260 ease-(--ease-drawer) group-focus-visible:-translate-x-[calc(100%+0.5rem)] group-hover:-translate-x-[calc(100%+0.5rem)]">Channel's Tool</span>
+            <span aria-hidden className="absolute inset-0 flex translate-x-full items-center px-2 text-base whitespace-nowrap text-brand-text transition-transform duration-260 ease-(--ease-drawer) group-focus-visible:translate-x-0 group-hover:translate-x-0">กลับสู่หน้าหลัก</span>
           </Link>
         )}
         {onToggle && (
@@ -104,7 +104,7 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
       )}
       <nav className="relative flex flex-col gap-1">
         {/* One brand thumb slides to the active item (same idea as Segmented); it hides on pages that are not in the list, e.g. a clip. */}
-        <span aria-hidden className="absolute top-0 left-0 h-10 w-full rounded-card bg-brand transition-[transform,opacity] duration-[260ms] ease-(--ease-drawer)"
+        <span aria-hidden className="absolute top-0 left-0 h-10 w-full rounded-card bg-brand transition-[transform,opacity] duration-260 ease-(--ease-drawer)"
           style={{ transform: `translateY(calc(${Math.max(active, 0)} * 2.75rem))`, opacity: active < 0 ? 0 : 1 }} />
         {items.map(({ to, label, icon: Icon }, i) => (
           <NavLink viewTransition key={to} to={to} end={to === '/'} onClick={onNavigate} aria-label={label}
@@ -117,14 +117,14 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
       {rail ? (
         <div className="mt-auto flex items-center gap-2 px-2 flex-col">
           <ThemeButton />
-          <span className="flex size-[35px] items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
+          <span className="flex size-8.75 items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
           <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><KeyRound size={16} /></button>
           <button onClick={() => setConfirmingLogout(true)} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><LogOut size={16} /></button>
         </div>
       ) : (
         <div className="mt-auto flex flex-col gap-1 border-t border-grid pt-3">
           <div className="flex items-center gap-3 px-2 pb-1">
-            <span className="flex size-[35px] shrink-0 items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
+            <span className="flex size-8.75 shrink-0 items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
             <div className="min-w-0 text-sm">
               <b className="block truncate">{me?.display_name}</b>
               <div className="text-xs text-sub">{me?.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</div>
@@ -170,7 +170,7 @@ export function AppShell() {
     <UploadProvider>
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <div className="flex min-h-dvh">
-        <aside style={{ viewTransitionName: 'sidebar' }} className={`sticky top-0 hidden h-dvh shrink-0 overflow-hidden transition-[width] duration-[240ms] ease-(--ease-out-quint) md:block ${rail ? 'w-16' : 'w-60'}`}>
+        <aside style={{ viewTransitionName: 'sidebar' }} className={`sticky top-0 hidden h-dvh shrink-0 overflow-hidden transition-[width] duration-240 ease-(--ease-out-quint) md:block ${rail ? 'w-16' : 'w-60'}`}>
           <Sidebar rail={rail} onToggle={toggle} />
         </aside>
         <Sheet open={open} onOpenChange={setOpen}>

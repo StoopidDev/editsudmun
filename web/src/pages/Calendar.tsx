@@ -32,9 +32,9 @@ export function Calendar() {
   const [drawer, setDrawer] = useState<string | null>(null)
 
   const go = (next: { view?: string; date?: string }) => setParams({ view, date: dateIso, ...next })
-  // The grid stays put when you step: only the labels change, and neighbouring ranges are prefetched so the cards are ready.
-  const step = (n: number) => go({ date: toIso(view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)) })
-  const backToToday = () => go({ date: todayIso() })
+  // Cells are keyed by position (weekday or index), not date, so they survive a step and <Roll> can animate the number; the grid stays put when you step: only the labels change, and neighbouring ranges are prefetched so the cards are ready.
+  const step = (n: number) => { go({ date: toIso(view === 'week' ? addDays(date, 7 * n) : addMonths(date, n)) }) }
+  const backToToday = () => { go({ date: todayIso() }) }
   const qc = useQueryClient()
   useEffect(() => {
     rememberView(view)
@@ -55,16 +55,16 @@ export function Calendar() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-lg font-semibold">{view === 'week' ? rangeLabel(date) : monthLabel(date)}</h2>
           <div className="flex">
             <Button variant="outline" size="icon" className="rounded-r-none max-md:size-11" aria-label="ก่อนหน้า" onClick={() => step(-1)}><ChevronLeft /></Button>
             <Button variant="outline" size="icon" className="-ml-px rounded-l-none max-md:size-11" aria-label="ถัดไป" onClick={() => step(1)}><ChevronRight /></Button>
           </div>
-          {away && (
-            <button type="button" onClick={backToToday} className="link-action text-sub! text-sm max-md:min-h-11">
-              {!todayLater && <ArrowLeft size={14} aria-hidden />}กลับไปวันนี้{todayLater && <ArrowRight size={14} aria-hidden />}
-            </button>
-          )}
+          <h2 className="text-lg font-semibold tabular-nums md:w-64">{view === 'week' ? rangeLabel(date) : monthLabel(date)}</h2>
+          {/* Always in the layout (hidden when today is on screen), so the toolbar never shifts while stepping. */}
+          <button type="button" onClick={backToToday} disabled={!away} tabIndex={away ? 0 : -1} aria-hidden={!away}
+            className={`link-action text-sub! text-sm max-md:min-h-11 ${away ? '' : 'invisible'}`}>
+            {!todayLater && <ArrowLeft size={14} aria-hidden />}กลับไปวันนี้{todayLater && <ArrowRight size={14} aria-hidden />}
+          </button>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Segmented label="มุมมองปฏิทิน" value={view} onChange={(v) => go({ view: v })} options={[{ value: 'week', label: 'สัปดาห์' }, { value: 'month', label: 'เดือน' }]} />
@@ -106,11 +106,11 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
           const sel = iso === selIso
           const hasClips = p.forDay(iso).length > 0
           return (
-            <button key={iso} type="button" aria-pressed={sel} aria-label={fullDate(d)} onClick={() => p.onPick(iso)}
-              className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-[62px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-card ${sel ? 'bg-brand text-white' : 'bg-surface'} ${iso === today && !sel ? 'ring-1 ring-brand' : ''}`}>
+            <button key={d.getDay()} type="button" aria-pressed={sel} aria-label={fullDate(d)} onClick={() => p.onPick(iso)}
+              className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-15.5 min-w-0 flex-col items-center justify-center gap-0.5 rounded-card ${sel ? 'bg-brand text-white' : 'bg-surface'} ${iso === today && !sel ? 'ring-1 ring-brand' : ''}`}>
               <span className="text-xs">{SHORT_DAYS[(d.getDay() + 6) % 7]}</span>
               <b className="text-base tabular-nums">{d.getDate()}</b>
-              <span className={`size-[5px] rounded-full ${hasClips ? (sel ? 'bg-white' : 'bg-brand') : ''}`} />
+              <span className={`size-1.25 rounded-full ${hasClips ? (sel ? 'bg-white' : 'bg-brand') : ''}`} />
             </button>
           )
         })}
@@ -140,8 +140,8 @@ function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => Clip
         const list = p.forDay(iso)
         const isToday = iso === today
         return (
-          <section key={iso} className={`flex flex-col gap-2 rounded-card p-2 min-h-[70vh] ${isToday ? 'border border-brand bg-today' : 'bg-surface'}`}>
-            <button onClick={() => p.onOpen(iso)} className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand rounded-card py-1 text-center ${isToday ? 'bg-brand text-white' : ''}`}>
+          <section key={d.getDay()} className={`flex flex-col gap-2 rounded-card p-2 min-h-[70vh] ${isToday ? 'border border-brand bg-today' : 'bg-surface'}`}>
+            <button onClick={() => p.onOpen(iso)} className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand rounded-[calc(var(--radius-card)-0.5rem)] py-1 text-center ${isToday ? 'bg-brand text-white' : ''}`}>
               <span className="text-xs">{dayLabel(d)}</span><br /><b className="text-2xl tabular-nums">{d.getDate()}</b><br />
               <span className="text-xs tabular-nums">{list.length} คลิป</span>
             </button>
@@ -154,7 +154,7 @@ function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => Clip
               <EmptyState title="ยังไม่มีคลิป" hint={p.owner ? undefined : 'ไม่มีงานในวันนี้'} className="py-4" />
             )}
             {p.owner && (
-              <Link viewTransition to={`/clips/new?date=${iso}`} className="rounded-card border border-dashed border-line py-1 text-center text-xs text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
+              <Link viewTransition to={`/clips/new?date=${iso}`} className="rounded-[calc(var(--radius-card)-0.5rem)] border border-dashed border-line py-1 text-center text-xs text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
             )}
           </section>
         )
@@ -170,8 +170,8 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipDay
     <>
       <div>
         <div className="grid grid-cols-7 pb-1 text-center text-xs text-sub">{p.days.slice(0, 7).map((d) => <div key={d.getDay()}>{dayLabel(d)}</div>)}</div>
-        {/* Always 6 weeks of square cells; days of the neighbouring months fill the spare ones, faded. */}
-        <div className="grid grid-cols-7 overflow-hidden rounded-card border border-line">
+        {/* Always 6 weeks (42 cells). From md the grid is as tall as the free screen, so the whole month shows without scrolling; on phones the cells are square. days of the neighbouring months fill the spare ones, faded. */}
+        <div className="grid grid-cols-7 overflow-hidden rounded-card border border-line md:h-[calc(100dvh-14rem)] md:min-h-112 md:grid-rows-6">
           {p.days.map((d, i) => {
             const iso = toIso(d)
             const list = p.forDay(iso)
@@ -179,8 +179,8 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipDay
             const inMonth = isSameMonth(d, p.anchor)
             const isToday = iso === today
             return (
-              <button key={iso} onClick={() => p.onPick(iso)} aria-label={fullDate(d)}
-                className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex aspect-square min-w-0 flex-col gap-1 overflow-hidden border-grid p-1 text-left ${i % 7 < 6 ? 'border-r' : ''} ${i < 35 ? 'border-b' : ''} ${isToday ? 'bg-today' : inMonth ? '' : 'bg-surface'}`}>
+              <button key={i} onClick={() => p.onPick(iso)} aria-label={fullDate(d)}
+                className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex min-h-0 min-w-0 flex-col gap-1 overflow-hidden border-grid max-md:aspect-square p-1 text-left ${i % 7 < 6 ? 'border-r' : ''} ${i < 35 ? 'border-b' : ''} ${isToday ? 'bg-today' : inMonth ? '' : 'bg-surface'}`}>
                 <span className="flex items-start justify-between text-xs tabular-nums">
                   <b className={isToday ? 'grid size-6 place-items-center rounded-full bg-brand text-white' : inMonth ? '' : 'font-normal text-sub'}>{d.getDate()}{!inMonth && d.getDate() === 1 ? ` ${monthShort(d)}` : ''}</b>
                   {total > 0 && <span className="hidden text-sub sm:inline">{total} คลิป</span>}

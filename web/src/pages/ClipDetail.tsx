@@ -26,7 +26,7 @@ function NoteBox({ note, className = '' }: { note: string; className?: string })
   return (
     <section className={`rounded-card border border-note-line bg-note p-3 ${className}`}>
       <h2 className="mb-1 flex items-center gap-1.5 text-sm font-bold"><FileText size={14} aria-hidden />หมายเหตุ</h2>
-      <ul className="max-w-[65ch] list-disc pl-4 text-base leading-[26px]">{note.split('\n').filter(Boolean).map((line, i) => <li key={i}>{line}</li>)}</ul>
+      <ul className="max-w-[65ch] list-disc pl-4 text-base leading-6.5">{note.split('\n').filter(Boolean).map((line, i) => <li key={i}>{line}</li>)}</ul>
     </section>
   )
 }
@@ -94,7 +94,7 @@ function CreatorDetail({ id }: { id: string }) {
           )}
           <section className="rounded-card border border-line p-4 max-lg:order-2">
             <h2 className="mb-2 text-sm font-bold text-sub">สคริปต์</h2>
-            <p className="max-w-[65ch] text-xl leading-[34px] whitespace-pre-wrap">{clip.script}</p>
+            <p className="max-w-[65ch] text-xl leading-8.5 whitespace-pre-wrap">{clip.script}</p>
           </section>
         </div>
 
@@ -136,7 +136,7 @@ function CreatorDetail({ id }: { id: string }) {
               const view = subViews.findIndex((v) => v.id === m.id)
               return (
                 <div key={m.id} style={{ '--i': i } as CSSProperties} className="enter flex flex-col gap-2 rounded-card border border-grid p-2">
-                  <div className="flex min-h-[58px] items-center gap-2">
+                  <div className="flex min-h-14.5 items-center gap-2">
                     {view >= 0 && (
                       <button type="button" aria-label={`เปิด ${m.file_name}`}
                         onClick={(e) => lb.openAt(subViews, view, e.currentTarget)}

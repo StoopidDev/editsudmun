@@ -95,7 +95,7 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
   if (wide) {
     return (
       <Sheet open={open} {...exit}>
-        <SheetContent className="flex w-full flex-col gap-3 p-4 sm:max-w-[420px] data-[side=right]:w-full data-[side=right]:sm:max-w-[420px]">
+        <SheetContent className="flex w-full flex-col gap-3 p-4 sm:max-w-105 data-[side=right]:w-full data-[side=right]:sm:max-w-105">
           {body}
         </SheetContent>
       </Sheet>
@@ -107,7 +107,7 @@ export function DayDrawer({ date, onClose }: { date: string; onClose: () => void
       <Drawer.Portal>
         <Drawer.Backdrop className="fixed inset-0 z-50 bg-black/10 transition-opacity duration-300 data-ending-style:opacity-0 data-starting-style:opacity-0" />
         <Drawer.Viewport className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center">
-          <Drawer.Popup className="pointer-events-auto flex h-[85dvh] w-full flex-col gap-3 rounded-t-[16px] bg-popover p-4 pt-2 text-sm text-popover-foreground shadow-lg outline-none translate-y-(--drawer-swipe-movement-y) transition-transform duration-[360ms] ease-(--ease-drawer) data-ending-style:translate-y-full data-starting-style:translate-y-full data-ending-style:duration-[200ms] data-ending-style:ease-(--ease-in-quint) data-swiping:transition-none">
+          <Drawer.Popup className="pointer-events-auto flex h-[85dvh] w-full flex-col gap-3 rounded-t-[16px] bg-popover p-4 pt-2 text-sm text-popover-foreground shadow-lg outline-none translate-y-(--drawer-swipe-movement-y) transition-transform duration-360 ease-(--ease-drawer) data-ending-style:translate-y-full data-starting-style:translate-y-full data-ending-style:duration-200 data-ending-style:ease-(--ease-in-quint) data-swiping:transition-none">
             <div aria-hidden className="mx-auto h-1 w-9 shrink-0 rounded-full bg-line" />
             {body}
           </Drawer.Popup>

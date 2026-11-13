@@ -71,7 +71,7 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
   const dur = seconds === null ? '' : formatDuration(seconds)
   return (
     <div className="flex min-w-0 flex-col gap-1">
-      <div ref={tile} className={`relative aspect-[103/68] overflow-hidden rounded-card ${isVideo ? 'bg-video' : 'bg-surface'}`}>
+      <div ref={tile} className={`relative aspect-103/68 overflow-hidden rounded-card ${isVideo ? 'bg-video' : 'bg-surface'}`}>
         {url && !isVideo && !broken && (
           <img src={url} alt="" width={103} height={68} loading="lazy" fetchPriority="low" decoding="async" onLoad={() => setLoaded(true)} onError={() => setBrokenUrl(url)}
             className={`absolute inset-0 size-full object-cover transition-opacity duration-200 ${loaded ? 'opacity-100' : 'opacity-0'}`} />
@@ -109,7 +109,7 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
 export function MoreTile({ count, onOpen }: { count: number; onOpen: (el: HTMLElement) => void }) {
   return (
     <button type="button" aria-label={`ดูไฟล์อีก ${count} ไฟล์`} onClick={(e) => onOpen(e.currentTarget)}
-      className="press hover-tint flex aspect-[103/68] items-center justify-center rounded-card bg-surface text-sm font-bold text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+      className="press hover-tint flex aspect-103/68 items-center justify-center rounded-card bg-surface text-sm font-bold text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
       <span className="tabular-nums">+{count}</span>
     </button>
   )

@@ -13,7 +13,7 @@ export function ClipCard({ clip, variant, index, total, enterIndex, square }: { 
   const enter = enterIndex !== undefined
   const scriptCls = square ? 'hidden' : today ? '' : 'xl:hidden'
   return (
-    <Link viewTransition to={`/clips/${clip.id}`} onClick={(e) => shareTitle(e, clip.id)} style={enter ? { '--i': enterIndex } as CSSProperties : undefined} className={`flex min-w-0 flex-col gap-1 overflow-hidden rounded-card border border-line bg-bg card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${today ? 'p-3' : 'p-2'} ${enter ? 'enter' : ''} ${square ? 'aspect-square' : ''}`}>
+    <Link viewTransition to={`/clips/${clip.id}`} onClick={(e) => shareTitle(e, clip.id)} style={enter ? { '--i': enterIndex } as CSSProperties : undefined} className={`flex min-w-0 flex-col gap-1 overflow-hidden ${square ? 'rounded-[calc(var(--radius-card)-0.5rem)]' : 'rounded-card'} border border-line bg-bg card-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${today ? 'p-3' : 'p-2'} ${enter ? 'enter' : ''} ${square ? 'aspect-square' : ''}`}>
       <div className="flex flex-wrap items-center gap-1">
         <CategoryBadge categoryId={clip.category_id} />
         <StatusChip status={clip.status} />

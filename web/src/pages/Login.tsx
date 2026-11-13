@@ -45,8 +45,8 @@ export function Login() {
             <Input id="password" name="password" type={show ? 'text' : 'password'} required autoComplete="current-password" aria-invalid={!!act.error} aria-describedby={act.error ? 'login-error' : undefined} className="pr-10" />
             <button type="button" aria-label={show ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'} aria-pressed={show} onClick={() => setShow(!show)} className="hover-tint absolute inset-y-0 right-0 flex w-9 items-center justify-center rounded-md text-sub max-md:w-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
               <span className="relative block size-4">
-                <Eye aria-hidden="true" className={`absolute inset-0 size-4 transition-[opacity,scale,filter] duration-150 ease-out ${show ? 'opacity-0 scale-75 blur-[4px]' : 'opacity-100 scale-100 blur-[0px]'}`} />
-                <EyeOff aria-hidden="true" className={`absolute inset-0 size-4 transition-[opacity,scale,filter] duration-150 ease-out ${show ? 'opacity-100 scale-100 blur-[0px]' : 'opacity-0 scale-75 blur-[4px]'}`} />
+                <Eye aria-hidden="true" className={`absolute inset-0 size-4 transition-[opacity,scale,filter] duration-150 ease-out ${show ? 'opacity-0 scale-75 blur-xs' : 'opacity-100 scale-100 blur-none'}`} />
+                <EyeOff aria-hidden="true" className={`absolute inset-0 size-4 transition-[opacity,scale,filter] duration-150 ease-out ${show ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-75 blur-xs'}`} />
               </span>
             </button>
           </div>

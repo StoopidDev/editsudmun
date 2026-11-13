@@ -248,6 +248,12 @@ body {
   &:focus-visible { outline: 2px solid var(--c-brand); outline-offset: 2px; }
 }
 
+/* Roll (components/Roll.tsx): text swaps like a slot machine, sideways, 280 ms in, 240 ms out. --rd is 1 or -1 for the direction. */
+.roll-in { animation: roll-in 280ms var(--ease-out-quint) both; }
+.roll-out { animation: roll-out 240ms var(--ease-in-quint) both; }
+@keyframes roll-in { from { opacity: 0; transform: translateX(calc(var(--rd, 1) * 70%)); } }
+@keyframes roll-out { to { opacity: 0; transform: translateX(calc(var(--rd, 1) * -70%)); } }
+
 /* Entry: fade and rise 4 px. Set --i on the element (0, 1, 2 ...) to stagger by 30 ms, capped at 8 steps. */
 @utility enter {
   animation: enter 200ms var(--ease-out-quint) backwards; /* backwards, not both: a forwards fill would pin transform and block card-hover's lift */
