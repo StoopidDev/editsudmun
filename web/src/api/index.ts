@@ -55,12 +55,10 @@ export async function listClips(from: string, to: string): Promise<ClipCardRow[]
   return rows.map((r) => withCount(narrowClip(r)))
 }
 
-// Month view: only what a day count needs.
+// Month view: clips per day and category, grouped in the database (one row per day and category,
+// so 50-70 clips a day do not hit PostgREST's 1000-row cap).
 export async function listDayCounts(from: string, to: string): Promise<ClipDayCount[]> {
-  const rows = ok(
-    await supabase.from('clips').select('id, date, category_id, status').gte('date', from).lte('date', to).is('deleted_at', null),
-  )
-  return rows.map(narrowClip)
+  return ok(await supabase.rpc('clip_day_counts', { p_from: from, p_to: to }))
 }
 
 // brief_updated_at moves only when the brief itself changes, not on review or reorder.
@@ -182,12 +180,10 @@ export async function listCategories(): Promise<Category[]> {
   return ok(await supabase.from('categories').select('*').order('position'))
 }
 
-// shortcut: counts in the browser from one column; move to a grouped view if clips grow past ~50k.
+// Live clips per category, grouped in the database.
 export async function categoryCounts(): Promise<Record<string, number>> {
-  const rows = ok(await supabase.from('clips').select('category_id').is('deleted_at', null))
-  const counts: Record<string, number> = {}
-  for (const r of rows) counts[r.category_id] = (counts[r.category_id] ?? 0) + 1
-  return counts
+  const rows = ok(await supabase.rpc('category_counts'))
+  return Object.fromEntries(rows.map((r) => [r.category_id, r.n]))
 }
 
 export async function createCategory(name: string, color: string): Promise<Category> {
