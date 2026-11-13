@@ -11,8 +11,9 @@ export const clipsQuery = (from: string, to: string) =>
   queryOptions({ queryKey: ['clips', from, to], queryFn: () => api.listClips(from, to) })
 export const dayCountsQuery = (from: string, to: string) =>
   queryOptions({ queryKey: ['dayCounts', from, to], queryFn: () => api.listDayCounts(from, to) })
-export const clipQuery = (id: string) => queryOptions({ queryKey: ['clip', id], queryFn: () => api.getClip(id) })
-export const mediaQuery = (id: string) => queryOptions({ queryKey: ['media', id], queryFn: () => api.listMedia(id) })
+// The new-clip form passes '' (no clip yet); Postgres rejects an empty uuid with a 400, so those queries stay off.
+export const clipQuery = (id: string) => queryOptions({ queryKey: ['clip', id], queryFn: () => api.getClip(id), enabled: !!id })
+export const mediaQuery = (id: string) => queryOptions({ queryKey: ['media', id], queryFn: () => api.listMedia(id), enabled: !!id })
 export const recentQuery = (limit: number) => queryOptions({ queryKey: ['recent', limit], queryFn: () => api.listRecent(limit) })
 export const categoriesQuery = queryOptions({ queryKey: ['categories'], queryFn: api.listCategories, staleTime: 5 * 60_000 })
 
