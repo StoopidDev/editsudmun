@@ -69,7 +69,8 @@ export function useAct<A, R>(fn: (arg: A) => Promise<R>, keys: Keys = CLIP_KEYS)
 type Patch = {
   id: string
   rows?: (rows: ClipCardRow[], key: readonly unknown[]) => ClipCardRow[]
-  set?: Partial<Clip>
+  // Generated columns (script_preview, has_note) are left out: the server computes them, and the refetch after settle brings them.
+  set?: Partial<Omit<Clip, 'script_preview' | 'has_note'>>
 }
 type Snap = [readonly unknown[], unknown][]
 

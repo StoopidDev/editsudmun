@@ -197,6 +197,18 @@ describe('soft delete', () => {
   })
 })
 
+describe('card preview columns', () => {
+  it('script_preview is the first 160 characters and has_note follows note; clients cannot write them', async () => {
+    const script = 'ก'.repeat(200)
+    const clip = await newClip('พรีวิว', '2031-03-03', { script, note: 'ข้อเดียว' })
+    const { data } = await creator.from('clips').select('script_preview, has_note').eq('id', clip.id).single()
+    expect(data).toEqual({ script_preview: 'ก'.repeat(160), has_note: true })
+    await owner.from('clips').update({ note: '' }).eq('id', clip.id)
+    expect((await owner.from('clips').select('has_note').eq('id', clip.id).single()).data!.has_note).toBe(false)
+    expect((await owner.from('clips').update({ script_preview: 'ปลอม' }).eq('id', clip.id)).error).not.toBeNull()
+  })
+})
+
 describe('count RPCs', () => {
   it('group live clips by day and category, for owner and creator, skipping deleted ones', async () => {
     const day = '2031-02-03'

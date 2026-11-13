@@ -34,10 +34,18 @@ const narrowProfile = <T extends { role: string }>(r: T) => ({ ...r, role: r.rol
 // Clips
 // Each list selects only the columns it shows; the typed client checks each select string against the
 // generated DB types. Cards show the reference image count, counted in the same request.
-const CARD = 'id, date, position, category_id, status, title, script, note, images:clip_media(count)'
-const ATTENTION = 'id, date, position, category_id, status, title, script, note, round, revision_note, images:clip_media(count)'
-type CardDb = Omit<ClipCardRow, 'imageCount'> & { images: { count: number }[] }
-const withCount = ({ images, ...c }: CardDb): ClipCardRow => ({ ...c, imageCount: images[0]?.count ?? 0 })
+// Cards read the generated script_preview and has_note instead of the full script and note.
+const CARD = 'id, date, position, category_id, status, title, script_preview, has_note, images:clip_media(count)'
+const ATTENTION = 'id, date, position, category_id, status, title, script_preview, has_note, round, revision_note, images:clip_media(count)'
+// Generated columns come back typed as nullable; they never are null (script and note are not null).
+type CardDb = Omit<ClipCardRow, 'imageCount' | 'script_preview' | 'has_note'> & {
+  script_preview: string | null
+  has_note: boolean | null
+  images: { count: number }[]
+}
+const withCount = ({ images, script_preview, has_note, ...c }: CardDb): ClipCardRow => ({
+  ...c, script_preview: script_preview ?? '', has_note: has_note ?? false, imageCount: images[0]?.count ?? 0,
+})
 
 export async function listClips(from: string, to: string): Promise<ClipCardRow[]> {
   const rows = ok(
