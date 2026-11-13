@@ -150,12 +150,13 @@ function Month(p: { days: Date[]; anchor: Date; forDay: (iso: string) => ClipDay
       {p.days.map((d) => {
         const iso = toIso(d)
         const list = p.forDay(iso)
+        const total = list.reduce((sum, x) => sum + x.n, 0)
         const inMonth = isSameMonth(d, p.anchor)
         return (
           <button key={iso} onClick={() => p.onPick(iso)} className={`press hover-tint flex min-h-20 flex-col gap-1 border-r border-b border-grid p-1 text-left md:min-h-28 ${iso === today ? 'bg-today' : inMonth ? '' : 'bg-surface opacity-60'}`}>
-            <span className="flex justify-between text-xs"><b>{d.getDate()}</b>{list.length > 0 && <span className="hidden text-sub sm:inline">{list.length} คลิป</span>}</span>
+            <span className="flex justify-between text-xs"><b>{d.getDate()}</b>{total > 0 && <span className="hidden text-sub sm:inline">{total} คลิป</span>}</span>
             {cats.map((c) => {
-              const n = list.filter((x) => x.category_id === c.id).length
+              const n = list.find((x) => x.category_id === c.id)?.n ?? 0
               return n > 0 && (
                 <span key={c.id} className="flex justify-between rounded px-1 text-xs font-bold" style={{ background: c.color, color: readableOn(c.color) }}>
                   <span className="hidden truncate sm:inline">{c.name}</span>

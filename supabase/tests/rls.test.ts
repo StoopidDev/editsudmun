@@ -197,6 +197,35 @@ describe('soft delete', () => {
   })
 })
 
+describe('count RPCs', () => {
+  it('group live clips by day and category, for owner and creator, skipping deleted ones', async () => {
+    const day = '2031-02-03'
+    await newClip('นับ 1', day)
+    await newClip('นับ 2', day)
+    await newClip('นับ 3', '2031-02-04')
+    const gone = await newClip('นับ ลบแล้ว', day)
+    await owner.from('clips').update({ deleted_at: new Date().toISOString() }).eq('id', gone.id)
+
+    for (const client of [owner, creator]) {
+      const days = await client.rpc('clip_day_counts', { p_from: '2031-02-01', p_to: '2031-02-28' })
+      expect(days.error).toBeNull()
+      const mine = days.data!.filter((r: { category_id: string }) => r.category_id === categoryId)
+      expect(mine.sort((a: { date: string }, b: { date: string }) => a.date.localeCompare(b.date))).toEqual([
+        { date: '2031-02-03', category_id: categoryId, n: 2 },
+        { date: '2031-02-04', category_id: categoryId, n: 1 },
+      ])
+      const cats = await client.rpc('category_counts')
+      expect(cats.error).toBeNull()
+      const live = (await admin.from('clips').select('id', { count: 'exact', head: true }).eq('category_id', categoryId).is('deleted_at', null)).count
+      expect(cats.data!.find((r: { category_id: string }) => r.category_id === categoryId)?.n).toBe(live)
+    }
+  })
+  it('are not callable signed out', async () => {
+    const anon = createClient(url, publishable, opts)
+    expect((await anon.rpc('category_counts')).error).not.toBeNull()
+  })
+})
+
 describe('clip_media', () => {
   it('creator cannot add reference files', async () => {
     const clip = await newClip()

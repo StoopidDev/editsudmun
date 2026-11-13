@@ -205,6 +205,21 @@ export type Database = {
       }
     }
     Functions: {
+      category_counts: {
+        Args: never
+        Returns: {
+          category_id: string
+          n: number
+        }[]
+      }
+      clip_day_counts: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          category_id: string
+          date: string
+          n: number
+        }[]
+      }
       copy_clip: {
         Args: { p_date: string; p_id: string }
         Returns: {
