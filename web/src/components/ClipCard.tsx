@@ -15,10 +15,10 @@ export function ClipCard({ clip, variant, index, total }: { clip: ClipCardRow; v
         {today && index !== undefined && total !== undefined && <span className="ml-auto text-xs text-sub">คลิป {index} จาก {total}</span>}
       </div>
       <b data-title className="text-sm">{clip.title}</b>
-      <p className={`line-clamp-2 text-sm text-sub ${today ? '' : 'xl:hidden'}`}>{clip.script}</p>
+      <p className={`line-clamp-2 text-sm text-sub ${today ? '' : 'xl:hidden'}`}>{clip.script_preview}</p>
       <div className="flex gap-2 text-xs text-sub">
         {clip.imageCount > 0 && <span className="flex items-center gap-1"><ImageIcon size={12} />{clip.imageCount}</span>}
-        {clip.note && <span className="flex items-center gap-1"><FileText size={12} />หมายเหตุ</span>}
+        {clip.has_note && <span className="flex items-center gap-1"><FileText size={12} />หมายเหตุ</span>}
       </div>
     </Link>
   )

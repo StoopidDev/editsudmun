@@ -19,6 +19,7 @@ All data access goes through `web/src/api/index.ts` (supabase-js); screens never
 - Withdraw: a creator may delete an own submission while pending or within 10 minutes of `ready_at`.
 - Auth hardening (2026-11-11): password policy min 12 with lower, upper and digit (set in each project's dashboard; `manage-users` temp passwords, `create-user.mjs` and the tests comply; `changePassword` mirrors it). Supabase Auth's built-in per-IP rate limits are used as-is. `web/public/_headers` sets a CSP and other security headers on the Workers site. The session stays in localStorage (static SPA, no server for httpOnly cookies); role checks in the UI are UX only, RLS and the Edge Functions enforce. 2FA and CAPTCHA are not built.
 - Deleting a user is a real delete; `uploaded_by`/`created_by` become null and `uploader_name` keeps the name. `manage-users` Edge Function: create, reset_password, delete (refuses owners).
+- Cards: generated columns `clips.script_preview` (`left(script, 160)`) and `clips.has_note` (`note <> ''`); card lists select those instead of `script` and `note`. Optimistic patches (`Patch.set` in `api/queries.ts`) leave them out; the refetch brings them.
 - Counts: RPCs `clip_day_counts(p_from, p_to)` (month view, rows of date, category_id, n) and `category_counts()` (category page) group in the database, so 50-70 clips a day do not hit PostgREST's 1000-row cap; both are security invoker.
 - Search: RPC `search_clips` (substring `ILIKE` with trigram indexes, because Postgres full-text search cannot split Thai words).
 

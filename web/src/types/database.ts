@@ -111,12 +111,14 @@ export type Database = {
           created_by: string | null
           date: string
           deleted_at: string | null
+          has_note: boolean | null
           id: string
           note: string
           position: number
           revision_note: string
           round: number
           script: string
+          script_preview: string | null
           status: string
           title: string
           updated_at: string
@@ -127,12 +129,14 @@ export type Database = {
           created_by?: string | null
           date: string
           deleted_at?: string | null
+          has_note?: boolean | null
           id?: string
           note?: string
           position?: number
           revision_note?: string
           round?: number
           script?: string
+          script_preview?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -143,12 +147,14 @@ export type Database = {
           created_by?: string | null
           date?: string
           deleted_at?: string | null
+          has_note?: boolean | null
           id?: string
           note?: string
           position?: number
           revision_note?: string
           round?: number
           script?: string
+          script_preview?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -228,12 +234,14 @@ export type Database = {
           created_by: string | null
           date: string
           deleted_at: string | null
+          has_note: boolean | null
           id: string
           note: string
           position: number
           revision_note: string
           round: number
           script: string
+          script_preview: string | null
           status: string
           title: string
           updated_at: string
@@ -262,12 +270,14 @@ export type Database = {
           created_by: string | null
           date: string
           deleted_at: string | null
+          has_note: boolean | null
           id: string
           note: string
           position: number
           revision_note: string
           round: number
           script: string
+          script_preview: string | null
           status: string
           title: string
           updated_at: string

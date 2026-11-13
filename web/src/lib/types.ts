@@ -20,7 +20,12 @@ export type ClipMedia = Narrow<
 >
 
 // What each list reads (the select strings in api/index.ts match these; the typed client checks them).
-export type ClipCardRow = Pick<Clip, 'id' | 'date' | 'position' | 'category_id' | 'status' | 'title' | 'script' | 'note'> & { imageCount: number }
+// Cards read script_preview (first 160 characters) and has_note, generated columns, not the full text.
+export type ClipCardRow = Pick<Clip, 'id' | 'date' | 'position' | 'category_id' | 'status' | 'title'> & {
+  script_preview: string
+  has_note: boolean
+  imageCount: number
+}
 // One row per day and category (RPC clip_day_counts); n is the number of live clips.
 export type ClipDayCount = Pick<Clip, 'date' | 'category_id'> & { n: number }
 export type ClipRecent = Pick<Clip, 'id' | 'title' | 'category_id' | 'brief_updated_at'>
