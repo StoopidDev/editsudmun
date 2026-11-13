@@ -99,7 +99,7 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
         <form onSubmit={submit} className="flex items-center gap-2 rounded-card border border-line bg-grid px-2 py-1.5">
           <Search size={16} />
           <input ref={input} name="q" defaultValue={params.get('q') ?? ''} placeholder="ค้นหาคลิป..." aria-label="ค้นหาคลิป" className="w-full bg-transparent text-sm outline-none" />
-          <kbd className="hidden rounded bg-bg px-1 text-xs text-sub lg:inline">Ctrl K</kbd>
+          <kbd className="hidden shrink-0 rounded bg-bg px-1 text-xs whitespace-nowrap text-sub lg:inline">Ctrl K</kbd>
         </form>
       )}
       <nav className="flex flex-col gap-1">
