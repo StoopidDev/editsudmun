@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
-import { FileText, Play } from 'lucide-react'
+import { ArrowLeft, FileText, Play } from 'lucide-react'
 import * as api from '@/api/index'
 import { useAct, useClip, useMe, useMedia } from '@/api/queries'
 import { BackButton } from '@/components/BackButton'
@@ -25,7 +25,7 @@ function NoteBox({ note, className = '' }: { note: string; className?: string })
   return (
     <section className={`rounded-card border border-note-line bg-note p-3 ${className}`}>
       <h2 className="mb-1 flex items-center gap-1.5 text-sm font-bold"><FileText size={14} aria-hidden />หมายเหตุ</h2>
-      <ul className="list-disc pl-4 text-base leading-[26px]">{note.split('\n').filter(Boolean).map((line, i) => <li key={i}>{line}</li>)}</ul>
+      <ul className="max-w-[65ch] list-disc pl-4 text-base leading-[26px]">{note.split('\n').filter(Boolean).map((line, i) => <li key={i}>{line}</li>)}</ul>
     </section>
   )
 }
@@ -62,7 +62,7 @@ function CreatorDetail({ id }: { id: string }) {
       </div>
     </Delayed>
   )
-  if (!clip) return <p>ไม่พบคลิป <Link viewTransition to="/calendar" className="text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">กลับปฏิทิน</Link></p>
+  if (!clip) return <p>ไม่พบคลิป <Link viewTransition to="/calendar" className="link-action max-md:min-h-11"><ArrowLeft size={14} aria-hidden />กลับปฏิทิน</Link></p>
 
   const refs = media.filter((m) => m.purpose === 'reference')
   const rounds = withRounds(media.filter((m) => m.purpose === 'submission'))
@@ -82,7 +82,7 @@ function CreatorDetail({ id }: { id: string }) {
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-3 max-lg:contents">
-          <div className="flex items-center gap-2 text-sm font-light text-sub">
+          <div className="flex items-center gap-2 text-sm font-normal text-sub">
             <CategoryBadge categoryId={clip.category_id} />{fullDate(fromIso(clip.date))}<StatusChip status={clip.status} />
           </div>
           <h1 className="text-[32px] leading-[1.3] font-bold" style={{ viewTransitionName: `title-${id}` }}>{clip.title}</h1>
@@ -93,16 +93,16 @@ function CreatorDetail({ id }: { id: string }) {
           )}
           <section className="rounded-card border border-line p-4 max-lg:order-2">
             <h2 className="mb-2 text-sm font-bold text-sub">สคริปต์</h2>
-            <p className="text-xl leading-[34px] whitespace-pre-wrap">{clip.script}</p>
+            <p className="max-w-[65ch] text-xl leading-[34px] whitespace-pre-wrap">{clip.script}</p>
           </section>
         </div>
 
         <div className="flex flex-col gap-3 max-lg:contents">
           {clip.note && <NoteBox note={clip.note} className="max-lg:order-1" />}
           <section className="flex flex-col gap-2 rounded-card border border-line p-3 max-lg:order-3">
-            <h2 className="flex items-baseline justify-between gap-2 text-sm font-bold">
+            <h2 className="flex items-baseline justify-between gap-2 text-sm font-bold tabular-nums">
               ไฟล์อ้างอิง {refs.length} ไฟล์
-              <span className="text-xs font-light text-sub">แตะรูปเพื่อดูขยาย</span>
+              <span className="text-xs font-normal text-sub">แตะรูปเพื่อดูขยาย</span>
             </h2>
             <div className="grid grid-cols-3 gap-2">
               {tiles.map((f) => (
@@ -118,17 +118,17 @@ function CreatorDetail({ id }: { id: string }) {
               )}
             </div>
             {minDays !== null && (
-              <p className="text-xs font-light text-sub">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {minDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>
+              <p className="text-xs font-normal text-sub tabular-nums">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {minDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>
             )}
           </section>
 
           <section className="flex flex-col gap-2 rounded-card border border-line p-3 max-lg:order-4">
             <h2 className="flex items-baseline justify-between gap-2 text-sm font-bold">
               ส่งงาน
-              <span className="text-xs font-light text-sub">ไฟล์ตัดต่อเสร็จ · MP4 ≤ 2 GB</span>
+              <span className="text-xs font-normal text-sub">ไฟล์ตัดต่อเสร็จ · MP4 ≤ 2 GB</span>
             </h2>
             <UploadZone clipId={id} purpose="submission" />
-            <h3 className="text-xs font-bold">ส่งแล้ว ({roundCount(rounds)} รอบ)</h3>
+            <h3 className="text-xs font-bold tabular-nums">ส่งแล้ว ({roundCount(rounds)} รอบ)</h3>
             {rounds.map((m, i) => {
               const left = withdrawMinutesLeft(m, now)
               const open = !!me && canWithdraw(m, me.id, now)
@@ -139,24 +139,24 @@ function CreatorDetail({ id }: { id: string }) {
                     {view >= 0 && (
                       <button type="button" aria-label={`เปิด ${m.file_name}`}
                         onClick={(e) => lb.openAt(subViews, view, e.currentTarget)}
-                        className="press flex size-8 shrink-0 items-center justify-center rounded-full bg-today text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+                        className="press flex size-8 max-md:min-h-11 max-md:min-w-11 shrink-0 items-center justify-center rounded-full bg-today text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
                         <Play size={14} />
                       </button>
                     )}
                     <div className="min-w-0 flex-1 text-sm">
                       <div className="flex min-w-0 items-center gap-2">
-                        <span className="shrink-0 rounded-card bg-surface px-1.5 text-xs font-bold">รอบ {m.round}</span>
+                        <span className="shrink-0 rounded-card bg-surface px-1.5 text-xs font-bold tabular-nums">รอบ {m.round}</span>
                         <b className="truncate">{m.file_name}</b>
                       </div>
-                      <div className="text-xs text-sub">{formatSize(m.size_bytes)} · ส่งเมื่อ {sentAt(m.created_at)}</div>
+                      <div className="text-xs text-sub tabular-nums">{formatSize(m.size_bytes)} · ส่งเมื่อ {sentAt(m.created_at)}</div>
                     </div>
-                    <span className="shrink-0 text-xs font-light text-sub">ลบใน {daysLeft(m.expires_at)} วัน</span>
+                    <span className="shrink-0 text-xs font-normal text-sub tabular-nums">ลบใน {daysLeft(m.expires_at)} วัน</span>
                   </div>
                   {me && m.uploaded_by === me.id && (
                     // Collapses instead of unmounting, so the withdraw button fades out when its window closes.
                     <div inert={!open} className={`grid transition-[grid-template-rows,opacity] duration-200 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                       <div className="min-h-0 overflow-hidden">
-                        <Button variant="outline" className="w-full border-danger text-danger max-md:min-h-11"
+                        <Button variant="outline" className="w-full border-danger text-danger tabular-nums max-md:min-h-11"
                           loading={withdraw.isPending} onClick={() => withdraw.mutate(m.id)}>
                           ถอนไฟล์นี้ (เหลือ {left} นาที)
                         </Button>
@@ -166,7 +166,7 @@ function CreatorDetail({ id }: { id: string }) {
                 </div>
               )
             })}
-            <p className="text-xs font-light text-sub">
+            <p className="text-xs font-normal text-sub">
               {anyWithdraw ? 'ถอนไฟล์ได้ภายใน 10 นาทีหลังส่ง หลังจากนั้นล็อก และแก้ไม่ได้ ต้องส่งเป็นรอบใหม่' : 'ส่งแล้วลบหรือแก้ไม่ได้ ถ้าต้องแก้ให้ส่งเป็นรอบใหม่'}
             </p>
           </section>

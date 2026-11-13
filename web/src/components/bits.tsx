@@ -33,7 +33,7 @@ export function StatusChip({ status, transitionName, drawCheck }: { status: Clip
   }, [status])
   return (
     <span style={transitionName ? { viewTransitionName: transitionName } : undefined}
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold transition-colors duration-200 ${s.className}`}>
+      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold transition-colors duration-200 ${s.className}`}>
       {s.label}
       {drawCheck && drawn && status === 'approved' && (
         <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -97,8 +97,8 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
           <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 z-10 size-5 rounded-full bg-avatar text-xs text-white opacity-70 transition-opacity hover-pointer:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
         )}
       </div>
-      <span className="block truncate text-xs">{file.file_name}{dur && ` · ${dur}`}</span>
-      <span className={`text-xs ${early ? `font-bold ${isVideo ? 'text-warn-line' : 'text-danger'}` : 'text-sub'}`}>
+      <span className="block truncate text-xs tabular-nums">{file.file_name}{dur && ` · ${dur}`}</span>
+      <span className={`text-xs tabular-nums ${early ? `font-bold ${isVideo ? 'text-warn-line' : 'text-danger'}` : 'text-sub'}`}>
         {early ? 'ลบก่อนถึงวันคลิป' : `ลบใน ${daysLeft(file.expires_at)} วัน`}
       </span>
     </div>
@@ -110,13 +110,14 @@ export function MoreTile({ count, onOpen }: { count: number; onOpen: (el: HTMLEl
   return (
     <button type="button" aria-label={`ดูไฟล์อีก ${count} ไฟล์`} onClick={(e) => onOpen(e.currentTarget)}
       className="press hover-tint flex aspect-[103/68] items-center justify-center rounded-card bg-surface text-sm font-bold text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
-      +{count}
+      <span className="tabular-nums">+{count}</span>
     </button>
   )
 }
 
 export function ConfirmDialog(props: {
   open: boolean; title: string; body: ReactNode; confirm: string; loading?: boolean
+  tone?: 'danger' | 'neutral' // danger (default) is red and for deletes; neutral is the brand button for reversible actions such as logging out
   onConfirm: () => unknown; onClose: () => void
 }) {
   return (
@@ -127,8 +128,8 @@ export function ConfirmDialog(props: {
           <DialogDescription>{props.body}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={props.onClose} disabled={props.loading}>ยกเลิก</Button>
-          <Button className="bg-danger-fill text-white hover-pointer:bg-danger-fill/90" loading={props.loading}
+          <Button variant="outline" className="max-md:min-h-11" onClick={props.onClose} disabled={props.loading}>ยกเลิก</Button>
+          <Button className={props.tone === 'neutral' ? 'max-md:min-h-11' : 'bg-danger-fill text-white hover-pointer:bg-danger-fill/90 max-md:min-h-11'} loading={props.loading}
             onClick={async () => {
               try { await props.onConfirm(); props.onClose() } catch { /* useAct shows the toast; keep the dialog open */ }
             }}>{props.confirm}</Button>
@@ -142,19 +143,19 @@ export function DayStrip({ value, onChange }: { value: string; onChange: (iso: s
   const [anchor, setAnchor] = useState(() => fromIso(value))
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="icon" aria-label="สัปดาห์ก่อน" onClick={() => setAnchor(addDays(anchor, -7))}><ChevronLeft /></Button>
+      <Button variant="outline" size="icon" className="max-md:min-h-11 max-md:min-w-11" aria-label="สัปดาห์ก่อน" onClick={() => setAnchor(addDays(anchor, -7))}><ChevronLeft /></Button>
       <div className="grid flex-1 grid-cols-7 gap-1">
         {weekDays(anchor).map((d) => {
           const iso = toIso(d)
           const cls = iso === value ? 'bg-brand text-white' : iso === todayIso() ? 'border border-brand bg-today cell-hover' : 'bg-surface cell-hover'
           return (
             <button key={iso} onClick={() => onChange(iso)} className={`press rounded-card p-2 text-center text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${cls}`}>
-              {dayLabel(d)}<br /><b className="text-base">{d.getDate()}</b>
+              {dayLabel(d)}<br /><b className="text-base tabular-nums">{d.getDate()}</b>
             </button>
           )
         })}
       </div>
-      <Button variant="outline" size="icon" aria-label="สัปดาห์ถัดไป" onClick={() => setAnchor(addDays(anchor, 7))}><ChevronRight /></Button>
+      <Button variant="outline" size="icon" className="max-md:min-h-11 max-md:min-w-11" aria-label="สัปดาห์ถัดไป" onClick={() => setAnchor(addDays(anchor, 7))}><ChevronRight /></Button>
     </div>
   )
 }

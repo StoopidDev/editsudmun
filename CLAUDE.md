@@ -29,6 +29,8 @@ Code and Figma match as of 2026-11-05 (UX audit fixes, plan `docs/superpowers/pl
 
 Later plans: drag reorder (needs a bulk reorder RPC); notifications if the client confirms.
 
+**Frontend work: read `DESIGN.md` first** (colour tokens and contrast, font, what must look clickable, motion utilities, accessibility checklist). Update it in the same commit when you change a token or rule.
+
 ## What this is
 
 A brief-management web app for a content-channel owner and one creator (voice-over + editing). It replaces LINE ordering, where messages get lost and scripts are hard to trace. Scale target: 1-2 clips/day now, 5/day soon, 50-70/day later. Client deadline: 7-10 days.

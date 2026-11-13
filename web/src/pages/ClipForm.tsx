@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronDown, Copy, Trash2 } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Copy, Trash2 } from 'lucide-react'
 import * as api from '@/api/index'
 import { useAct, useCategories, useClip, useDeleteClip, useMedia } from '@/api/queries'
 import { BackButton } from '@/components/BackButton'
@@ -38,7 +38,7 @@ function ThaiDateField({ id, value, onChange }: { id: string; value: string; onC
   return (
     <div className="relative">
       <button type="button" id={id} onClick={open} aria-label={`วัน ${isIsoDate(value) ? fullDate(fromIso(value)) : ''}`}
-        className="flex h-9 w-full items-center justify-between rounded-md border border-line bg-bg px-2.5 text-left text-sm font-light max-md:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+        className="flex h-9 w-full items-center justify-between rounded-md border border-line bg-bg px-2.5 text-left text-sm font-normal max-md:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
         {isIsoDate(value) ? fullDate(fromIso(value)) : ''}
         <ChevronDown size={16} aria-hidden className="text-sub" />
       </button>
@@ -59,7 +59,7 @@ export function ClipForm({ clipId }: { clipId?: string }) {
       </div>
     </Delayed>
   )
-  if (clipId && !clip) return <p>ไม่พบคลิป <Link viewTransition to="/calendar" className="text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">กลับปฏิทิน</Link></p>
+  if (clipId && !clip) return <p>ไม่พบคลิป <Link viewTransition to="/calendar" className="link-action"><ArrowLeft size={14} aria-hidden />กลับปฏิทิน</Link></p>
   return <Form key={clipId ?? key} clipId={clipId} initial={clip ?? undefined} />
 }
 

@@ -1,11 +1,12 @@
 import { useState, type CSSProperties, type FormEvent } from 'react'
 import { format, parseISO } from 'date-fns'
 import { th } from 'date-fns/locale'
-import { KeyRound, Plus, Trash2 } from 'lucide-react'
+import { KeyRound, Plus, Trash2, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
 import * as api from '@/api/index'
 import { useAct, useUsers } from '@/api/queries'
 import { ConfirmDialog } from '@/components/bits'
+import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -17,7 +18,7 @@ import { useLast } from '@/lib/useLast'
 const USER_KEYS = [['users']] as const
 
 export function Users() {
-  const { data: users = [] } = useUsers()
+  const { data: users = [], isPending } = useUsers()
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<Profile | null>(null)
   const [resetting, setResetting] = useState<Profile | null>(null)
@@ -41,11 +42,14 @@ export function Users() {
             <span className={`w-fit rounded-full px-2 py-0.5 text-xs font-bold ${u.role === 'owner' ? 'bg-today text-brand-text' : 'bg-surface text-sub'}`}>{u.role === 'owner' ? 'เจ้าของ' : 'ครีเอเตอร์'}</span>
             <span className="text-sm text-sub">{format(parseISO(u.created_at), 'd MMM yyyy', { locale: th })}</span>
             <span className="flex gap-1">
-              <Button variant="ghost" className="min-h-11 md:min-h-0" disabled={u.role === 'owner'} aria-label={`รีเซ็ตรหัสผ่าน ${u.display_name}`} onClick={() => setResetting(u)}><KeyRound />รีเซ็ตรหัสผ่าน</Button>
-              <Button variant="ghost" className="min-h-11 text-danger md:min-h-0" disabled={u.role === 'owner'} aria-label={`ลบ ${u.display_name}`} onClick={() => setDeleting(u)}><Trash2 />ลบ</Button>
+              <Button variant="outline" size="sm" className="min-h-11 md:min-h-0" disabled={u.role === 'owner'} aria-label={`รีเซ็ตรหัสผ่าน ${u.display_name}`} onClick={() => setResetting(u)}><KeyRound />รีเซ็ตรหัสผ่าน</Button>
+              <Button variant="outline" size="sm" className="min-h-11 text-danger md:min-h-0" disabled={u.role === 'owner'} aria-label={`ลบ ${u.display_name}`} onClick={() => setDeleting(u)}><Trash2 />ลบ</Button>
             </span>
           </div>
         ))}
+        {!isPending && users.length === 0 && (
+          <EmptyState icon={UserRound} title="ยังไม่มีครีเอเตอร์" hint="สร้างบัญชีครีเอเตอร์เพื่อให้เริ่มรับงานได้" />
+        )}
       </div>
       <p className="text-xs text-sub">เฉพาะเจ้าของช่องเท่านั้นที่สร้างและจัดการบัญชีผู้ใช้งานได้</p>
 

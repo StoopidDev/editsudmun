@@ -108,7 +108,7 @@
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
+  --font-sans: 'Anuphan Variable', 'Noto Sans Thai Variable', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -166,8 +166,17 @@
     @apply font-sans;}}
 
 @theme {
-  --font-sans: "Geist Variable", "Noto Sans Thai Variable", sans-serif;
+  --font-sans: "Anuphan Variable", "Noto Sans Thai Variable", sans-serif;
+  /* Thai stacks vowels and tone marks above and below the line, so it needs more leading than Tailwind's Latin defaults. */
+  --text-xs--line-height: 1.5;
+  --text-sm--line-height: 1.6;
+  --text-base--line-height: 1.6;
 }
+
+/* No layout shift when a scrollbar appears; no one-word last lines in headings and paragraphs. */
+html { scrollbar-gutter: stable; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
 
 body {
   margin: 0;
@@ -181,6 +190,7 @@ body {
   --duration-press: 100ms;
   --duration-state: 200ms;
   --duration-layout: 320ms;
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* Feedback on pointer-down, not on click (apple-design §1). */
@@ -226,12 +236,24 @@ body {
   &:active { transform: scale(0.99); }
 }
 
-/* Entry: fade and rise 8 px. Set --i on the element (0, 1, 2 ...) to stagger by 30 ms, capped at 8 steps. */
+/* Inline action that must read as clickable: always underlined, thicker on hover, optional trailing icon. Never use plain coloured text for an action. */
+@utility link-action {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  color: var(--c-brand-text);
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px;
+  border-radius: var(--radius-sm);
+  transition: text-decoration-thickness 120ms, color var(--duration-state), transform var(--duration-press) var(--ease-out-quint);
+  @media (hover: hover) and (pointer: fine) { &:hover { text-decoration-thickness: 2px; } }
+  &:active { transform: scale(0.97); }
+  &:focus-visible { outline: 2px solid var(--c-brand); outline-offset: 2px; }
+}
+
+/* Entry: fade and rise 4 px. Set --i on the element (0, 1, 2 ...) to stagger by 30 ms, capped at 8 steps. */
 @utility enter {
-  animation: enter 260ms var(--ease-out-quint) backwards; /* backwards, not both: a forwards fill would pin transform and block card-hover's lift */
+  animation: enter 200ms var(--ease-out-quint) backwards; /* backwards, not both: a forwards fill would pin transform and block card-hover's lift */
   animation-delay: calc(min(var(--i, 0), 8) * 30ms);
 }
-@keyframes enter { from { opacity: 0; transform: translateY(8px); } }
+@keyframes enter { from { opacity: 0; transform: translateY(4px); } }
 
 /* Theme switch: plain 200 ms colour fade on surfaces, text and borders. theme.ts adds the class for 250 ms around the toggle. */
 :root.theme-switching, :root.theme-switching *, :root.theme-switching *::before, :root.theme-switching *::after {
@@ -256,15 +278,28 @@ body {
 @keyframes row-out { to { opacity: 0; } }
 
 /* Route crossfade; week change slides 24 px in the direction set on <html data-dir>. Reduced motion shortens these. */
-::view-transition-old(root) { animation: 140ms var(--ease-in-quint) both fade-out; mix-blend-mode: normal; }
-::view-transition-new(root) { animation: 280ms var(--ease-out-quint) 60ms both page-in; mix-blend-mode: normal; }
-@keyframes page-in { from { opacity: 0; transform: translateY(10px); } }
+/* Page change stacks: the app chrome (sidebar, header, tab bar) is named so it stays put, and only the page area (name "page") animates.
+   The new page drops in from under the header and covers the old one, which sinks and dims a little. The group clips to the page area, so nothing draws over the header. */
+::view-transition-group(page) { overflow: clip; }
+::view-transition-old(page) { animation: 300ms var(--ease-drawer) both page-under; mix-blend-mode: normal; }
+::view-transition-new(page) { animation: 340ms var(--ease-drawer) both page-drop; mix-blend-mode: normal; }
+@keyframes page-drop { from { opacity: 0; transform: translateY(-56px); } }
+@keyframes page-under { to { opacity: 0.55; transform: translateY(14px) scale(0.985); } }
+/* Whatever is outside every named area (login, the very first load) fades through. */
+::view-transition-old(root) { animation: 100ms ease-out both fade-out; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: 160ms ease-out 100ms both fade-in; mix-blend-mode: normal; }
 /* Local writes (moves, approvals) animate only the changed element, so the page does not crossfade. */
-:root[data-vt='local']::view-transition-old(root), :root[data-vt='local']::view-transition-new(root) { animation: none; }
-::view-transition-old(cal) { animation: 160ms var(--ease-in-quint) both slide-out; }
-::view-transition-new(cal) { animation: 240ms var(--ease-out-quint) both slide-in; }
-@keyframes slide-out { to { opacity: 0; transform: translateX(calc(var(--d, 1) * -24px)); } }
-@keyframes slide-in { from { opacity: 0; transform: translateX(calc(var(--d, 1) * 24px)); } }
+:root[data-vt='local']::view-transition-old(root), :root[data-vt='local']::view-transition-new(root),
+:root[data-vt='local']::view-transition-old(page), :root[data-vt='local']::view-transition-new(page) { animation: none; }
+/* The calendar grid is named only while the user moves inside the calendar (data-dir set), so it slides; a route change never names it. */
+:root[data-dir] .cal-grid { view-transition-name: cal; }
+::view-transition-group(cal) { overflow: clip; }
+:root[data-dir]::view-transition-old(cal) { animation: 160ms var(--ease-in-quint) both slide-out; }
+:root[data-dir]::view-transition-new(cal) { animation: 260ms var(--ease-out-quint) both slide-in; }
+/* "Back to today" sets data-jump as well: a longer slide, so the distance travelled reads. */
+:root[data-jump] { --dist: 72px; }
+@keyframes slide-out { to { opacity: 0; transform: translateX(calc(var(--d, 1) * var(--dist, 24px) * -1)); } }
+@keyframes slide-in { from { opacity: 0; transform: translateX(calc(var(--d, 1) * var(--dist, 24px))); } }
 :root[data-dir='prev'] { --d: -1; }
 
 /* Approve moment: the tick draws in over 240 ms (pathLength 1 keeps the dash length at 1). */

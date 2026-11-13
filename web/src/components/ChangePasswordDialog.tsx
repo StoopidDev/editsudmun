@@ -1,20 +1,29 @@
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { toast } from 'sonner'
 import * as api from '@/api/index'
 import { useAct } from '@/api/queries'
+import { ConfirmDialog } from '@/components/bits'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+type Passwords = { current: string; next: string }
+
 export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
-  const change = useAct(({ current, next }: { current: string; next: string }) => api.changePassword(current, next), [])
+  const change = useAct(({ current, next }: Passwords) => api.changePassword(current, next), [])
+  // Typed values wait here while the confirm step is open; the form stays mounted so cancel keeps them.
+  const [pending, setPending] = useState<Passwords | null>(null)
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
-    change.mutate({ current: String(f.get('current')), next: String(f.get('next')) }, {
-      onSuccess: () => { toast.success('เปลี่ยนรหัสผ่านแล้ว'); onClose() },
-    })
+    setPending({ current: String(f.get('current')), next: String(f.get('next')) })
+  }
+  const confirm = async () => {
+    if (!pending) return
+    await change.mutateAsync(pending)
+    toast.success('เปลี่ยนรหัสผ่านแล้ว')
+    onClose()
   }
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -29,6 +38,9 @@ export function ChangePasswordDialog({ onClose }: { onClose: () => void }) {
           </DialogFooter>
         </form>
       </DialogContent>
+      <ConfirmDialog open={!!pending} tone="neutral" title="เปลี่ยนรหัสผ่านใช่ไหม?"
+        body="รหัสผ่านเดิมจะใช้ไม่ได้อีก ต้องใช้รหัสผ่านใหม่ในการเข้าสู่ระบบครั้งต่อไป" confirm="เปลี่ยนรหัสผ่าน"
+        loading={change.isPending} onConfirm={confirm} onClose={() => setPending(null)} />
     </Dialog>
   )
 }
