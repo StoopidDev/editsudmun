@@ -67,7 +67,7 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-card border border-line p-3">
+    <section className="@container flex flex-col gap-3 rounded-card border border-line p-3">
       <h2 className="flex flex-wrap items-baseline justify-between gap-2 text-sm font-bold">
         งานที่ครีเอเตอร์ส่ง ({rounds.length} ไฟล์)
         {rounds.length > 0 && <span className="text-xs font-light text-sub">ใช้พื้นที่ {formatSize(totalBytes)} · ลบอัตโนมัติหลัง 30 วัน</span>}
@@ -75,7 +75,7 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
       {rounds.length === 0 ? <p className="text-sm text-sub">ยังไม่มีไฟล์ส่งงาน</p> : (
         <>
           <div className="self-start"><DownloadAll ids={readyIds(rounds)} /></div>
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-3 @xl:grid-cols-2">
             <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-card bg-video text-sm text-white">
               {!curUrl ? (
                 <Skeleton className="absolute inset-0 rounded-none" />
