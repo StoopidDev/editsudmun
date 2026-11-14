@@ -41,7 +41,7 @@ export function Lightbox({ opened, open, onOpenChange, onIndex }: {
     </div>
   )
 
-  const arrow = 'press absolute top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover-pointer:bg-black/60'
+  const arrow = 'press absolute top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover-pointer:bg-black/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand'
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
@@ -61,7 +61,7 @@ export function Lightbox({ opened, open, onOpenChange, onIndex }: {
           <div className="flex items-center justify-between gap-3 p-3 text-sm">
             <span className="tabular-nums">{index + 1} / {items.length}</span>
             <span className="min-w-0 truncate">{item.file_name}</span>
-            <DialogPrimitive.Close aria-label="ปิด" className="press flex size-11 shrink-0 items-center justify-center rounded-full hover-pointer:bg-white/10">
+            <DialogPrimitive.Close aria-label="ปิด" className="press flex size-11 shrink-0 items-center justify-center rounded-full hover-pointer:bg-white/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
               <X />
             </DialogPrimitive.Close>
           </div>

@@ -33,9 +33,9 @@ describe('dates', () => {
     expect(dayLabel(new Date(2026, 9, 29))).toBe('พฤหัส')
     expect(rangeLabel(new Date(2026, 9, 29))).toBe('26 ต.ค. – 1 พ.ย. 2026')
   })
-  it('builds a month grid of whole weeks', () => {
+  it('builds a month grid of six whole weeks', () => {
     const grid = monthGrid(new Date(2026, 9, 15))
-    expect(grid.length % 7).toBe(0)
+    expect(grid).toHaveLength(42)
     expect(grid[0].getDate()).toBe(28)
   })
 })

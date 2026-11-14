@@ -1,7 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
-import '@fontsource-variable/geist'
+import '@fontsource-variable/anuphan'
 import '@fontsource-variable/noto-sans-thai'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ThemedToaster } from './components/ThemedToaster'

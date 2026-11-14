@@ -11,9 +11,12 @@
   --c-brand: #0066cc; --c-brand-text: #0066cc; --c-danger: #d70015; --c-success: #1a7f3c; --c-success-text: #1a7f3c;
   --c-warn-bg: #fff0e0; --c-warn-line: #ffb04d; --c-warn-text: #9a4f00; /* Figma #b35c00 is 4.2:1 on warn-bg; darkened to pass 4.5:1 */ --c-ok-bg: #e6f8ec;
   --c-chip: #eeeeee; --c-video: #1e1e1e; --c-avatar: #2c2c2c; --c-toast: #ffffff;
+  /* White-on-fill pairs: danger fill is the same in both themes so white text keeps 5.4:1 (the text-red #ff383c in dark gave 3.6:1). */
+  --c-danger-fill: #d70015;
 
+  /* Form controls use the 4.6:1 line colour (WCAG 1.4.11 needs 3:1); the 1.4:1 grid grey is for dividers only. */
   --border: var(--c-grid);
-  --accent: oklch(0.97 0 0);
+  --accent: var(--c-surface);
 
   --background: var(--c-bg);
 
@@ -31,19 +34,19 @@
 
   --primary-foreground: #fff;
 
-  --secondary: oklch(0.97 0 0);
+  --secondary: var(--c-surface);
 
-  --secondary-foreground: oklch(0.205 0 0);
+  --secondary-foreground: var(--c-ink);
 
-  --muted: oklch(0.97 0 0);
+  --muted: var(--c-surface);
 
   --muted-foreground: var(--c-sub);
 
-  --accent-foreground: oklch(0.205 0 0);
+  --accent-foreground: var(--c-ink);
 
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: var(--c-danger);
 
-  --input: var(--c-grid);
+  --input: var(--c-line);
 
   --ring: var(--c-brand);
 
@@ -59,29 +62,29 @@
 
   --radius: 10px;
 
-  --sidebar: oklch(0.985 0 0);
+  --sidebar: var(--c-surface);
 
-  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-foreground: var(--c-ink);
 
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: var(--c-brand);
 
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary-foreground: #fff;
 
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent: var(--c-surface);
 
-  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-accent-foreground: var(--c-ink);
 
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-border: var(--c-grid);
 
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-ring: var(--c-brand);
 }
 
 .dark {
-  --c-bg: #1b1b1d; --c-ink: #f2f2f2; --c-sub: #a0a0a5; --c-line: #8e8e93; --c-surface: #262628;
+  --c-bg: #1b1b1d; --c-ink: #f2f2f2; --c-sub: #adadb2; /* #a0a0a5 gave 4.4:1 on the #3a3a3c chip; this gives 5.1:1 */ --c-line: #8e8e93; --c-surface: #262628;
   --c-grid: #3a3a3c; --c-today: #12304d; --c-note: #3a3112; --c-note-line: #ffcc00;
   --c-brand: #0071e3; /* Figma dark #0088ff gives white text 3.5:1; this passes 4.5:1 */ --c-brand-text: #4da3ff; --c-danger: #ff383c; --c-success: #1a7f3c; --c-success-text: #34c759;
   --c-warn-bg: #3a2810; --c-warn-line: #ffb04d; --c-warn-text: #ffb04d; --c-ok-bg: #12301c;
-  --c-chip: #3a3a3c; --c-video: #0e0e0f; --c-avatar: #3a3a3c; --c-toast: #3a3a3c;
+  --c-chip: #3a3a3c; --c-video: #0e0e0f; --c-avatar: #3a3a3c; --c-toast: #3a3a3c; --c-danger-fill: #d70015;
   color-scheme: dark;
 
   --background: var(--c-bg);
@@ -91,7 +94,8 @@
   --popover: var(--c-surface);
   --popover-foreground: var(--c-ink);
   --border: var(--c-grid);
-  --input: var(--c-grid);
+  --input: var(--c-line);
+  --destructive: var(--c-danger);
   --primary: var(--c-brand);
   --muted: var(--c-surface);
   --muted-foreground: var(--c-sub);
@@ -104,7 +108,7 @@
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: 'Geist Variable', sans-serif;
+  --font-sans: 'Anuphan Variable', 'Noto Sans Thai Variable', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -142,7 +146,7 @@
   --color-brand-text: var(--c-brand-text); --color-danger: var(--c-danger); --color-success: var(--c-success);
   --color-success-text: var(--c-success-text); --color-warn-bg: var(--c-warn-bg); --color-warn-line: var(--c-warn-line);
   --color-warn-text: var(--c-warn-text); --color-ok-bg: var(--c-ok-bg); --color-chip: var(--c-chip);
-  --color-video: var(--c-video); --color-avatar: var(--c-avatar); --color-toast: var(--c-toast);
+  --color-video: var(--c-video); --color-avatar: var(--c-avatar); --color-toast: var(--c-toast); --color-danger-fill: var(--c-danger-fill);
   --radius-card: 10px;
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -162,8 +166,17 @@
     @apply font-sans;}}
 
 @theme {
-  --font-sans: "Geist Variable", "Noto Sans Thai Variable", sans-serif;
+  --font-sans: "Anuphan Variable", "Noto Sans Thai Variable", sans-serif;
+  /* Thai stacks vowels and tone marks above and below the line, so it needs more leading than Tailwind's Latin defaults. */
+  --text-xs--line-height: 1.5;
+  --text-sm--line-height: 1.6;
+  --text-base--line-height: 1.6;
 }
+
+/* No layout shift when a scrollbar appears; no one-word last lines in headings and paragraphs. */
+html { scrollbar-gutter: stable; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
 
 body {
   margin: 0;
@@ -177,6 +190,7 @@ body {
   --duration-press: 100ms;
   --duration-state: 200ms;
   --duration-layout: 320ms;
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* Feedback on pointer-down, not on click (apple-design §1). */
@@ -204,6 +218,54 @@ body {
   @media (hover: hover) and (pointer: fine) { &:hover { box-shadow: inset 0 0 0 100vmax color-mix(in oklab, var(--c-ink) 6%, transparent); } }
 }
 
+/* Calendar card: border darkens, 2 px lift and a tinted shadow. Pointer devices only; press (utility above) still scales down. */
+@utility card-hover {
+  transition: transform var(--duration-state) var(--ease-out-quint), box-shadow var(--duration-state) var(--ease-out-quint), border-color var(--duration-state), background-color var(--duration-state);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--c-ink) 55%, transparent); box-shadow: 0 6px 14px -6px color-mix(in oklab, var(--c-ink) 28%, transparent); }
+  }
+  &:active { transform: translateY(0) scale(0.985); }
+}
+
+/* Grid cell and day column: background tint and a brand outline fade in. Inset, so layout never moves. */
+@utility cell-hover {
+  transition: box-shadow var(--duration-state) var(--ease-out-quint), background-color var(--duration-state), transform var(--duration-press) var(--ease-out-quint);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-brand) 55%, transparent), inset 0 0 0 100vmax color-mix(in oklab, var(--c-brand) 7%, transparent); }
+  }
+  &:active { transform: scale(0.99); }
+}
+
+/* Inline action that must read as clickable: always underlined, thicker on hover, optional trailing icon. Never use plain coloured text for an action. */
+@utility link-action {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  color: var(--c-brand-text);
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px;
+  border-radius: var(--radius-sm);
+  transition: text-decoration-thickness 120ms, color var(--duration-state), transform var(--duration-press) var(--ease-out-quint);
+  @media (hover: hover) and (pointer: fine) { &:hover { text-decoration-thickness: 2px; } }
+  &:active { transform: scale(0.97); }
+  &:focus-visible { outline: 2px solid var(--c-brand); outline-offset: 2px; }
+}
+
+/* Roll (components/Roll.tsx): text swaps like a slot machine, sideways, 280 ms in, 240 ms out. --rd is 1 or -1 for the direction. */
+.roll-in { animation: roll-in 280ms var(--ease-out-quint) both; }
+.roll-out { animation: roll-out 240ms var(--ease-in-quint) both; }
+@keyframes roll-in { from { opacity: 0; transform: translateX(calc(var(--rd, 1) * 70%)); } }
+@keyframes roll-out { to { opacity: 0; transform: translateX(calc(var(--rd, 1) * -70%)); } }
+
+/* Entry: fade and rise 4 px. Set --i on the element (0, 1, 2 ...) to stagger by 30 ms, capped at 8 steps. */
+@utility enter {
+  animation: enter 200ms var(--ease-out-quint) backwards; /* backwards, not both: a forwards fill would pin transform and block card-hover's lift */
+  animation-delay: calc(min(var(--i, 0), 8) * 30ms);
+}
+@keyframes enter { from { opacity: 0; transform: translateY(4px); } }
+
+/* Theme switch: plain 200 ms colour fade on surfaces, text and borders. theme.ts adds the class for 250 ms around the toggle. */
+:root.theme-switching, :root.theme-switching *, :root.theme-switching *::before, :root.theme-switching *::after {
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, fill 200ms ease, stroke 200ms ease, box-shadow 200ms ease !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) {
     animation-duration: 1ms !important;
@@ -221,16 +283,19 @@ body {
 
 @keyframes row-out { to { opacity: 0; } }
 
-/* Route crossfade; week change slides 24 px in the direction set on <html data-dir>. Reduced motion shortens these. */
-::view-transition-old(root) { animation: 120ms var(--ease-in-quint) both fade-out; mix-blend-mode: normal; }
-::view-transition-new(root) { animation: 200ms var(--ease-out-quint) both fade-in; mix-blend-mode: normal; }
+/* Page change stacks: the app chrome (sidebar, header, tab bar) is named so it stays put, and only the page area (name "page") animates.
+   The new page drops in from under the header and covers the old one, which sinks and dims a little. The group clips to the page area, so nothing draws over the header. */
+::view-transition-group(page) { overflow: clip; }
+::view-transition-old(page) { animation: 300ms var(--ease-drawer) both page-under; mix-blend-mode: normal; }
+::view-transition-new(page) { animation: 340ms var(--ease-drawer) both page-drop; mix-blend-mode: normal; }
+@keyframes page-drop { from { opacity: 0; transform: translateY(-56px); } }
+@keyframes page-under { to { opacity: 0.55; transform: translateY(14px) scale(0.985); } }
+/* Whatever is outside every named area (login, the very first load) fades through. */
+::view-transition-old(root) { animation: 100ms ease-out both fade-out; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: 160ms ease-out 100ms both fade-in; mix-blend-mode: normal; }
 /* Local writes (moves, approvals) animate only the changed element, so the page does not crossfade. */
-:root[data-vt='local']::view-transition-old(root), :root[data-vt='local']::view-transition-new(root) { animation: none; }
-::view-transition-old(cal) { animation: 160ms var(--ease-in-quint) both slide-out; }
-::view-transition-new(cal) { animation: 240ms var(--ease-out-quint) both slide-in; }
-@keyframes slide-out { to { opacity: 0; transform: translateX(calc(var(--d, 1) * -24px)); } }
-@keyframes slide-in { from { opacity: 0; transform: translateX(calc(var(--d, 1) * 24px)); } }
-:root[data-dir='prev'] { --d: -1; }
+:root[data-vt='local']::view-transition-old(root), :root[data-vt='local']::view-transition-new(root),
+:root[data-vt='local']::view-transition-old(page), :root[data-vt='local']::view-transition-new(page) { animation: none; }
 
 /* Approve moment: the tick draws in over 240 ms (pathLength 1 keeps the dash length at 1). */
 .check-draw { stroke-dasharray: 1; animation: check-draw 240ms var(--ease-out-quint) both; }

@@ -6,7 +6,7 @@ import { downloadAll } from '@/lib/viewer'
 export function DownloadAll({ ids }: { ids: string[] }) {
   const [busy, setBusy] = useState(false)
   return (
-    <Button variant="outline" size="sm" loading={busy} disabled={ids.length === 0}
+    <Button variant="outline" size="sm" className="max-md:min-h-11" loading={busy} disabled={ids.length === 0}
       onClick={async () => {
         setBusy(true)
         try {

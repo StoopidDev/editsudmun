@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type Dispatch, type DragEvent, type SetStateAction } from 'react'
+import { Pause, Play, RotateCw, Upload, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { ACCEPT, progressLabel, uploadProblem, uploadStatus } from '@/lib/media'
 import type { ClipMedia } from '@/lib/types'
 import { useUploads, type UploadRow } from '@/lib/upload-state'
@@ -95,7 +97,7 @@ export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setPark
         onDragOver={(e: DragEvent) => { e.preventDefault(); setOver(true) }}
         onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false) }}
         onDrop={(e: DragEvent) => { e.preventDefault(); setOver(false); void onFiles(e.dataTransfer.files) }}
-        className={`flex h-15 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-card border bg-surface px-3 text-center text-xs transition-colors duration-150 focus-within:ring-2 focus-within:ring-brand/50 ${over ? 'border-brand bg-today' : 'border-line'}`}
+        className={`flex min-h-15 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-card border border-dashed bg-surface px-3 py-2 text-center text-xs transition-colors duration-200 focus-within:ring-2 focus-within:ring-brand/50 ${over ? 'border-brand bg-today' : 'border-line'}`}
       >
         <input
           ref={inputRef}
@@ -105,6 +107,7 @@ export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setPark
           className="sr-only"
           onChange={(e) => { void onFiles(e.target.files ?? []); e.target.value = '' }}
         />
+        <Upload size={18} className="text-sub" aria-hidden />
         <span className="text-ink">{COPY[purpose].title}</span>
         <span className="text-sub">{COPY[purpose].hint}</span>
       </label>
@@ -125,13 +128,12 @@ export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setPark
         <div key={f.key} className="flex flex-col gap-1 rounded-card border border-danger bg-danger/10 p-3">
           <div className="flex items-baseline justify-between gap-2">
             <span className="truncate text-sm font-bold text-ink">{f.name}</span>
-            <button type="button" className="press shrink-0 text-xs text-sub hover-pointer:underline underline-offset-4"
-              onClick={() => setRefused((r) => r.filter((x) => x.key !== f.key))}>ลบออก</button>
+            <Button variant="outline" size="sm" className="shrink-0" onClick={() => setRefused((r) => r.filter((x) => x.key !== f.key))}><X size={14} aria-hidden />ลบออก</Button>
           </div>
           <span className="text-xs text-danger">{f.message}</span>
           {f.tooBig && (
-            <button type="button" className="press self-start text-xs text-brand-text hover-pointer:underline underline-offset-4"
-              onClick={() => { setRefused((r) => r.filter((x) => x.key !== f.key)); inputRef.current?.click() }}>เลือกไฟล์ใหม่</button>
+            <Button variant="outline" size="sm" className="self-start text-brand-text"
+              onClick={() => { setRefused((r) => r.filter((x) => x.key !== f.key)); inputRef.current?.click() }}><Upload size={14} aria-hidden />เลือกไฟล์ใหม่</Button>
           )}
         </div>
       ))}
@@ -142,8 +144,7 @@ export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setPark
           {parked.map((f, i) => (
             <div key={`${i}-${f.name}`} className="flex items-baseline justify-between gap-2 rounded-card border border-line bg-surface p-3">
               <span className="truncate text-sm text-ink">{f.name}</span>
-              <button type="button" className="press shrink-0 text-xs text-sub hover-pointer:underline underline-offset-4"
-                onClick={() => setParked?.((p) => p.filter((_, j) => j !== i))}>ลบออก</button>
+              <Button variant="outline" size="sm" className="shrink-0" onClick={() => setParked?.((p) => p.filter((_, j) => j !== i))}><X size={14} aria-hidden />ลบออก</Button>
             </div>
           ))}
         </div>
@@ -166,7 +167,6 @@ function Row({ row, leaving, onLeft, onPause, onRetry, onRemove }: {
   const right = failed ? `อัปไม่สำเร็จที่ ${row.percent}%`
     : warn ? `${row.offline ? 'เน็ตหลุด · ' : ''}กำลังลองใหม่ (ครั้งที่ ${Math.max(1, row.retries)})`
     : progressLabel(row.sent, row.size)
-  const link = 'press shrink-0 text-xs hover-pointer:underline underline-offset-4'
 
   return (
     <div
@@ -182,16 +182,16 @@ function Row({ row, leaving, onLeft, onPause, onRetry, onRemove }: {
         <div className={`h-full rounded-full transition-[width] duration-200 ease-linear ${bar}`} style={{ width: `${row.percent}%` }} />
       </div>
       {!leaving && (
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-2">
           {failed ? (
             <>
-              <button type="button" className={`${link} text-brand-text`} onClick={onRetry}>อัปต่อจากเดิม</button>
-              <button type="button" className={`${link} text-sub`} onClick={onRemove}>ยกเลิกไฟล์นี้</button>
+              <Button variant="outline" size="sm" className="text-brand-text" onClick={onRetry}><RotateCw size={14} aria-hidden />อัปต่อจากเดิม</Button>
+              <Button variant="outline" size="sm" className="text-danger" onClick={onRemove}><X size={14} aria-hidden />ยกเลิกไฟล์นี้</Button>
             </>
           ) : (
             <>
-              <button type="button" className={`${link} text-brand-text`} onClick={onPause}>{row.paused ? 'อัปต่อ' : 'หยุดชั่วคราว'}</button>
-              <button type="button" className={`${link} text-sub`} onClick={onRemove}>ยกเลิก</button>
+              <Button variant="outline" size="sm" className="text-brand-text" onClick={onPause}>{row.paused ? <Play size={14} aria-hidden /> : <Pause size={14} aria-hidden />}{row.paused ? 'อัปต่อ' : 'หยุดชั่วคราว'}</Button>
+              <Button variant="outline" size="sm" className="text-danger" onClick={onRemove}><X size={14} aria-hidden />ยกเลิก</Button>
             </>
           )}
         </div>

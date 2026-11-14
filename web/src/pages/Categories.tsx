@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react'
-import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { useState, type CSSProperties, type FormEvent } from 'react'
+import { Pencil, Plus, Tags, Trash2 } from 'lucide-react'
 import * as api from '@/api/index'
 import { useAct, useCategories, useCategoryCounts } from '@/api/queries'
 import { ConfirmDialog } from '@/components/bits'
+import { EmptyState } from '@/components/EmptyState'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -30,21 +31,25 @@ export function Categories() {
         <h1 className="text-lg font-bold">ประเภทคลิป</h1>
         <Button className="min-h-11 md:min-h-0" onClick={() => setEditing('new')}><Plus />เพิ่มประเภท</Button>
       </div>
-      {!isPending && cats.length === 0 && <p className="py-16 text-center text-sub">ยังไม่มีประเภทคลิป</p>}
+      {!isPending && cats.length === 0 && (
+        <div className="overflow-hidden rounded-card border border-line">
+          <EmptyState icon={Tags} title="ยังไม่มีประเภทคลิป" hint="กด “เพิ่มประเภท” เพื่อสร้างประเภทแรก" className="py-10" />
+        </div>
+      )}
       {cats.length > 0 && (
         <>
         <div className="overflow-hidden rounded-card border border-line">
           <div className="hidden grid-cols-[40px_1fr_120px_140px] bg-surface p-3 text-xs text-sub md:grid">
             <span>สี</span><span>ชื่อประเภท</span><span>จำนวนคลิป</span><span className="text-right">การจัดการ</span>
           </div>
-          {cats.map((c) => (
-            <div key={c.id} className="grid grid-cols-[32px_1fr_auto] items-center gap-y-1 border-t border-grid p-3 md:grid-cols-[40px_1fr_120px_140px]">
+          {cats.map((c, i) => (
+            <div key={c.id} className="enter grid grid-cols-[32px_1fr_auto] items-center gap-y-1 border-t border-grid p-3 md:grid-cols-[40px_1fr_120px_140px]" style={{ '--i': i } as CSSProperties}>
               <span className="size-3 rounded-full" style={{ background: c.color }} />
               <b className="text-sm">{c.name}</b>
               <span className="text-sm max-md:hidden">{counts[c.id] ?? 0}</span>
               <span className="flex justify-end gap-1">
-                <Button variant="ghost" className="size-11 md:size-auto" aria-label={`แก้ไข ${c.name}`} onClick={() => setEditing(c)}><Pencil /><span className="max-md:hidden">แก้ไข</span></Button>
-                <Button variant="ghost" className="size-11 text-danger md:size-auto" disabled={(counts[c.id] ?? 0) > 0} aria-label={`ลบ ${c.name}`} onClick={() => setDeleting(c)}><Trash2 /><span className="max-md:hidden">ลบ</span></Button>
+                <Button variant="outline" size="sm" className="max-md:size-11" aria-label={`แก้ไข ${c.name}`} onClick={() => setEditing(c)}><Pencil /><span className="max-md:hidden">แก้ไข</span></Button>
+                <Button variant="outline" size="sm" className="text-danger max-md:size-11" disabled={(counts[c.id] ?? 0) > 0} aria-label={`ลบ ${c.name}`} onClick={() => setDeleting(c)}><Trash2 /><span className="max-md:hidden">ลบ</span></Button>
               </span>
             </div>
           ))}
