@@ -37,7 +37,7 @@ function ThemeButton({ className = '', label }: { className?: string; label?: bo
   const dark = useTheme()
   const name = dark ? 'โหมดสว่าง' : 'โหมดมืด'
   // Both icons stay mounted and crossfade (opacity, scale, blur) so the swap reads as one change, not a pop.
-  const icon = (on: boolean) => `absolute inset-0 transition-[opacity,scale,filter] duration-200 ease-out ${on ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-75 blur-xs'}`
+  const icon = (on: boolean) => `absolute inset-0 transition-[opacity,scale] duration-200 ease-out ${on ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`
   return (
     <button type="button" onClick={toggleTheme} aria-label={name} title={name}
       className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-8 min-w-8 max-md:min-h-11 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
@@ -108,7 +108,7 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
           style={{ transform: `translateY(calc(${Math.max(active, 0)} * 2.75rem))`, opacity: active < 0 ? 0 : 1 }} />
         {items.map(({ to, label, icon: Icon }, i) => (
           <NavLink viewTransition key={to} to={to} end={to === '/'} onClick={onNavigate} aria-label={label}
-            className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand relative z-10 flex h-10 items-center gap-2 rounded-card px-2 text-base font-normal transition-colors duration-200 ${rail ? 'justify-center' : ''} ${i === active ? 'text-white' : ''}`}>
+            className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand relative z-10 flex h-10 items-center gap-2 rounded-card px-2 text-base font-normal ${rail ? 'justify-center' : ''} ${i === active ? 'text-white' : ''}`}>
             <Icon size={16} />{!rail && label}
           </NavLink>
         ))}

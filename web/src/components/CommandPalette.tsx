@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { DateLabel } from '@/components/DateLabel'
 import { fromIso } from '@/lib/dates'
 import { snippet } from '@/lib/search'
+import { plainPreview } from '@/lib/markdown'
 
 const SHORTCUTS = [
   { to: '/', label: 'หน้าแรก', icon: Home, owner: false },
@@ -108,7 +109,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                   <div role="group" aria-label="คลิป">
                     <div aria-hidden className="px-3 pt-2 pb-1 text-xs text-sub">คลิป</div>
                     {hits.map((c, i) => {
-                      const s = snippet([c.script, c.note, c.title].find((t) => t.toLowerCase().includes(deferred.toLowerCase())) ?? c.script, deferred, 28)
+                      const s = snippet(plainPreview([c.script, c.note, c.title].find((t) => t.toLowerCase().includes(deferred.toLowerCase())) ?? c.script), deferred, 28)
                       const d = fromIso(c.date)
                       return opt(i, `/clips/${c.id}`, <>
                         <div className="min-w-0 flex-1">

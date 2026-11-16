@@ -15,7 +15,7 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
         const on = o.value === value
         return (
           <button key={o.value} type="button" aria-pressed={on} onClick={() => onChange(o.value)}
-            className={`press relative z-10 rounded-[calc(var(--radius-card)-3px)] px-3 py-1 text-sm font-medium transition-colors duration-200 max-md:min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${on ? 'text-white' : 'text-ink hover-pointer:bg-ink/5'}`}>
+            className={`press relative z-10 rounded-[calc(var(--radius-card)-3px)] px-3 py-1 text-sm font-medium max-md:min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${on ? 'text-white' : 'text-ink hover-pointer:bg-ink/5'}`}>
             {o.label}
           </button>
         )

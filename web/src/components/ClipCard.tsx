@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { FileText, Image as ImageIcon } from 'lucide-react'
 import { CategoryBadge, StatusChip } from '@/components/bits'
 import { shareTitle } from '@/lib/viewTransition'
+import { plainPreview } from '@/lib/markdown'
 import type { ClipCardRow } from '@/lib/types'
 
 // variant "today" (Home) shows the position in the day and always the two-line script.
@@ -20,7 +21,7 @@ export function ClipCard({ clip, variant, index, total, enterIndex, square }: { 
         {today && index !== undefined && total !== undefined && <span className="ml-auto text-xs text-sub tabular-nums">คลิป {index} จาก {total}</span>}
       </div>
       <b data-title className={`text-sm ${square ? 'line-clamp-3' : ''}`}>{clip.title}</b>
-      <p className={`line-clamp-2 text-sm text-sub ${scriptCls}`}>{clip.script_preview}</p>
+      <p className={`line-clamp-2 text-sm text-sub ${scriptCls}`}>{plainPreview(clip.script_preview)}</p>
       <div className={`flex gap-2 text-xs text-sub ${square ? 'mt-auto' : ''}`}>
         {clip.imageCount > 0 && <span className="flex items-center gap-1 tabular-nums"><ImageIcon size={12} />{clip.imageCount}</span>}
         {clip.has_note && <span className="flex items-center gap-1"><FileText size={12} />หมายเหตุ</span>}

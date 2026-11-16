@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { ChevronLeft, ChevronRight, ImageIcon, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ImageIcon, Play, X } from 'lucide-react'
 import { useCategories } from '@/api/queries'
 import { Button } from '@/components/ui/button'
 import { readableOn } from '@/lib/color'
@@ -94,7 +94,7 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
             onClick={(e) => onOpen(e.currentTarget)} className="press hover-tint absolute inset-0 rounded-card focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand" />
         )}
         {onDelete && (
-          <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 z-10 size-5 rounded-full bg-avatar text-xs text-white opacity-70 transition-opacity hover-pointer:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand before:absolute before:-inset-3 before:content-[''] md:before:hidden">×</button>
+          <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 z-10 grid place-items-center size-6 rounded-full bg-avatar text-white opacity-70 transition-opacity hover-pointer:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand before:absolute before:-inset-3 before:content-[''] md:before:hidden"><X size={14} aria-hidden /></button>
         )}
       </div>
       <span className="block truncate text-xs tabular-nums">{file.file_name}{dur && ` · ${dur}`}</span>
@@ -129,7 +129,7 @@ export function ConfirmDialog(props: {
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" className="max-md:min-h-11" onClick={props.onClose} disabled={props.loading}>ยกเลิก</Button>
-          <Button className={props.tone === 'neutral' ? 'max-md:min-h-11' : 'bg-danger-fill text-white hover-pointer:bg-danger-fill/90 max-md:min-h-11'} loading={props.loading}
+          <Button className={props.tone === 'neutral' ? 'max-md:min-h-11' : 'bg-danger-fill text-white hover-pointer:bg-[color-mix(in_oklab,var(--c-danger-fill),black_16%)] max-md:min-h-11'} loading={props.loading}
             onClick={async () => {
               try { await props.onConfirm(); props.onClose() } catch { /* useAct shows the toast; keep the dialog open */ }
             }}>{props.confirm}</Button>

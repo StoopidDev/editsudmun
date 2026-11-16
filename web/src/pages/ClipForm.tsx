@@ -1,53 +1,31 @@
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ChevronDown, Copy, Trash2 } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import * as api from '@/api/index'
 import { useAct, useCategories, useClip, useDeleteClip, useMedia } from '@/api/queries'
 import { BackButton } from '@/components/BackButton'
 import { ClipPager } from '@/components/ClipPager'
 import { CopyDialog } from '@/components/CopyDialog'
 import { ConfirmDialog, Delayed, FileTile, Skeleton } from '@/components/bits'
-import { DateLabel } from '@/components/DateLabel'
+import { DateField } from '@/components/DateField'
+import { MarkdownField } from '@/components/MarkdownField'
 import { DownloadAll } from '@/components/media'
 import { useLightbox } from '@/components/useLightbox'
 import { UploadZone } from '@/components/UploadZone'
+import { dialogOpen, shortcutKey } from '@/lib/shortcut'
 import { Ctx } from '@/lib/upload-state'
 import { useViewUrls, viewables } from '@/lib/viewer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { fromIso, fullDate, isIsoDate, todayIso } from '@/lib/dates'
+import { isIsoDate, todayIso } from '@/lib/dates'
 import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from '@/lib/draft'
 import { daysLeft, readyIds, WARN_DAYS } from '@/lib/media'
 import type { ClipInput, ClipMedia } from '@/lib/types'
 import { useLast } from '@/lib/useLast'
 import { Review } from './Review'
 import { toast } from 'sonner'
-
-// Shows the Thai date (พฤหัส 29 ต.ค. 2026) like the frame; the native picker opens from the same button.
-function ThaiDateField({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
-  const picker = useRef<HTMLInputElement>(null)
-  const open = () => {
-    const el = picker.current
-    if (!el) return
-    try {
-      if (el.showPicker) el.showPicker()
-      else el.click()
-    } catch { /* showPicker throws without a user gesture: focus stays on the button */ }
-  }
-  return (
-    <div className="relative">
-      <button type="button" id={id} onClick={open} aria-label={`วัน ${isIsoDate(value) ? fullDate(fromIso(value)) : ''}`}
-        className="flex h-9 w-full items-center justify-between rounded-md border border-line bg-bg px-2.5 text-left text-sm font-normal max-md:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
-        {isIsoDate(value) && <DateLabel date={value} />}
-        <ChevronDown size={16} aria-hidden className="text-sub" />
-      </button>
-      <input ref={picker} type="date" value={value} tabIndex={-1} aria-hidden
-        onChange={(e) => e.target.value && onChange(e.target.value)} className="pointer-events-none absolute inset-0 size-full opacity-0" />
-    </div>
-  )
-}
 
 export function ClipForm({ clipId }: { clipId?: string }) {
   const { data: clip, isPending } = useClip(clipId ?? '')
@@ -69,7 +47,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   const [params] = useSearchParams()
   const urlDate = params.get('date')
   const explicitDate = urlDate && isIsoDate(urlDate) ? urlDate : null
-  const { data: cats = [] } = useCategories()
+  const { data: cats = [], isSuccess: catsLoaded } = useCategories()
   const { data: media = [] } = useMedia(clipId ?? '')
   const urls = useViewUrls(readyIds(media))
   const lb = useLightbox()
@@ -145,7 +123,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
 
   const submit = (addAnother = false) => {
     if (!isIsoDate(form.date)) { toast.error('วันที่ไม่ถูกต้อง'); return }
-    if (!form.title.trim()) return setTitleError(true)
+    if (!form.title.trim()) { setTitleError(true); document.getElementById('title')?.focus(); return }
     setSaving(addAnother ? 'more' : 'save')
     if (!clipId) {
       void ensureClip()
@@ -168,28 +146,53 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     })
   }
 
+  const blocked = save.isPending || cats.length === 0 || !!draft
+  // Ctrl/Cmd+S saves: the owner enters many clips a day. Bound on every render so it sees the current form.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || shortcutKey(e) !== 's') return
+      e.preventDefault()
+      if (!blocked && !dialogOpen()) submit()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
   const refs = media.filter((m) => m.purpose === 'reference')
   const refViews = viewables(refs, urls)
   const expiring = media.filter((m) => daysLeft(m.expires_at) <= WARN_DAYS)
   // Files R2 keeps 30 days from upload; on a saved clip the soonest-expiring reference sets the line.
   const refDays = refs.length ? Math.min(...refs.map((f) => daysLeft(f.expires_at))) : 30
 
+  // Fixed minimum widths: the spinner and the "saved" label must not resize the buttons.
+  const actions: ReactNode = (
+    <>
+      {clipId
+        ? <Button variant="outline" onClick={() => setCopying(true)}><Copy />คัดลอกไปวันอื่น</Button>
+        : <Button variant="outline" className="min-w-40" onClick={() => submit(true)} loading={saving === 'more'} disabled={blocked}>บันทึกและเพิ่มต่อ</Button>}
+      <Button className="min-w-28" onClick={() => submit()} loading={saving === 'save'} disabled={blocked}>{saved ? 'บันทึกแล้ว ✓' : 'บันทึก'}</Button>
+    </>
+  )
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="flex flex-col gap-3 max-md:pb-16">
+      <div className="flex items-center gap-2">
         <BackButton fallback={`/calendar?date=${form.date}`} />
         {initial && clipId && <ClipPager clipId={clipId} date={initial.date} />}
-        {!pristine && !draft && <span className="text-xs text-sub">✓ บันทึกร่างอัตโนมัติแล้ว</span>}
-        <div className="flex flex-wrap gap-2">
-          {clipId
-            ? <Button variant="outline" onClick={() => setCopying(true)}><Copy />คัดลอกไปวันอื่น</Button>
-            : <Button variant="outline" onClick={() => submit(true)} loading={saving === 'more'} disabled={save.isPending || cats.length === 0 || !!draft}>บันทึกและเพิ่มต่อ</Button>}
-          <Button onClick={() => submit()} loading={saving === 'save'} disabled={save.isPending || cats.length === 0 || !!draft}>{saved ? 'บันทึกแล้ว ✓' : 'บันทึก'}</Button>
-        </div>
+        {/* Always in the layout (invisible while there is nothing to say), so the toolbar never shifts when the first edit is made. */}
+        <span role="status" className={`ml-auto text-right text-xs text-sub ${!pristine && !draft ? '' : 'invisible'}`}>
+          ยังไม่ได้บันทึก<span className="max-sm:hidden"> · เก็บร่างไว้ในเครื่องนี้แล้ว</span>
+        </span>
+        <div className="flex gap-2 max-md:hidden">{actions}</div>
       </div>
+      {/* Phones: the save actions sit above the tab bar, in reach of the thumb and on screen however long the script is. Portalled so the page transition does not carry them. */}
+      {createPortal(
+        <div data-savebar className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 flex gap-2 border-t border-line bg-bg px-4 py-2 md:hidden [&>:last-child]:flex-1">{actions}</div>,
+        document.body,
+      )}
 
       {draft && (
-        <div className="flex items-center justify-between rounded-card border border-note-line bg-note p-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-note-line bg-note p-3 text-sm">
           พบร่างที่ยังไม่ได้บันทึก: {draft.title || 'ไม่มีหัวข้อ'}
           <span className="flex gap-2">
             <Button variant="outline" onClick={() => { clearDraft(clipId); setDraft(null) }}>ทิ้งร่าง</Button>
@@ -203,6 +206,12 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           มี {expiring.length} ไฟล์จะถูกลบใน {Math.min(...expiring.map((m) => daysLeft(m.expires_at)))} วัน
           <span className="ml-2 inline-block"><DownloadAll ids={readyIds(expiring)} /></span>
         </div>
+      )}
+
+      {catsLoaded && cats.length === 0 && (
+        <p role="status" className="rounded-card border border-warn-line bg-warn-bg p-3 text-sm">
+          ยังไม่มีประเภทคลิป จึงยังบันทึกไม่ได้ <Link viewTransition to="/categories" className="link-action">สร้างประเภทคลิป</Link>
+        </p>
       )}
 
       <fieldset disabled={!!draft} className="contents">
@@ -220,7 +229,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
             </div>
             <div className="grid gap-1">
               <Label htmlFor="date">วัน</Label>
-              <ThaiDateField id="date" value={form.date} onChange={(v) => set({ date: v })} />
+              <DateField id="date" value={form.date} onChange={(v) => set({ date: v })} />
             </div>
           </div>
           <div className="grid gap-1">
@@ -230,7 +239,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           </div>
           <div className="grid gap-1">
             <Label htmlFor="script">สคริปต์</Label>
-            <Textarea id="script" rows={clipId ? 10 : 18} value={form.script} onChange={(e) => set({ script: e.target.value })} />
+            <MarkdownField id="script" className={clipId ? 'min-h-60' : 'min-h-96'} value={form.script} onChange={(v) => set({ script: v })} />
           </div>
           {clipId && <Review clipId={clipId} urls={urls} />}
         </div>
@@ -238,7 +247,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         <div className="flex flex-col gap-3">
           <section className="rounded-card border border-note-line bg-note p-3">
             <Label htmlFor="note" className="mb-1">หมายเหตุ</Label>
-            <Textarea id="note" rows={5} placeholder="หนึ่งบรรทัดต่อหนึ่งข้อ" className="bg-bg" value={form.note} onChange={(e) => set({ note: e.target.value })} />
+            <MarkdownField id="note" note placeholder="หนึ่งบรรทัดต่อหนึ่งข้อ" className="min-h-32 bg-bg" value={form.note} onChange={(v) => set({ note: v })} />
           </section>
           <section className="flex flex-col gap-2 rounded-card border border-line p-3">
             <h2 className="text-sm font-bold">ไฟล์อ้างอิง ({refs.length})</h2>

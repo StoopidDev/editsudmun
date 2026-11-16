@@ -11,6 +11,8 @@ import { useViewUrls, viewables } from '@/lib/viewer'
 import { UploadZone } from '@/components/UploadZone'
 import { Button } from '@/components/ui/button'
 import { DateLabel } from '@/components/DateLabel'
+import { Markdown } from '@/components/Markdown'
+import { noteToMarkdown } from '@/lib/markdown'
 import { sentAt } from '@/lib/dates'
 import { canWithdraw, daysLeft, formatSize, readyIds, roundCount, shownTiles, TILE_CAP, WITHDRAW_MS, withRounds, withdrawMinutesLeft } from '@/lib/media'
 import { ClipForm } from './ClipForm'
@@ -26,7 +28,7 @@ function NoteBox({ note, className = '' }: { note: string; className?: string })
   return (
     <section className={`rounded-card border border-note-line bg-note p-3 ${className}`}>
       <h2 className="mb-1 flex items-center gap-1.5 text-sm font-bold"><FileText size={14} aria-hidden />หมายเหตุ</h2>
-      <ul className="max-w-[65ch] list-disc pl-4 text-base leading-6.5">{note.split('\n').filter(Boolean).map((line, i) => <li key={i}>{line}</li>)}</ul>
+      <Markdown text={noteToMarkdown(note)} className="max-w-[65ch] text-base leading-6.5" />
     </section>
   )
 }
@@ -94,7 +96,7 @@ function CreatorDetail({ id }: { id: string }) {
           )}
           <section className="rounded-card border border-line p-4 max-lg:order-2">
             <h2 className="mb-2 text-sm font-bold text-sub">สคริปต์</h2>
-            <p className="max-w-[65ch] text-xl leading-8.5 whitespace-pre-wrap">{clip.script}</p>
+            <Markdown text={clip.script} className="max-w-[65ch] text-xl leading-8.5" />
           </section>
         </div>
 

@@ -59,7 +59,7 @@ export function Calendar() {
             <Button variant="outline" size="icon" className="rounded-r-none max-md:size-11" aria-label="ก่อนหน้า" onClick={() => step(-1)}><ChevronLeft /></Button>
             <Button variant="outline" size="icon" className="-ml-px rounded-l-none max-md:size-11" aria-label="ถัดไป" onClick={() => step(1)}><ChevronRight /></Button>
           </div>
-          <h2 className="text-lg font-semibold tabular-nums md:w-64">{view === 'week' ? rangeLabel(date) : monthLabel(date)}</h2>
+          <h2 className="text-lg font-semibold tabular-nums md:w-48">{view === 'week' ? rangeLabel(date) : monthLabel(date)}</h2>
           {/* Always in the layout (hidden when today is on screen), so the toolbar never shifts while stepping. */}
           <button type="button" onClick={backToToday} disabled={!away} tabIndex={away ? 0 : -1} aria-hidden={!away}
             className={`link-action text-sub! text-sm max-md:min-h-11 ${away ? '' : 'invisible'}`}>
@@ -68,7 +68,7 @@ export function Calendar() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Segmented label="มุมมองปฏิทิน" value={view} onChange={(v) => go({ view: v })} options={[{ value: 'week', label: 'สัปดาห์' }, { value: 'month', label: 'เดือน' }]} />
-          {owner && <Button nativeButton={false} render={<Link viewTransition to={`/clips/new?date=${dateIso}`} />} className="max-md:hidden"><Plus />เพิ่มคลิป</Button>}
+          {owner && <Button nativeButton={false} render={<Link viewTransition to={`/clips/new?date=${dateIso}`} />}><Plus />เพิ่มคลิป</Button>}
         </div>
       </div>
 
@@ -85,11 +85,6 @@ export function Calendar() {
       </div>
 
       {drawer && <DayDrawer date={drawer} onClose={() => setDrawer(null)} />}
-      {owner && (
-        <Link viewTransition to={`/clips/new?date=${dateIso}`} aria-label="เพิ่มคลิป" className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-md md:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
-          <Plus />
-        </Link>
-      )}
     </div>
   )
 }
@@ -125,7 +120,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
         <EmptyState icon={Clapperboard} title="ยังไม่มีคลิปในวันนี้" hint={p.owner ? 'กด “เพิ่มคลิป” ด้านล่างเพื่อเริ่มวางแผน' : 'เจ้าของยังไม่ได้ใส่งานของวันนี้'} />
       )}
       {p.owner && (
-        <Link viewTransition to={`/clips/new?date=${selIso}`} className="max-md:min-h-11 rounded-card border border-dashed border-line py-3 text-center text-sm text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
+        <Link viewTransition to={`/clips/new?date=${selIso}`} className="max-md:min-h-11 rounded-card border border-dashed border-line press hover-tint hover-pointer:border-brand hover-pointer:text-brand-text py-3 text-center text-sm text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
       )}
     </div>
   )
@@ -154,7 +149,7 @@ function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => Clip
               <EmptyState title="ยังไม่มีคลิป" hint={p.owner ? undefined : 'ไม่มีงานในวันนี้'} className="py-4" />
             )}
             {p.owner && (
-              <Link viewTransition to={`/clips/new?date=${iso}`} className="rounded-[calc(var(--radius-card)-0.5rem)] border border-dashed border-line py-1 text-center text-xs text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
+              <Link viewTransition to={`/clips/new?date=${iso}`} className="rounded-[calc(var(--radius-card)-0.5rem)] border border-dashed border-line press hover-tint hover-pointer:border-brand hover-pointer:text-brand-text py-1 text-center text-xs text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
             )}
           </section>
         )

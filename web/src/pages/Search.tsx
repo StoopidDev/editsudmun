@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { DateLabel } from '@/components/DateLabel'
 import { fromIso } from '@/lib/dates'
 import { snippet } from '@/lib/search'
+import { plainPreview } from '@/lib/markdown'
 
 export function Search() {
   const [params, setParams] = useSearchParams()
@@ -38,7 +39,7 @@ function Results({ q }: { q: string }) {
       )}
       {data.map((c, i) => {
         const hay = [c.script, c.note, c.title].find((t) => t.toLowerCase().includes(q.trim().toLowerCase())) ?? c.script
-        const s = snippet(hay, q)
+        const s = snippet(plainPreview(hay), q)
         const d = fromIso(c.date)
         return (
           <div key={c.id} className="enter" style={{ '--i': i } as CSSProperties}>
