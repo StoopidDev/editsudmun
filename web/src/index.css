@@ -216,6 +216,9 @@ body {
 }
 @keyframes shimmer { to { transform: translateX(100%); } }
 
+/* Touch screens of any width (an iPad is wider than md but still a finger): pair every max-md: touch-target class with coarse:. */
+@custom-variant coarse (@media (pointer: coarse));
+
 /* One hover language: a 150 ms tint, no lift, no shadow jump. */
 @custom-variant hover-pointer {
   @media (hover: hover) and (pointer: fine) {
@@ -313,6 +316,9 @@ body {
   }
   .skeleton::after { animation: none; }
 }
+
+/* Sonner sets its own system font; toasts use the app font like everything else. */
+[data-sonner-toaster], [data-sonner-toast] { font-family: var(--font-sans) !important; }
 
 /* Sonner offsets toasts only at <=600px; the tab bar runs to 767px. */
 @media (max-width: 767px) {

@@ -85,7 +85,7 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
               ) : (
                 <div className="flex flex-col items-center gap-3 p-4 text-center">
                   <p>ProRes · เล่นในเบราว์เซอร์ไม่ได้ ดาวน์โหลดแทน</p>
-                  <Button variant="outline" className="max-md:min-h-11" onClick={() => downloadOne(current.id).catch((e: Error) => toast.error(e.message))}>ดาวน์โหลด</Button>
+                  <Button variant="outline" className="max-md:min-h-11 coarse:min-h-11" onClick={() => downloadOne(current.id).catch((e: Error) => toast.error(e.message))}>ดาวน์โหลด</Button>
                 </div>
               )}
               {curUrl && <b className="pointer-events-none absolute top-3 left-3 rounded bg-black/50 px-2 py-1 text-xs tabular-nums">รอบ {current.round} · {current.file_name}</b>}
@@ -101,9 +101,9 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
                     </span>
                   </div>
                   {isPlayable(m.mime)
-                    ? <Button variant="outline" size="sm" className="max-md:min-h-11" aria-label={`เล่น ${m.file_name}`} disabled={!urls[m.id]} onClick={() => setSelected(m.id)}><Play size={14} aria-hidden />{m.id === current.id ? 'กำลังเล่น' : 'เล่น'}</Button>
-                    : <Button variant="outline" size="sm" className="max-md:min-h-11" aria-label={`ดาวน์โหลด ${m.file_name}`} disabled={!urls[m.id]} onClick={() => downloadOne(m.id).catch((e: Error) => toast.error(e.message))}><Download size={14} aria-hidden />ดาวน์โหลด</Button>}
-                  <Button variant="outline" size="sm" aria-label={`ลบ ${m.file_name}`} className="text-danger max-md:min-h-11" onClick={() => setDeleting(m)}><Trash2 size={14} aria-hidden />ลบ</Button>
+                    ? <Button variant="outline" size="sm" className="max-md:min-h-11 coarse:min-h-11" aria-label={`เล่น ${m.file_name}`} disabled={!urls[m.id]} onClick={() => setSelected(m.id)}><Play size={14} aria-hidden />{m.id === current.id ? 'กำลังเล่น' : 'เล่น'}</Button>
+                    : <Button variant="outline" size="sm" className="max-md:min-h-11 coarse:min-h-11" aria-label={`ดาวน์โหลด ${m.file_name}`} disabled={!urls[m.id]} onClick={() => downloadOne(m.id).catch((e: Error) => toast.error(e.message))}><Download size={14} aria-hidden />ดาวน์โหลด</Button>}
+                  <Button variant="outline" size="sm" aria-label={`ลบ ${m.file_name}`} className="text-danger max-md:min-h-11 coarse:min-h-11" onClick={() => setDeleting(m)}><Trash2 size={14} aria-hidden />ลบ</Button>
                 </div>
               ))}
             </div>
@@ -116,8 +116,8 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
           <div inert={!asking} className="flex flex-col gap-2 p-px">
             <Textarea ref={reasonRef} rows={3} aria-label="เหตุผลที่ขอแก้ไข" placeholder="เหตุผลที่ขอแก้ไข (ครีเอเตอร์จะเห็นข้อความนี้)" value={reason} onChange={(e) => setReason(e.target.value)} />
             <span className="flex justify-end gap-2">
-              <Button variant="outline" className="max-md:min-h-11" onClick={() => { restoreFocus.current = true; setAsking(false) }}>ยกเลิก</Button>
-              <Button className="max-md:min-h-11" loading={review.isPending} disabled={!reason.trim()} onClick={requestChanges}>ส่งคำขอแก้ไข</Button>
+              <Button variant="outline" className="max-md:min-h-11 coarse:min-h-11" onClick={() => { restoreFocus.current = true; setAsking(false) }}>ยกเลิก</Button>
+              <Button className="max-md:min-h-11 coarse:min-h-11" loading={review.isPending} disabled={!reason.trim()} onClick={requestChanges}>ส่งคำขอแก้ไข</Button>
             </span>
           </div>
         </div>
@@ -126,8 +126,8 @@ export function Review({ clipId, urls }: { clipId: string; urls: Record<string, 
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs">สถานะ: <StatusChip status={clip.status} transitionName={`status-${clipId}`} drawCheck /></span>
           <span className="flex gap-2">
-            <Button ref={askRef} variant="outline" className="border-warn-line text-warn-text max-md:min-h-11" disabled={rounds.length === 0} onClick={() => setAsking(true)}>ขอแก้ไข</Button>
-            <Button className="bg-success text-white hover-pointer:bg-success/90 max-md:min-h-11" loading={review.isPending} disabled={rounds.length === 0 || clip.status === 'approved'} onClick={approve}>
+            <Button ref={askRef} variant="outline" className="border-warn-line text-warn-text max-md:min-h-11 coarse:min-h-11" disabled={rounds.length === 0} onClick={() => setAsking(true)}>ขอแก้ไข</Button>
+            <Button className="bg-success text-white hover-pointer:bg-success/90 max-md:min-h-11 coarse:min-h-11" loading={review.isPending} disabled={rounds.length === 0 || clip.status === 'approved'} onClick={approve}>
               {clip.status === 'approved' ? 'อนุมัติแล้ว ✓' : 'อนุมัติ'}
             </Button>
           </span>

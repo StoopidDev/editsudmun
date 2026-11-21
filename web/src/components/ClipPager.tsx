@@ -8,20 +8,21 @@ export function ClipPager({ clipId, date }: { clipId: string; date: string }) {
   const { data: day = [] } = useClips(date, date)
   const i = day.findIndex((c) => c.id === clipId)
   // replace: paging through a day must not fill the history, so Back returns to the list.
-  const go = (id: string) => nav(`/clips/${id}`, { replace: true, viewTransition: true })
+  // No page transition: the next clip is the same page with other content, so it fades in (state.paged) instead of dropping in as a new page.
+  const go = (id: string) => nav(`/clips/${id}`, { replace: true, state: { paged: true } })
   return (
     <div className="flex items-center gap-2 text-xs text-sub tabular-nums">
       {/* ‹ › are one joined pair, like the calendar toolbar. Phones get the short "1 / 3"; the full sentence stays for screen readers. */}
+      {i >= 0 && (
+        <>
+          <span aria-hidden className="lg:hidden">{i + 1} / {day.length}</span>
+          <span className="max-lg:sr-only">คลิป {i + 1} จาก {day.length} ของวันนั้น</span>
+        </>
+      )}
       <div className="flex">
         <Button variant="outline" size="icon" className="rounded-r-none" aria-label="คลิปก่อนหน้า" disabled={i <= 0} onClick={() => go(day[i - 1].id)}><ChevronLeft /></Button>
         <Button variant="outline" size="icon" className="-ml-px rounded-l-none" aria-label="คลิปถัดไป" disabled={i < 0 || i >= day.length - 1} onClick={() => go(day[i + 1].id)}><ChevronRight /></Button>
       </div>
-      {i >= 0 && (
-        <>
-          <span aria-hidden className="md:hidden">{i + 1} / {day.length}</span>
-          <span className="max-md:sr-only">คลิป {i + 1} จาก {day.length} ของวันนั้น</span>
-        </>
-      )}
     </div>
   )
 }

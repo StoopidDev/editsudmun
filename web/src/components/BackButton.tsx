@@ -7,7 +7,7 @@ export function BackButton({ fallback }: { fallback: string }) {
   const nav = useNavigate()
   const { key } = useLocation()
   return (
-    <Button variant="outline" className="max-md:min-h-11" onClick={() => (key === 'default' ? nav(fallback) : nav(-1))}>
+    <Button variant="outline" className="max-md:min-h-11 coarse:min-h-11" onClick={() => (key === 'default' ? nav(fallback) : nav(-1))}>
       <ChevronLeft />กลับ
     </Button>
   )

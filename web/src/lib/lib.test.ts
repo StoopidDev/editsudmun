@@ -6,7 +6,7 @@ import { calendarView, dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } fr
 import { canWithdraw, chunk, daysLeft, expiresBeforeClip, formatDuration, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, shownTiles, TILE_CAP, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
-import { swapInDay } from './order'
+import { moveInDay, moveToDay, swapInDay } from './order'
 import { contrast, nextColor, readableOn } from './color'
 import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from './draft'
 import { noteToMarkdown, plainPreview } from './markdown'
@@ -238,6 +238,13 @@ describe('order', () => {
     expect(swapInDay(r, 'b', -1).map((x) => x.id)).toEqual(['b', 'a', 'c'])
     expect(swapInDay(r, 'a', -1)).toEqual(r)
     expect(swapInDay(r, 'c', 1)).toEqual(r)
+  })
+  it('moves a clip to any place in its day and renumbers the day', () => {
+    const r = [{ id: 'a', date: 'd1', position: 0 }, { id: 'b', date: 'd1', position: 1 }, { id: 'c', date: 'd1', position: 5 }, { id: 'z', date: 'd2', position: 0 }]
+    expect(moveInDay(r, 'a', 2).map((x) => [x.id, x.position])).toEqual([['b', 0], ['c', 1], ['a', 2], ['z', 0]])
+    expect(moveInDay(r, 'c', 0).map((x) => x.id)).toEqual(['c', 'a', 'b', 'z'])
+    expect(moveInDay(r, 'b', 1).map((x) => x.id)).toEqual(['a', 'b', 'c', 'z'])
+    expect(moveToDay(r, 'a', 'd2').map((x) => [x.id, x.date, x.position])).toEqual([['b', 'd1', 1], ['c', 'd1', 5], ['z', 'd2', 0], ['a', 'd2', 1]])
   })
   it('moves down and keeps days in order', () => {
     const r = [{ id: 'b', date: 'd2', position: 1 }, { id: 'a', date: 'd2', position: 0 }, { id: 'z', date: 'd1', position: 5 }]

@@ -25,7 +25,7 @@ export function DateField({ id, value, onChange }: { id: string; value: string; 
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger ref={trigger} id={id} aria-label={`วัน ${valid ? fullDate(fromIso(value)) : ''}`}
         onPointerDown={(e) => { clickX.current = e.clientX; setByPointer(true) }} onKeyDown={() => { clickX.current = null; setByPointer(false) }}
-        className="flex h-9 w-full items-center justify-between rounded-md border border-line bg-bg px-2.5 text-left text-sm font-normal hover-pointer:bg-surface max-md:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50">
+        className="flex h-9 w-full items-center justify-between rounded-md border border-line bg-bg px-2.5 text-left text-sm font-normal hover-pointer:bg-surface max-md:h-11 coarse:h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:opacity-50">
         {valid && <DateLabel date={value} />}
         <CalendarDays size={16} aria-hidden className="text-sub" />
       </PopoverTrigger>

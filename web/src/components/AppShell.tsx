@@ -40,7 +40,7 @@ function ThemeButton({ className = '', label }: { className?: string; label?: bo
   const icon = (on: boolean) => `absolute inset-0 transition-[opacity,scale] duration-200 ease-out ${on ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`
   return (
     <button type="button" onClick={toggleTheme} aria-label={name} title={name}
-      className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-8 min-w-8 max-md:min-h-11 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
+      className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-8 min-w-8 max-md:min-h-11 coarse:min-h-11 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
       <span aria-hidden className="relative size-4.5 shrink-0">
         <Sun size={18} className={icon(dark)} />
         <Moon size={18} className={icon(!dark)} />
@@ -118,8 +118,8 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
         <div className="mt-auto flex items-center gap-2 px-2 flex-col">
           <ThemeButton />
           <span className="flex size-8.75 items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
-          <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><KeyRound size={16} /></button>
-          <button onClick={() => setConfirmingLogout(true)} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><LogOut size={16} /></button>
+          <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 coarse:size-11 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><KeyRound size={16} /></button>
+          <button onClick={() => setConfirmingLogout(true)} aria-label="ออกจากระบบ" className="flex size-8 coarse:size-11 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><LogOut size={16} /></button>
         </div>
       ) : (
         <div className="mt-auto flex flex-col gap-1 border-t border-grid pt-3">

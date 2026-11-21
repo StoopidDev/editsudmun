@@ -108,7 +108,8 @@ function apply(qc: QueryClient, p: Patch) {
 // goes back and the error is toasted. Refetch after settle, so the server's answer wins. Month counts
 // ('dayCounts') are not patched; they refetch on settle with the other clip lists.
 // scope: writes in the same scope run one after another (move twice in a row keeps both).
-export function useOptimisticAct<A>(fn: (a: A) => Promise<unknown>, patch: (a: A) => Patch, scope?: { id: string }) {
+// plain: no View Transition. A drag has already shown the move, and a transition would snapshot the page and flash the drawer's blurred backdrop.
+export function useOptimisticAct<A>(fn: (a: A) => Promise<unknown>, patch: (a: A) => Patch, scope?: { id: string }, plain = false) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: fn,
@@ -117,7 +118,8 @@ export function useOptimisticAct<A>(fn: (a: A) => Promise<unknown>, patch: (a: A
       const p = patch(a)
       await Promise.all([qc.cancelQueries({ queryKey: ['clips'] }), qc.cancelQueries({ queryKey: ['clip', p.id] })])
       const before = snapshot(qc, p.id)
-      await withTransition(() => apply(qc, p))
+      if (plain) apply(qc, p)
+      else await withTransition(() => apply(qc, p))
       return { before }
     },
     onError: (e: Error, _a, ctx) => {

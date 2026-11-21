@@ -52,7 +52,7 @@ function Results({ q }: { q: string }) {
         )
       })}
       {hasNextPage && (
-        <Button variant="outline" className="self-center tabular-nums max-md:min-h-11" loading={isFetchingNextPage} onClick={() => void fetchNextPage()}>
+        <Button variant="outline" className="self-center tabular-nums max-md:min-h-11 coarse:min-h-11" loading={isFetchingNextPage} onClick={() => void fetchNextPage()}>
           ดูเพิ่ม ({total - data.length} คลิป)
         </Button>
       )}

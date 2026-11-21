@@ -37,7 +37,7 @@ export function Home() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl md:text-4xl font-bold">ยินดีต้อนรับกลับมา</h1>
-        {owner && <Button nativeButton={false} render={<Link viewTransition to={`/clips/new?date=${today}`} />} className="max-md:min-h-11"><Plus />เพิ่มคลิป</Button>}
+        {owner && <Button nativeButton={false} render={<Link viewTransition to={`/clips/new?date=${today}`} />} className="max-md:min-h-11 coarse:min-h-11"><Plus />เพิ่มคลิป</Button>}
       </div>
 
       {attention.data && !attention.isError && (
@@ -67,7 +67,7 @@ export function Home() {
         <section role="status" className="enter flex flex-col gap-1 rounded-card border border-warn-line bg-warn-bg p-3 text-sm" style={{ '--i': 1 } as CSSProperties}>
           <b className="tabular-nums">มี {dying.length} ไฟล์ใกล้ถูกลบ</b>
           {dying.map((f) => (
-            <Link viewTransition key={f.id} to={`/clips/${f.clip_id}`} className="link-action min-w-0 text-xs max-md:min-h-11">
+            <Link viewTransition key={f.id} to={`/clips/${f.clip_id}`} className="link-action min-w-0 text-xs max-md:min-h-11 coarse:min-h-11">
               <span className="truncate tabular-nums">{f.file_name} · {f.clip_title} · ลบใน {f.days} วัน</span>
               <ChevronRight size={14} aria-hidden className="shrink-0" />
             </Link>
@@ -79,7 +79,7 @@ export function Home() {
       <section className="enter flex flex-col gap-2" style={{ '--i': 2 } as CSSProperties}>
         <div className="flex justify-between">
           <h2 className="text-lg tabular-nums">วันนี้ <span className="text-sub">·</span> <DateLabel date={now} relative={false} /></h2>
-          <Link viewTransition to="/calendar" className="link-action text-sm max-md:min-h-11">เปิดปฏิทิน<ChevronRight size={14} aria-hidden /></Link>
+          <Link viewTransition to="/calendar" className="link-action text-sm max-md:min-h-11 coarse:min-h-11">เปิดปฏิทิน<ChevronRight size={14} aria-hidden /></Link>
         </div>
         {week.isPending ? (<Delayed><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Skeleton className="h-28" /><Skeleton className="h-28" /></div></Delayed>) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -102,7 +102,7 @@ export function Home() {
       <section className="enter flex flex-col gap-2" style={{ '--i': 3 } as CSSProperties}>
         <div className="flex justify-between">
           <h2 className="text-lg">สัปดาห์นี้</h2>
-          <span className="text-sm text-sub tabular-nums">{rangeLabel(now)} · <Link viewTransition to="/calendar" className="link-action max-md:min-h-11">ดูทั้งหมด<ChevronRight size={14} aria-hidden /></Link></span>
+          <span className="text-sm text-sub tabular-nums">{rangeLabel(now)} · <Link viewTransition to="/calendar" className="link-action max-md:min-h-11 coarse:min-h-11">ดูทั้งหมด<ChevronRight size={14} aria-hidden /></Link></span>
         </div>
         <div className="grid grid-cols-7 overflow-hidden rounded-card border border-line">
           {days.map((d) => {

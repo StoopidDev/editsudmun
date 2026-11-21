@@ -128,8 +128,8 @@ export function ConfirmDialog(props: {
           <DialogDescription>{props.body}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" className="max-md:min-h-11" onClick={props.onClose} disabled={props.loading}>ยกเลิก</Button>
-          <Button className={props.tone === 'neutral' ? 'max-md:min-h-11' : 'bg-danger-fill text-white hover-pointer:bg-[color-mix(in_oklab,var(--c-danger-fill),black_16%)] max-md:min-h-11'} loading={props.loading}
+          <Button variant="outline" className="max-md:min-h-11 coarse:min-h-11" onClick={props.onClose} disabled={props.loading}>ยกเลิก</Button>
+          <Button className={props.tone === 'neutral' ? 'max-md:min-h-11 coarse:min-h-11' : 'bg-danger-fill text-white hover-pointer:bg-[color-mix(in_oklab,var(--c-danger-fill),black_16%)] max-md:min-h-11 coarse:min-h-11'} loading={props.loading}
             onClick={async () => {
               try { await props.onConfirm(); props.onClose() } catch { /* useAct shows the toast; keep the dialog open */ }
             }}>{props.confirm}</Button>
@@ -143,7 +143,7 @@ export function DayStrip({ value, onChange }: { value: string; onChange: (iso: s
   const [anchor, setAnchor] = useState(() => fromIso(value))
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="icon" className="max-md:min-h-11 max-md:min-w-11" aria-label="สัปดาห์ก่อน" onClick={() => setAnchor(addDays(anchor, -7))}><ChevronLeft /></Button>
+      <Button variant="outline" size="icon" className="max-md:min-h-11 coarse:min-h-11 max-md:min-w-11 coarse:min-w-11" aria-label="สัปดาห์ก่อน" onClick={() => setAnchor(addDays(anchor, -7))}><ChevronLeft /></Button>
       <div className="grid flex-1 grid-cols-7 gap-1">
         {weekDays(anchor).map((d) => {
           const iso = toIso(d)
@@ -155,7 +155,7 @@ export function DayStrip({ value, onChange }: { value: string; onChange: (iso: s
           )
         })}
       </div>
-      <Button variant="outline" size="icon" className="max-md:min-h-11 max-md:min-w-11" aria-label="สัปดาห์ถัดไป" onClick={() => setAnchor(addDays(anchor, 7))}><ChevronRight /></Button>
+      <Button variant="outline" size="icon" className="max-md:min-h-11 coarse:min-h-11 max-md:min-w-11 coarse:min-w-11" aria-label="สัปดาห์ถัดไป" onClick={() => setAnchor(addDays(anchor, 7))}><ChevronRight /></Button>
     </div>
   )
 }

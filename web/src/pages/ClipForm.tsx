@@ -17,12 +17,13 @@ import { dialogOpen, shortcutKey } from '@/lib/shortcut'
 import { Ctx } from '@/lib/upload-state'
 import { useViewUrls, viewables } from '@/lib/viewer'
 import { Button } from '@/components/ui/button'
+import { Segmented } from '@/components/ui/segmented'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { isIsoDate, todayIso } from '@/lib/dates'
 import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from '@/lib/draft'
 import { daysLeft, readyIds, WARN_DAYS } from '@/lib/media'
-import type { ClipInput, ClipMedia } from '@/lib/types'
+import type { Clip, ClipInput, ClipMedia } from '@/lib/types'
 import { useLast } from '@/lib/useLast'
 import { Review } from './Review'
 import { toast } from 'sonner'
@@ -42,9 +43,10 @@ export function ClipForm({ clipId }: { clipId?: string }) {
   return <Form key={clipId ?? key} clipId={clipId} initial={clip ?? undefined} />
 }
 
-function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
+function Form({ clipId, initial }: { clipId?: string; initial?: Clip }) {
   const nav = useNavigate()
-  const [params] = useSearchParams()
+  const paged = (useLocation().state as { paged?: boolean } | null)?.paged
+  const [params, setParams] = useSearchParams()
   const urlDate = params.get('date')
   const explicitDate = urlDate && isIsoDate(urlDate) ? urlDate : null
   const { data: cats = [], isSuccess: catsLoaded } = useCategories()
@@ -74,6 +76,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   // The create in flight, so a drop and a save click make one clip.
   const pending = useRef<Promise<string | null> | null>(null)
   const [deletingFile, setDeletingFile] = useState<ClipMedia | null>(null)
+  const [deletingClip, setDeletingClip] = useState(false)
   const lastFile = useLast(deletingFile)
   const del = useDeleteClip(() => nav(`/calendar?date=${form.date}`, { viewTransition: true }))
   const removeFile = useAct(api.deleteMedia)
@@ -158,6 +161,14 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
     return () => window.removeEventListener('keydown', onKey)
   })
 
+  // Two jobs, two tabs: writing the brief and reviewing what the creator sent. A clip that is waiting for review opens on the review.
+  // The default is fixed at mount, so approving does not switch the tab under the owner.
+  const [defaultTab] = useState<'brief' | 'review'>(initial?.status === 'submitted' ? 'review' : 'brief')
+  const asked = params.get('tab')
+  const tab = !clipId ? 'brief' : asked === 'review' || asked === 'brief' ? asked : defaultTab
+  const setTab = (t: 'brief' | 'review') => setParams((prev) => { prev.set('tab', t); return prev }, { replace: true })
+  const sent = media.filter((m) => m.purpose === 'submission').length
+
   const refs = media.filter((m) => m.purpose === 'reference')
   const refViews = viewables(refs, urls)
   const expiring = media.filter((m) => daysLeft(m.expires_at) <= WARN_DAYS)
@@ -175,20 +186,27 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
   )
 
   return (
-    <div className="flex flex-col gap-3 max-md:pb-16">
-      <div className="flex items-center gap-2">
+    <div className={`flex flex-col gap-3 max-md:pb-16 ${paged ? 'enter' : ''}`}>
+      {/* Stays at the top from md up, so saving is in reach however long the script is (phones have the bar below). */}
+      <div className="flex items-center gap-2 md:sticky md:top-0 md:z-10 md:-my-2 md:bg-bg md:py-2">
         <BackButton fallback={`/calendar?date=${form.date}`} />
-        {initial && clipId && <ClipPager clipId={clipId} date={initial.date} />}
         {/* Always in the layout (invisible while there is nothing to say), so the toolbar never shifts when the first edit is made. */}
         <span role="status" className={`ml-auto text-right text-xs text-sub ${!pristine && !draft ? '' : 'invisible'}`}>
           ยังไม่ได้บันทึก<span className="max-sm:hidden"> · เก็บร่างไว้ในเครื่องนี้แล้ว</span>
         </span>
-        <div className="flex gap-2 max-md:hidden">{actions}</div>
+        <div className={`flex gap-2 max-md:hidden ${tab === 'brief' ? '' : 'invisible'}`}>{actions}</div>
       </div>
       {/* Phones: the save actions sit above the tab bar, in reach of the thumb and on screen however long the script is. Portalled so the page transition does not carry them. */}
-      {createPortal(
+      {tab === 'brief' && createPortal(
         <div data-savebar className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 flex gap-2 border-t border-line bg-bg px-4 py-2 md:hidden [&>:last-child]:flex-1">{actions}</div>,
         document.body,
+      )}
+
+      {clipId && (
+        <div className="max-md:w-full md:self-start">
+          <Segmented label="ส่วนของคลิป" value={tab} onChange={setTab}
+            options={[{ value: 'brief', label: pristine ? 'บรีฟ' : 'บรีฟ • ยังไม่บันทึก' }, { value: 'review', label: `งานที่ส่ง (${sent})` }]} />
+        </div>
       )}
 
       {draft && (
@@ -214,6 +232,9 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
         </p>
       )}
 
+      {tab === 'review' && clipId && <Review clipId={clipId} urls={urls} />}
+
+      {tab === 'brief' && (
       <fieldset disabled={!!draft} className="contents">
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-3">
@@ -221,7 +242,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
             <div className="grid gap-1">
               <Label htmlFor="cat">ประเภท</Label>
               <div className="relative">
-                <select id="cat" value={categoryId} onChange={(e) => set({ category_id: e.target.value })} className="h-9 w-full appearance-none rounded-md border border-line bg-bg pr-8 pl-2.5 text-sm max-md:h-11">
+                <select id="cat" value={categoryId} onChange={(e) => set({ category_id: e.target.value })} className="h-9 w-full appearance-none rounded-md border border-line bg-bg pr-8 pl-2.5 text-sm max-md:h-11 coarse:h-11">
                   {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <ChevronDown size={16} aria-hidden className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sub" />
@@ -234,14 +255,13 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           </div>
           <div className="grid gap-1">
             <Label htmlFor="title">หัวข้อ</Label>
-            <Input id="title" autoFocus={!!params.get('cat')} aria-invalid={titleError} value={form.title} className="font-bold" style={clipId ? { viewTransitionName: `title-${clipId}` } : undefined} onChange={(e) => { set({ title: e.target.value }); setTitleError(false) }} />
+            <Input id="title" autoFocus={!!params.get('cat')} aria-invalid={titleError} value={form.title} className="font-bold" onChange={(e) => { set({ title: e.target.value }); setTitleError(false) }} />
             {titleError && <p role="alert" className="text-xs text-danger">กรุณากรอกหัวข้อ</p>}
           </div>
           <div className="grid gap-1">
             <Label htmlFor="script">สคริปต์</Label>
             <MarkdownField id="script" className={clipId ? 'min-h-60' : 'min-h-96'} value={form.script} onChange={(v) => set({ script: v })} />
           </div>
-          {clipId && <Review clipId={clipId} urls={urls} />}
         </div>
 
         <div className="flex flex-col gap-3">
@@ -251,7 +271,7 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
           </section>
           <section className="flex flex-col gap-2 rounded-card border border-line p-3">
             <h2 className="text-sm font-bold">ไฟล์อ้างอิง ({refs.length})</h2>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:max-lg:grid-cols-4">
               {/* Every file, not capped: the owner must reach each one to delete it (the creator view caps tiles). */}
               {refs.map((f) => (
                 <FileTile key={f.id} file={f} clipDate={form.date} url={urls[f.id]} onDelete={() => setDeletingFile(f)}
@@ -261,12 +281,18 @@ function Form({ clipId, initial }: { clipId?: string; initial?: ClipInput }) {
             <UploadZone clipId={clipId ?? ''} purpose="reference" ensureClipId={ensureClip} parked={parked} setParked={setParked} />
             <p className="text-xs text-sub">ไฟล์อ้างอิงจะถูกลบอัตโนมัติใน {refDays} วัน · ดาวน์โหลดไว้ก่อนได้</p>
           </section>
-          {clipId && <Button variant="outline" className="self-start border-danger text-danger max-md:min-h-11" onClick={() => void del(clipId)}><Trash2 />ลบคลิป</Button>}
+          {clipId && <Button variant="outline" className="self-start border-danger text-danger max-md:min-h-11 coarse:min-h-11" onClick={() => setDeletingClip(true)}><Trash2 />ลบคลิป</Button>}
         </div>
       </div>
       </fieldset>
+      )}
+
+      {/* Previous and next clip of the day sit at the end of the page, where the eye is after reading one. */}
+      {initial && clipId && <div className="flex justify-end"><ClipPager clipId={clipId} date={initial.date} /></div>}
 
       {lb.node}
+      <ConfirmDialog open={deletingClip} title={`ลบคลิป “${form.title}”?`} body="หลังลบ กด “เลิกทำ” ได้ทันทีถ้าลบผิด" confirm="ลบคลิป"
+        onConfirm={() => clipId && del(clipId)} onClose={() => setDeletingClip(false)} />
       {copying && clipId && <CopyDialog clip={{ id: clipId, title: form.title, date: form.date }} onClose={() => setCopying(false)} />}
       <ConfirmDialog open={!!deletingFile} title={`ลบไฟล์ “${lastFile?.file_name}”?`} body="ลบแล้วกู้คืนไม่ได้" confirm="ลบ"
         onConfirm={() => deletingFile && removeFile.mutateAsync(deletingFile.id)} loading={removeFile.isPending} onClose={() => setDeletingFile(null)} />
