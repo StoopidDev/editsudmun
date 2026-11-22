@@ -194,17 +194,30 @@ body {
 }
 
 /* Feedback on pointer-down, not on click (apple-design §1). */
+/* Only transform and opacity transition (compositor-only). Colour changes on press are instant. */
 @utility press {
-  transition: transform var(--duration-press) var(--ease-out-quint), box-shadow 150ms var(--ease-out-quint), background-color var(--duration-state), border-color 150ms, color 150ms, opacity var(--duration-state);
+  transition: transform var(--duration-press) var(--ease-out-quint), opacity var(--duration-state);
   &:active:not(:disabled):not([aria-haspopup]) { transform: scale(0.97); }
 }
 
+/* Shimmer band is a ::after moved with transform, not a background-position animation. */
 @utility skeleton {
-  background: linear-gradient(90deg, var(--c-surface) 25%, var(--c-grid) 50%, var(--c-surface) 75%) 0 0 / 200% 100%;
-  animation: shimmer 1.4s linear infinite;
+  background: var(--c-surface);
   border-radius: var(--radius-card);
+  overflow: hidden;
+  isolation: isolate;
+  &:not(.absolute) { position: relative; }
+  &::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent 25%, var(--c-grid) 50%, transparent 75%);
+    transform: translateX(-100%);
+    animation: shimmer 1.4s linear infinite;
+  }
 }
-@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes shimmer { to { transform: translateX(100%); } }
+
+/* Touch screens of any width (an iPad is wider than md but still a finger): pair every max-md: touch-target class with coarse:. */
+@custom-variant coarse (@media (pointer: coarse));
 
 /* One hover language: a 150 ms tint, no lift, no shadow jump. */
 @custom-variant hover-pointer {
@@ -212,27 +225,54 @@ body {
     &:hover { @slot; }
   }
 }
-/* Inset shadow, not background: fills (brand, today, surface) keep their colour. Transition list matches press so either utility yields the same result. */
+/* Tint is a ::before behind the content (isolation keeps it under the text), faded by opacity; fills (brand, today, surface) keep their colour. Transition list matches press so either utility yields the same result. */
 @utility hover-tint {
-  transition: transform var(--duration-press) var(--ease-out-quint), box-shadow 150ms var(--ease-out-quint), background-color var(--duration-state), border-color 150ms, color 150ms, opacity var(--duration-state);
-  @media (hover: hover) and (pointer: fine) { &:hover { box-shadow: inset 0 0 0 100vmax color-mix(in oklab, var(--c-ink) 6%, transparent); } }
+  transition: transform var(--duration-press) var(--ease-out-quint), opacity var(--duration-state);
+  &:not(.absolute) { position: relative; }
+  isolation: isolate;
+  &::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+    background: color-mix(in oklab, var(--c-ink) 6%, transparent);
+    opacity: 0; transition: opacity var(--duration-state);
+  }
+  @media (hover: hover) and (pointer: fine) { &:hover::before { opacity: 1; } }
 }
 
-/* Calendar card: border darkens, 2 px lift and a tinted shadow. Pointer devices only; press (utility above) still scales down. */
+/* Calendar card: border darkens, 2 px lift and a tinted shadow. Pointer devices only; press (utility above) still scales down.
+   Border and shadow are pseudo-elements faded by opacity, so only transform and opacity transition. */
 @utility card-hover {
-  transition: transform var(--duration-state) var(--ease-out-quint), box-shadow var(--duration-state) var(--ease-out-quint), border-color var(--duration-state), background-color var(--duration-state);
+  transition: transform var(--duration-state) var(--ease-out-quint), opacity var(--duration-state);
+  &:not(.absolute) { position: relative; }
+  isolation: isolate;
+  &::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+    box-shadow: 0 6px 14px -6px color-mix(in oklab, var(--c-ink) 28%, transparent);
+    opacity: 0; transition: opacity var(--duration-state) var(--ease-out-quint);
+  }
+  &::after {
+    content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-ink) 55%, transparent);
+    opacity: 0; transition: opacity var(--duration-state);
+  }
   @media (hover: hover) and (pointer: fine) {
-    &:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--c-ink) 55%, transparent); box-shadow: 0 6px 14px -6px color-mix(in oklab, var(--c-ink) 28%, transparent); }
+    &:hover { transform: translateY(-2px); }
+    &:hover::before, &:hover::after { opacity: 1; }
   }
   &:active { transform: translateY(0) scale(0.985); }
 }
 
-/* Grid cell and day column: background tint and a brand outline fade in. Inset, so layout never moves. */
+/* Grid cell and day column: background tint and a brand outline fade in (pseudo-element, opacity only). Inset, so layout never moves. */
 @utility cell-hover {
-  transition: box-shadow var(--duration-state) var(--ease-out-quint), background-color var(--duration-state), transform var(--duration-press) var(--ease-out-quint);
-  @media (hover: hover) and (pointer: fine) {
-    &:hover { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-brand) 55%, transparent), inset 0 0 0 100vmax color-mix(in oklab, var(--c-brand) 7%, transparent); }
+  transition: transform var(--duration-press) var(--ease-out-quint), opacity var(--duration-state);
+  &:not(.absolute) { position: relative; }
+  isolation: isolate;
+  &::before {
+    content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c-brand) 55%, transparent);
+    background: color-mix(in oklab, var(--c-brand) 7%, transparent);
+    opacity: 0; transition: opacity var(--duration-state);
   }
+  @media (hover: hover) and (pointer: fine) { &:hover::before { opacity: 1; } }
   &:active { transform: scale(0.99); }
 }
 
@@ -242,7 +282,7 @@ body {
   color: var(--c-brand-text);
   text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px;
   border-radius: var(--radius-sm);
-  transition: text-decoration-thickness 120ms, color var(--duration-state), transform var(--duration-press) var(--ease-out-quint);
+  transition: transform var(--duration-press) var(--ease-out-quint);
   @media (hover: hover) and (pointer: fine) { &:hover { text-decoration-thickness: 2px; } }
   &:active { transform: scale(0.97); }
   &:focus-visible { outline: 2px solid var(--c-brand); outline-offset: 2px; }
@@ -256,6 +296,7 @@ body {
 
 /* Entry: fade and rise 4 px. Set --i on the element (0, 1, 2 ...) to stagger by 30 ms, capped at 8 steps. */
 @utility enter {
+  will-change: transform, opacity; /* keeps the animation on the compositor when it overlaps other layers (Lighthouse) */
   animation: enter 200ms var(--ease-out-quint) backwards; /* backwards, not both: a forwards fill would pin transform and block card-hover's lift */
   animation-delay: calc(min(var(--i, 0), 8) * 30ms);
 }
@@ -273,12 +314,17 @@ body {
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
   }
-  .skeleton { animation: none; }
+  .skeleton::after { animation: none; }
 }
+
+/* Sonner sets its own system font; toasts use the app font like everything else. */
+[data-sonner-toaster], [data-sonner-toast] { font-family: var(--font-sans) !important; }
 
 /* Sonner offsets toasts only at <=600px; the tab bar runs to 767px. */
 @media (max-width: 767px) {
   [data-sonner-toaster][data-y-position="bottom"] { bottom: 80px !important; }
+  /* The clip form adds a save bar above the tab bar; toasts must not cover it. */
+  body:has([data-savebar]) [data-sonner-toaster][data-y-position="bottom"] { bottom: 144px !important; }
 }
 
 @keyframes row-out { to { opacity: 0; } }

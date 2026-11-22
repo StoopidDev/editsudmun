@@ -6,9 +6,10 @@ import { calendarView, dayLabel, isIsoDate, monthGrid, rangeLabel, weekDays } fr
 import { canWithdraw, chunk, daysLeft, expiresBeforeClip, formatDuration, formatSize, isPlayable, MULTIPART_AT, PART_BYTES, partNumbers, progressLabel, roundCount, shownTiles, TILE_CAP, uploadProblem, uploadStatus, withdrawMinutesLeft, withRounds } from './media'
 import { searchClips, snippet } from './search'
 import { attentionOf } from './attention'
-import { swapInDay } from './order'
+import { moveInDay, moveToDay, swapInDay } from './order'
 import { contrast, nextColor, readableOn } from './color'
 import { clearDraft, isBlank, readDraft, sameBrief, writeDraft } from './draft'
+import { noteToMarkdown, plainPreview } from './markdown'
 import type { Clip, ClipMedia } from './types'
 
 const media = (over: Partial<ClipMedia>): ClipMedia => ({
@@ -238,6 +239,13 @@ describe('order', () => {
     expect(swapInDay(r, 'a', -1)).toEqual(r)
     expect(swapInDay(r, 'c', 1)).toEqual(r)
   })
+  it('moves a clip to any place in its day and renumbers the day', () => {
+    const r = [{ id: 'a', date: 'd1', position: 0 }, { id: 'b', date: 'd1', position: 1 }, { id: 'c', date: 'd1', position: 5 }, { id: 'z', date: 'd2', position: 0 }]
+    expect(moveInDay(r, 'a', 2).map((x) => [x.id, x.position])).toEqual([['b', 0], ['c', 1], ['a', 2], ['z', 0]])
+    expect(moveInDay(r, 'c', 0).map((x) => x.id)).toEqual(['c', 'a', 'b', 'z'])
+    expect(moveInDay(r, 'b', 1).map((x) => x.id)).toEqual(['a', 'b', 'c', 'z'])
+    expect(moveToDay(r, 'a', 'd2').map((x) => [x.id, x.date, x.position])).toEqual([['b', 'd1', 1], ['c', 'd1', 5], ['z', 'd2', 0], ['a', 'd2', 1]])
+  })
   it('moves down and keeps days in order', () => {
     const r = [{ id: 'b', date: 'd2', position: 1 }, { id: 'a', date: 'd2', position: 0 }, { id: 'z', date: 'd1', position: 5 }]
     expect(swapInDay(r, 'a', 1).map((x) => x.id)).toEqual(['z', 'b', 'a'])
@@ -278,6 +286,26 @@ describe('shownTiles', () => {
   it('leaves the sixth tile for "+n" when there are more files', () => {
     const files = [1, 2, 3, 4, 5, 6, 7, 8]
     expect(shownTiles(files)).toEqual([1, 2, 3, 4, 5])
+  })
+})
+
+describe('markdown', () => {
+  it('turns plain note lines into bullets and drops empty ones', () => {
+    expect(noteToMarkdown('ห้ามใช้เพลง\n\n  ใช้ฟอนต์  \n')).toBe('- ห้ามใช้เพลง\n- ใช้ฟอนต์')
+  })
+  it('leaves lines that are already list items, headings or quotes alone', () => {
+    expect(noteToMarkdown('- a\n* b\n+ c\n1. d\n2) e\n# f\n> g')).toBe('- a\n* b\n+ c\n1. d\n2) e\n# f\n> g')
+  })
+  it('keeps a #hashtag line as its own bullet instead of joining the bullet above', () => {
+    expect(noteToMarkdown('ห้ามใช้เพลง\n#โปรโมชั่น')).toBe('- ห้ามใช้เพลง\n- #โปรโมชั่น')
+  })
+  it('strips Markdown markers for previews', () => {
+    expect(plainPreview('**หนา** และ *เอียง*')).toBe('หนา และ เอียง')
+    expect(plainPreview('# หัวข้อ\n- ข้อหนึ่ง')).toBe('หัวข้อ\nข้อหนึ่ง')
+    expect(plainPreview('[ลิงก์](https://example.com)')).toBe('ลิงก์')
+  })
+  it('keeps underscores and stars that are not emphasis', () => {
+    expect(plainPreview('snake_case a * b')).toBe('snake_case a * b')
   })
 })
 

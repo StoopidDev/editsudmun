@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState, type Dispatch, type DragEvent, type SetStateAction } from 'react'
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import { createPortal } from 'react-dom'
 import { Pause, Play, RotateCw, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ACCEPT, progressLabel, uploadProblem, uploadStatus } from '@/lib/media'
 import type { ClipMedia } from '@/lib/types'
+import { dialogOpen } from '@/lib/shortcut'
 import { useUploads, type UploadRow } from '@/lib/upload-state'
 
 const COPY = {
-  reference: { title: 'ลากรูปหรือวิดีโอมาวาง หรือคลิกเพื่อเลือกไฟล์', hint: 'รูปภาพ และวิดีโอ MP4 / MOV ไม่เกิน 2 GB' },
-  submission: { title: 'ลากไฟล์มาวาง หรือ คลิกเพื่อเลือกไฟล์', hint: 'ถ้าเน็ตหลุดระหว่างอัป จะอัปต่อจากเดิมได้' },
+  reference: { title: 'ลากรูปหรือวิดีโอมาวาง หรือคลิกเพื่อเลือกไฟล์', hint: 'รูปภาพ และวิดีโอ MP4 / MOV ไม่เกิน 2 GB', drop: 'วางไฟล์เพื่อแนบเป็นไฟล์อ้างอิง' },
+  submission: { title: 'ลากไฟล์มาวาง หรือ คลิกเพื่อเลือกไฟล์', hint: 'ถ้าเน็ตหลุดระหว่างอัป จะอัปต่อจากเดิมได้', drop: 'วางไฟล์เพื่อส่งงาน' },
 } as const
 
 // Copy for a file refused before upload (Figma 103:2720, 102:2384).
@@ -30,7 +32,9 @@ export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setPark
   setParked?: Dispatch<SetStateAction<File[]>>
 }) {
   const { rows, add, pause, retry, remove } = useUploads(clipId, purpose)
+  // A file is being dragged over the window: the whole page is the drop target, not only the small zone.
   const [over, setOver] = useState(false)
+  const depth = useRef(0)
   const [refused, setRefused] = useState<Refused[]>([])
   const [leaving, setLeaving] = useState<UploadRow[]>([])
   const [announce, setAnnounce] = useState('')
@@ -91,14 +95,36 @@ export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setPark
 
   const cancel = (id: string) => { cancelled.current.add(id); remove(id) }
 
+  // Bound on every render so the drop sees the current clip id. dragenter and dragleave fire for every element crossed, so they are counted.
+  useEffect(() => {
+    const files = (e: DragEvent) => !!e.dataTransfer?.types.includes('Files')
+    // A disabled form (draft banner) or an open dialog takes no files, but the drop is still cancelled: otherwise the browser opens the file and leaves the app.
+    const live = (e: DragEvent) => files(e) && !inputRef.current?.matches(':disabled') && !dialogOpen()
+    const enter = (e: DragEvent) => { if (live(e)) { depth.current++; setOver(true) } }
+    const leave = (e: DragEvent) => { if (files(e) && (depth.current = Math.max(0, depth.current - 1)) === 0) setOver(false) }
+    const hover = (e: DragEvent) => { if (files(e)) e.preventDefault() }
+    const drop = (e: DragEvent) => {
+      if (!files(e)) return
+      e.preventDefault()
+      depth.current = 0
+      setOver(false)
+      if (live(e) && e.dataTransfer) void onFiles(e.dataTransfer.files)
+    }
+    window.addEventListener('dragenter', enter)
+    window.addEventListener('dragleave', leave)
+    window.addEventListener('dragover', hover)
+    window.addEventListener('drop', drop)
+    return () => {
+      window.removeEventListener('dragenter', enter)
+      window.removeEventListener('dragleave', leave)
+      window.removeEventListener('dragover', hover)
+      window.removeEventListener('drop', drop)
+    }
+  })
+
   return (
     <div className="flex flex-col gap-2">
-      <label
-        onDragOver={(e: DragEvent) => { e.preventDefault(); setOver(true) }}
-        onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false) }}
-        onDrop={(e: DragEvent) => { e.preventDefault(); setOver(false); void onFiles(e.dataTransfer.files) }}
-        className={`flex min-h-15 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-card border border-dashed bg-surface px-3 py-2 text-center text-xs transition-colors duration-200 focus-within:ring-2 focus-within:ring-brand/50 ${over ? 'border-brand bg-today' : 'border-line'}`}
-      >
+      <label className="flex min-h-15 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-card border border-dashed border-line bg-surface px-3 py-2 text-center text-xs transition-colors duration-200 hover-pointer:border-brand hover-pointer:bg-today focus-within:ring-2 focus-within:ring-brand/50">
         <input
           ref={inputRef}
           type="file"
@@ -148,6 +174,17 @@ export function UploadZone({ clipId, purpose, ensureClipId, parked = [], setPark
             </div>
           ))}
         </div>
+      )}
+
+      {over && createPortal(
+        <div className="pointer-events-none fixed inset-0 z-50 grid place-items-center bg-black/40 p-6 backdrop-blur-sm duration-150 animate-in fade-in-0">
+          <div className="flex w-full max-w-md flex-col items-center gap-2 rounded-xl border-2 border-dashed border-brand bg-bg p-10 text-center duration-150 animate-in zoom-in-95">
+            <Upload size={32} className="text-brand" aria-hidden />
+            <b className="text-lg text-ink">{COPY[purpose].drop}</b>
+            <span className="text-sm text-sub">{COPY[purpose].hint}</span>
+          </div>
+        </div>,
+        document.body,
       )}
 
       <div aria-live="polite" className="sr-only">{announce}</div>

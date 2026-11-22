@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { DateLabel } from '@/components/DateLabel'
 import { fromIso } from '@/lib/dates'
 import { snippet } from '@/lib/search'
+import { plainPreview } from '@/lib/markdown'
 
 export function Search() {
   const [params, setParams] = useSearchParams()
@@ -16,8 +17,8 @@ export function Search() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* The full sidebar starts at lg, so this input is the only search box below it. */}
-      <Input key={q} className="lg:hidden" aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
+      {/* The results page keeps its own input at every width; the sidebar field opens the palette. */}
+      <Input key={q} aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
       {!q && <EmptyState icon={SearchIcon} title="ค้นหาคลิป" hint="พิมพ์ชื่อคลิปหรือคำในสคริปต์ แล้วกด Enter" />}
       {q && <Results key={q} q={q} />}
     </div>
@@ -38,7 +39,7 @@ function Results({ q }: { q: string }) {
       )}
       {data.map((c, i) => {
         const hay = [c.script, c.note, c.title].find((t) => t.toLowerCase().includes(q.trim().toLowerCase())) ?? c.script
-        const s = snippet(hay, q)
+        const s = snippet(plainPreview(hay), q)
         const d = fromIso(c.date)
         return (
           <div key={c.id} className="enter" style={{ '--i': i } as CSSProperties}>
@@ -51,7 +52,7 @@ function Results({ q }: { q: string }) {
         )
       })}
       {hasNextPage && (
-        <Button variant="outline" className="self-center tabular-nums max-md:min-h-11" loading={isFetchingNextPage} onClick={() => void fetchNextPage()}>
+        <Button variant="outline" className="self-center tabular-nums max-md:min-h-11 coarse:min-h-11" loading={isFetchingNextPage} onClick={() => void fetchNextPage()}>
           ดูเพิ่ม ({total - data.length} คลิป)
         </Button>
       )}

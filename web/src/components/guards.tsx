@@ -1,10 +1,11 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useMe } from '@/api/queries-auth'
+import { Splash } from '@/components/Splash'
 
 export function RequireAuth() {
   const { data: me, isPending } = useMe()
   const location = useLocation()
-  if (isPending) return null
+  if (isPending) return <Splash />
   return me ? <Outlet /> : <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
 }
 

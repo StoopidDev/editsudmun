@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import { ArrowLeft, FileText, Play } from 'lucide-react'
 import * as api from '@/api/index'
 import { useAct, useClip, useMe, useMedia } from '@/api/queries'
@@ -11,6 +11,8 @@ import { useViewUrls, viewables } from '@/lib/viewer'
 import { UploadZone } from '@/components/UploadZone'
 import { Button } from '@/components/ui/button'
 import { DateLabel } from '@/components/DateLabel'
+import { Markdown } from '@/components/Markdown'
+import { noteToMarkdown } from '@/lib/markdown'
 import { sentAt } from '@/lib/dates'
 import { canWithdraw, daysLeft, formatSize, readyIds, roundCount, shownTiles, TILE_CAP, WITHDRAW_MS, withRounds, withdrawMinutesLeft } from '@/lib/media'
 import { ClipForm } from './ClipForm'
@@ -26,13 +28,14 @@ function NoteBox({ note, className = '' }: { note: string; className?: string })
   return (
     <section className={`rounded-card border border-note-line bg-note p-3 ${className}`}>
       <h2 className="mb-1 flex items-center gap-1.5 text-sm font-bold"><FileText size={14} aria-hidden />หมายเหตุ</h2>
-      <ul className="max-w-[65ch] list-disc pl-4 text-base leading-6.5">{note.split('\n').filter(Boolean).map((line, i) => <li key={i}>{line}</li>)}</ul>
+      <Markdown text={noteToMarkdown(note)} className="max-w-[65ch] text-base leading-6.5" />
     </section>
   )
 }
 
 function CreatorDetail({ id }: { id: string }) {
   const { data: me } = useMe()
+  const paged = (useLocation().state as { paged?: boolean } | null)?.paged
   const { data: clip, isPending } = useClip(id)
   const { data: media = [] } = useMedia(id)
   const urls = useViewUrls(readyIds(media))
@@ -63,7 +66,7 @@ function CreatorDetail({ id }: { id: string }) {
       </div>
     </Delayed>
   )
-  if (!clip) return <p>ไม่พบคลิป <Link viewTransition to="/calendar" className="link-action max-md:min-h-11"><ArrowLeft size={14} aria-hidden />กลับปฏิทิน</Link></p>
+  if (!clip) return <p>ไม่พบคลิป <Link viewTransition to="/calendar" className="link-action max-md:min-h-11 coarse:min-h-11"><ArrowLeft size={14} aria-hidden />กลับปฏิทิน</Link></p>
 
   const refs = media.filter((m) => m.purpose === 'reference')
   const rounds = withRounds(media.filter((m) => m.purpose === 'submission'))
@@ -75,11 +78,8 @@ function CreatorDetail({ id }: { id: string }) {
   const anyWithdraw = !!me && rounds.some((m) => canWithdraw(m, me.id, now))
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <BackButton fallback={`/calendar?date=${clip.date}`} />
-        <ClipPager clipId={id} date={clip.date} />
-      </div>
+    <div key={id} className={`flex flex-col gap-3 ${paged ? 'enter' : ''}`}>
+      <div className="flex"><BackButton fallback={`/calendar?date=${clip.date}`} /></div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[1fr_360px]">
         <div className="flex flex-col gap-3 max-lg:contents">
@@ -94,7 +94,7 @@ function CreatorDetail({ id }: { id: string }) {
           )}
           <section className="rounded-card border border-line p-4 max-lg:order-2">
             <h2 className="mb-2 text-sm font-bold text-sub">สคริปต์</h2>
-            <p className="max-w-[65ch] text-xl leading-8.5 whitespace-pre-wrap">{clip.script}</p>
+            <Markdown text={clip.script} className="max-w-[65ch] text-xl leading-8.5" />
           </section>
         </div>
 
@@ -140,7 +140,7 @@ function CreatorDetail({ id }: { id: string }) {
                     {view >= 0 && (
                       <button type="button" aria-label={`เปิด ${m.file_name}`}
                         onClick={(e) => lb.openAt(subViews, view, e.currentTarget)}
-                        className="press flex size-8 max-md:min-h-11 max-md:min-w-11 shrink-0 items-center justify-center rounded-full bg-today text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
+                        className="press flex size-8 max-md:min-h-11 coarse:min-h-11 max-md:min-w-11 coarse:min-w-11 shrink-0 items-center justify-center rounded-full bg-today text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
                         <Play size={14} />
                       </button>
                     )}
@@ -157,7 +157,7 @@ function CreatorDetail({ id }: { id: string }) {
                     // Collapses instead of unmounting, so the withdraw button fades out when its window closes.
                     <div inert={!open} className={`grid transition-[grid-template-rows,opacity] duration-200 ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
                       <div className="min-h-0 overflow-hidden">
-                        <Button variant="outline" className="w-full border-danger text-danger tabular-nums max-md:min-h-11"
+                        <Button variant="outline" className="w-full border-danger text-danger tabular-nums max-md:min-h-11 coarse:min-h-11"
                           loading={withdraw.isPending} onClick={() => withdraw.mutate(m.id)}>
                           ถอนไฟล์นี้ (เหลือ {left} นาที)
                         </Button>
@@ -173,6 +173,7 @@ function CreatorDetail({ id }: { id: string }) {
           </section>
         </div>
       </div>
+      <div className="flex justify-end"><ClipPager clipId={id} date={clip.date} /></div>
       {lb.node}
     </div>
   )

@@ -4,7 +4,8 @@ import { useQuery, type Query } from '@tanstack/react-query'
 import * as api from './auth'
 
 // Signed in or out only changes at login and logout (logout clears the cache), so it never goes stale.
-export const useMe = () => useQuery({ queryKey: ['me'], queryFn: async () => api.me(), staleTime: Infinity })
+export const meQuery = { queryKey: ['me'], queryFn: async () => api.me(), staleTime: Infinity }
+export const useMe = () => useQuery(meQuery)
 
 // Login refreshes everything except playback URLs: re-signing would restart a playing video.
 export const notViews = { predicate: (q: Query) => q.queryKey[0] !== 'view' }

@@ -124,6 +124,11 @@ export async function moveClip(id: string, dir: -1 | 1) {
   ok(await supabase.rpc('move_clip', { p_id: id, p_dir: dir }))
 }
 
+// shortcut: one move_clip call per step, so a long drag is several requests and is not atomic; add a bulk reorder RPC when days hold dozens of clips.
+export async function moveClipBy(id: string, steps: number) {
+  for (let i = 0; i < Math.abs(steps); i++) await moveClip(id, steps < 0 ? -1 : 1)
+}
+
 export async function copyClip(id: string, date: string): Promise<Clip> {
   checkDate(date)
   return narrowClip(ok(await supabase.rpc('copy_clip', { p_id: id, p_date: date })))

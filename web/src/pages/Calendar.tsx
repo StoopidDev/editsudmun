@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { addDays, addMonths, isSameMonth } from 'date-fns'
 import { ArrowLeft, ArrowRight, Clapperboard, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
-import { clipsQuery, dayCountsQuery, useCategories, useClips, useDayCounts, useMe } from '@/api/queries'
+import * as api from '@/api/index'
+import { clipsQuery, dayCountsQuery, useCategories, useClips, useDayCounts, useMe, useOptimisticAct } from '@/api/queries'
 import { ClipCard } from '@/components/ClipCard'
 import { DayDrawer } from '@/components/DayDrawer'
 import { EmptyState } from '@/components/EmptyState'
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Segmented } from '@/components/ui/segmented'
 import { readableOn } from '@/lib/color'
 import { calendarView, dayLabel, fullDate, monthGrid, monthLabel, monthShort, rangeLabel, rememberView, toIso, todayIso, weekDays } from '@/lib/dates'
+import { moveInDay, moveToDay } from '@/lib/order'
 import type { ClipCardRow, ClipDayCount } from '@/lib/types'
 
 const MAX_CARDS = 4
@@ -56,19 +58,19 @@ export function Calendar() {
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex">
-            <Button variant="outline" size="icon" className="rounded-r-none max-md:size-11" aria-label="ก่อนหน้า" onClick={() => step(-1)}><ChevronLeft /></Button>
-            <Button variant="outline" size="icon" className="-ml-px rounded-l-none max-md:size-11" aria-label="ถัดไป" onClick={() => step(1)}><ChevronRight /></Button>
+            <Button variant="outline" size="icon" className="rounded-r-none max-md:size-11 coarse:size-11" aria-label="ก่อนหน้า" onClick={() => step(-1)}><ChevronLeft /></Button>
+            <Button variant="outline" size="icon" className="-ml-px rounded-l-none max-md:size-11 coarse:size-11" aria-label="ถัดไป" onClick={() => step(1)}><ChevronRight /></Button>
           </div>
-          <h2 className="text-lg font-semibold tabular-nums md:w-64">{view === 'week' ? rangeLabel(date) : monthLabel(date)}</h2>
+          <h2 className="text-lg font-semibold tabular-nums md:w-48">{view === 'week' ? rangeLabel(date) : monthLabel(date)}</h2>
           {/* Always in the layout (hidden when today is on screen), so the toolbar never shifts while stepping. */}
           <button type="button" onClick={backToToday} disabled={!away} tabIndex={away ? 0 : -1} aria-hidden={!away}
-            className={`link-action text-sub! text-sm max-md:min-h-11 ${away ? '' : 'invisible'}`}>
+            className={`link-action text-sub! text-sm max-md:min-h-11 coarse:min-h-11 ${away ? '' : 'invisible'}`}>
             {!todayLater && <ArrowLeft size={14} aria-hidden />}กลับไปวันนี้{todayLater && <ArrowRight size={14} aria-hidden />}
           </button>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Segmented label="มุมมองปฏิทิน" value={view} onChange={(v) => go({ view: v })} options={[{ value: 'week', label: 'สัปดาห์' }, { value: 'month', label: 'เดือน' }]} />
-          {owner && <Button nativeButton={false} render={<Link viewTransition to={`/clips/new?date=${dateIso}`} />} className="max-md:hidden"><Plus />เพิ่มคลิป</Button>}
+          {owner && <Button nativeButton={false} render={<Link viewTransition to={`/clips/new?date=${dateIso}`} />}><Plus />เพิ่มคลิป</Button>}
         </div>
       </div>
 
@@ -85,11 +87,6 @@ export function Calendar() {
       </div>
 
       {drawer && <DayDrawer date={drawer} onClose={() => setDrawer(null)} />}
-      {owner && (
-        <Link viewTransition to={`/clips/new?date=${dateIso}`} aria-label="เพิ่มคลิป" className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-md md:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
-          <Plus />
-        </Link>
-      )}
     </div>
   )
 }
@@ -106,9 +103,10 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
           const sel = iso === selIso
           const hasClips = p.forDay(iso).length > 0
           return (
-            <button key={d.getDay()} type="button" aria-pressed={sel} aria-label={fullDate(d)} onClick={() => p.onPick(iso)}
+            <button key={d.getDay()} type="button" aria-pressed={sel} aria-label={`${SHORT_DAYS[(d.getDay() + 6) % 7]} ${d.getDate()} (${fullDate(d)})`} onClick={() => p.onPick(iso)}
               className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-15.5 min-w-0 flex-col items-center justify-center gap-0.5 rounded-card ${sel ? 'bg-brand text-white' : 'bg-surface'} ${iso === today && !sel ? 'ring-1 ring-brand' : ''}`}>
-              <span className="text-xs">{SHORT_DAYS[(d.getDay() + 6) % 7]}</span>
+              {/* The space is not drawn (flex column) but makes the text "จ 16", matching the start of the aria-label. */}
+              <span className="text-xs">{SHORT_DAYS[(d.getDay() + 6) % 7]}</span>{' '}
               <b className="text-base tabular-nums">{d.getDate()}</b>
               <span className={`size-1.25 rounded-full ${hasClips ? (sel ? 'bg-white' : 'bg-brand') : ''}`} />
             </button>
@@ -125,7 +123,7 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
         <EmptyState icon={Clapperboard} title="ยังไม่มีคลิปในวันนี้" hint={p.owner ? 'กด “เพิ่มคลิป” ด้านล่างเพื่อเริ่มวางแผน' : 'เจ้าของยังไม่ได้ใส่งานของวันนี้'} />
       )}
       {p.owner && (
-        <Link viewTransition to={`/clips/new?date=${selIso}`} className="max-md:min-h-11 rounded-card border border-dashed border-line py-3 text-center text-sm text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
+        <Link viewTransition to={`/clips/new?date=${selIso}`} className="max-md:min-h-11 coarse:min-h-11 rounded-card border border-dashed border-line press hover-tint hover-pointer:border-brand hover-pointer:text-brand-text py-3 text-center text-sm text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
       )}
     </div>
   )
@@ -133,6 +131,25 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
 
 function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => ClipCardRow[]; owner: boolean; onOpen: (iso: string) => void }) {
   const today = todayIso()
+  // The owner drags a card to another place in its day, or onto another day's column (it lands at the end of that day).
+  // Native drag and drop: the browser draws the dragged card, and the week grid only shows on wide screens.
+  const [drag, setDrag] = useState<{ id: string; date: string; from: number } | null>(null)
+  const [over, setOver] = useState<string | null>(null)
+  const reorder = useOptimisticAct(({ id, from, to }: { id: string; from: number; to: number }) => api.moveClipBy(id, to - from), ({ id, to }) => ({
+    id,
+    rows: (rows) => moveInDay(rows, id, to),
+  }), { id: 'clips-order' }, true)
+  const toDay = useOptimisticAct(({ id, date }: { id: string; date: string }) => api.updateClip(id, { date }), ({ id, date }) => ({
+    id,
+    rows: (rows) => moveToDay(rows, id, date),
+    set: { date },
+  }), { id: 'clips-order' }, true)
+  const drop = (iso: string, to?: number) => {
+    if (drag && drag.date !== iso) toDay.mutate({ id: drag.id, date: iso })
+    else if (drag && to !== undefined && to !== drag.from) reorder.mutate({ id: drag.id, from: drag.from, to })
+    setDrag(null)
+    setOver(null)
+  }
   return (
     <div className="grid grid-cols-7 gap-2">
       {p.days.map((d) => {
@@ -140,13 +157,21 @@ function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => Clip
         const list = p.forDay(iso)
         const isToday = iso === today
         return (
-          <section key={d.getDay()} className={`flex flex-col gap-2 rounded-card p-2 min-h-[70vh] ${isToday ? 'border border-brand bg-today' : 'bg-surface'}`}>
-            <button onClick={() => p.onOpen(iso)} className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand rounded-[calc(var(--radius-card)-0.5rem)] py-1 text-center ${isToday ? 'bg-brand text-white' : ''}`}>
+          <section key={d.getDay()} onDragOver={(e) => { if (drag) { e.preventDefault(); setOver(iso) } }} onDrop={() => drop(iso)}
+            className={`flex flex-col gap-2 rounded-[calc(var(--radius-card)+0.5rem)] p-2 min-h-[70vh] ${isToday ? 'border border-brand bg-today' : 'bg-surface'} ${drag && over === iso && drag.date !== iso ? 'outline-2 outline-brand' : ''}`}>
+            <button onClick={() => p.onOpen(iso)} className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand rounded-card py-1 text-center ${isToday ? 'bg-brand text-white' : ''}`}>
               <span className="text-xs">{dayLabel(d)}</span><br /><b className="text-2xl tabular-nums">{d.getDate()}</b><br />
               <span className="text-xs tabular-nums">{list.length} คลิป</span>
             </button>
             {p.loading && <Delayed><Skeleton className="h-20" /></Delayed>}
-            {list.slice(0, MAX_CARDS).map((c, i) => <ClipCard key={c.id} clip={c} enterIndex={i} square />)}
+            {list.slice(0, MAX_CARDS).map((c, i) => (
+              <div key={c.id} draggable={p.owner} className={drag?.id === c.id ? 'opacity-40' : ''}
+                onDragStart={(e) => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', c.title); setDrag({ id: c.id, date: iso, from: i }) }}
+                onDragEnd={() => { setDrag(null); setOver(null) }}
+                onDrop={(e) => { e.stopPropagation(); drop(iso, i) }}>
+                <ClipCard clip={c} enterIndex={i} square />
+              </div>
+            ))}
             {list.length > MAX_CARDS && (
               <button onClick={() => p.onOpen(iso)} className="link-action self-start text-xs tabular-nums">ดูเพิ่มอีก {list.length - MAX_CARDS} คลิป<ChevronRight size={12} aria-hidden /></button>
             )}
@@ -154,7 +179,7 @@ function Week(p: { days: Date[]; loading: boolean; forDay: (iso: string) => Clip
               <EmptyState title="ยังไม่มีคลิป" hint={p.owner ? undefined : 'ไม่มีงานในวันนี้'} className="py-4" />
             )}
             {p.owner && (
-              <Link viewTransition to={`/clips/new?date=${iso}`} className="rounded-[calc(var(--radius-card)-0.5rem)] border border-dashed border-line py-1 text-center text-xs text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
+              <Link viewTransition to={`/clips/new?date=${iso}`} className="rounded-card border border-dashed border-line press hover-tint hover-pointer:border-brand hover-pointer:text-brand-text py-1 text-center text-xs text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">+ เพิ่มคลิป</Link>
             )}
           </section>
         )

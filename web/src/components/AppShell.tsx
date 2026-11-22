@@ -37,10 +37,10 @@ function ThemeButton({ className = '', label }: { className?: string; label?: bo
   const dark = useTheme()
   const name = dark ? 'โหมดสว่าง' : 'โหมดมืด'
   // Both icons stay mounted and crossfade (opacity, scale, blur) so the swap reads as one change, not a pop.
-  const icon = (on: boolean) => `absolute inset-0 transition-[opacity,scale,filter] duration-200 ease-out ${on ? 'opacity-100 scale-100 blur-none' : 'opacity-0 scale-75 blur-xs'}`
+  const icon = (on: boolean) => `absolute inset-0 transition-[opacity,scale] duration-200 ease-out ${on ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`
   return (
     <button type="button" onClick={toggleTheme} aria-label={name} title={name}
-      className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-8 min-w-8 max-md:min-h-11 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
+      className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-8 min-w-8 max-md:min-h-11 max-md:min-w-11 coarse:min-h-11 coarse:min-w-11 items-center justify-center gap-2 rounded-card px-2 text-sub ${className}`}>
       <span aria-hidden className="relative size-4.5 shrink-0">
         <Sun size={18} className={icon(dark)} />
         <Moon size={18} className={icon(!dark)} />
@@ -56,13 +56,13 @@ function readCollapsed() {
   try { return localStorage.getItem(COLLAPSE_KEY) === '1' } catch { return false }
 }
 
-function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: () => void; onToggle?: () => void }) {
+function Sidebar({ rail, onNavigate, onToggle, onSearch }: { rail?: boolean; onNavigate?: () => void; onToggle?: () => void; onSearch: () => void }) {
   const { data: me } = useMe()
   const qc = useQueryClient()
   const nav = useNavigate()
   const [changing, setChanging] = useState(false)
-  // Clicking the search field opens the full search page; the palette opens from the keyboard shortcut only.
-  const openSearch = () => { nav('/search', { viewTransition: true }); onNavigate?.() }
+  // The search field opens the command palette (same as Ctrl/Cmd+K); the sheet closes first on phones.
+  const openSearch = () => { onNavigate?.(); onSearch() }
   const [confirmingLogout, setConfirmingLogout] = useState(false)
   const { pathname } = useLocation()
   const items = NAV.filter((n) => !n.owner || me?.role === 'owner')
@@ -78,10 +78,10 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
   }
 
   return (
-    <div className={`flex h-full flex-col gap-4 bg-surface p-3 ${rail ? '' : 'min-w-60'}`}>
+    <div className={`flex h-full flex-col gap-4 bg-surface p-3 ${rail ? 'coarse:p-2' : 'min-w-60'}`}>
       <div className={`flex items-center ${rail ? 'flex-col' : 'justify-between'}`}>
         {!rail && (
-          <Link viewTransition to="/" aria-label="กลับสู่หน้าหลัก" title="กลับสู่หน้าหลัก"
+          <Link viewTransition to="/" title="กลับสู่หน้าหลัก"
             className="group relative block overflow-hidden rounded-card px-2 py-2 text-xl font-normal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand">
             {/* Title slides out to the left, the hint slides in from the right; both reverse on leave. Pointer devices and keyboard focus only. */}
             <span className="block transition-transform duration-260 ease-(--ease-drawer) group-focus-visible:-translate-x-[calc(100%+0.5rem)] group-hover:-translate-x-[calc(100%+0.5rem)]">Channel's Tool</span>
@@ -94,7 +94,7 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
         )}
       </div>
       {rail ? (
-        <button type="button" onClick={openSearch} aria-label="ค้นหา" className="flex justify-center rounded-card p-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><Search size={18} /></button>
+        <button type="button" onClick={openSearch} aria-label="ค้นหา" className="press hover-tint flex justify-center rounded-card p-2 max-md:min-h-11 coarse:min-h-11 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><Search size={18} /></button>
       ) : (
         <button type="button" onClick={openSearch} className="press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex w-full items-center gap-2 rounded-card border border-line bg-bg px-2 py-1.5 text-left text-sm text-sub">
           <Search size={16} aria-hidden />
@@ -102,13 +102,13 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
           <kbd className="hidden shrink-0 rounded bg-bg px-1 text-xs whitespace-nowrap text-sub lg:inline">Ctrl K</kbd>
         </button>
       )}
-      <nav className="relative flex flex-col gap-1">
+      <nav className="relative flex flex-col gap-1 [--nav-step:2.75rem] coarse:[--nav-step:3rem]">
         {/* One brand thumb slides to the active item (same idea as Segmented); it hides on pages that are not in the list, e.g. a clip. */}
-        <span aria-hidden className="absolute top-0 left-0 h-10 w-full rounded-card bg-brand transition-[transform,opacity] duration-260 ease-(--ease-drawer)"
-          style={{ transform: `translateY(calc(${Math.max(active, 0)} * 2.75rem))`, opacity: active < 0 ? 0 : 1 }} />
+        <span aria-hidden className="absolute top-0 left-0 h-10 w-full rounded-card bg-brand coarse:h-11 transition-[transform,opacity] duration-260 ease-(--ease-drawer)"
+          style={{ transform: `translateY(calc(${Math.max(active, 0)} * var(--nav-step)))`, opacity: active < 0 ? 0 : 1 }} />
         {items.map(({ to, label, icon: Icon }, i) => (
           <NavLink viewTransition key={to} to={to} end={to === '/'} onClick={onNavigate} aria-label={label}
-            className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand relative z-10 flex h-10 items-center gap-2 rounded-card px-2 text-base font-normal transition-colors duration-200 ${rail ? 'justify-center' : ''} ${i === active ? 'text-white' : ''}`}>
+            className={`press hover-tint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand relative z-10 flex h-10 coarse:h-11 items-center gap-2 rounded-card px-2 text-base font-normal ${rail ? 'justify-center' : ''} ${i === active ? 'text-white' : ''}`}>
             <Icon size={16} />{!rail && label}
           </NavLink>
         ))}
@@ -118,8 +118,8 @@ function Sidebar({ rail, onNavigate, onToggle }: { rail?: boolean; onNavigate?: 
         <div className="mt-auto flex items-center gap-2 px-2 flex-col">
           <ThemeButton />
           <span className="flex size-8.75 items-center justify-center rounded-full bg-avatar text-white"><User size={16} /></span>
-          <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><KeyRound size={16} /></button>
-          <button onClick={() => setConfirmingLogout(true)} aria-label="ออกจากระบบ" className="flex size-8 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><LogOut size={16} /></button>
+          <button onClick={() => setChanging(true)} aria-label="เปลี่ยนรหัสผ่าน" className="flex size-8 coarse:size-11 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><KeyRound size={16} /></button>
+          <button onClick={() => setConfirmingLogout(true)} aria-label="ออกจากระบบ" className="flex size-8 coarse:size-11 items-center justify-center rounded-card text-sub focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"><LogOut size={16} /></button>
         </div>
       ) : (
         <div className="mt-auto flex flex-col gap-1 border-t border-grid pt-3">
@@ -171,12 +171,12 @@ export function AppShell() {
       <CommandPalette open={palette} onOpenChange={setPalette} />
       <div className="flex min-h-dvh">
         <aside style={{ viewTransitionName: 'sidebar' }} className={`sticky top-0 hidden h-dvh shrink-0 overflow-hidden transition-[width] duration-240 ease-(--ease-out-quint) md:block ${rail ? 'w-16' : 'w-60'}`}>
-          <Sidebar rail={rail} onToggle={toggle} />
+          <Sidebar rail={rail} onToggle={toggle} onSearch={() => setPalette(true)} />
         </aside>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetContent side="left" className="w-72 p-0">
             <SheetTitle className="sr-only">เมนู</SheetTitle>
-            <Sidebar onNavigate={() => setOpen(false)} />
+            <Sidebar onNavigate={() => setOpen(false)} onSearch={() => setPalette(true)} />
           </SheetContent>
         </Sheet>
         <div className="flex min-w-0 flex-1 flex-col">
@@ -192,7 +192,7 @@ export function AppShell() {
         <nav aria-label="เมนูหลัก" style={{ viewTransitionName: 'tabbar' }} className="fixed inset-x-0 bottom-0 z-20 flex h-[calc(4rem+env(safe-area-inset-bottom))] border-t border-line bg-bg pb-[env(safe-area-inset-bottom)] md:hidden">
           {TABS.map(({ to, label, icon: Icon }) => (
             <NavLink viewTransition key={to} to={to} end={to === '/'}
-              className={({ isActive }) => `press relative flex flex-1 flex-col items-center justify-center gap-0.5 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${isActive ? 'font-bold text-brand' : 'text-sub'}`}>
+              className={({ isActive }) => `press relative flex flex-1 flex-col items-center justify-center gap-0.5 text-xs focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${isActive ? 'font-bold text-brand-text' : 'text-sub'}`}>
               {({ isActive }) => (
                 <>
                   <span aria-hidden className={`absolute inset-x-4 top-0 h-0.5 origin-center rounded-full bg-brand transition-transform duration-200 ${isActive ? 'scale-x-100' : 'scale-x-0'}`} />

@@ -48,8 +48,8 @@ export function Categories() {
               <b className="text-sm">{c.name}</b>
               <span className="text-sm max-md:hidden">{counts[c.id] ?? 0}</span>
               <span className="flex justify-end gap-1">
-                <Button variant="outline" size="sm" className="max-md:size-11" aria-label={`แก้ไข ${c.name}`} onClick={() => setEditing(c)}><Pencil /><span className="max-md:hidden">แก้ไข</span></Button>
-                <Button variant="outline" size="sm" className="text-danger max-md:size-11" disabled={(counts[c.id] ?? 0) > 0} aria-label={`ลบ ${c.name}`} onClick={() => setDeleting(c)}><Trash2 /><span className="max-md:hidden">ลบ</span></Button>
+                <Button variant="outline" size="sm" className="max-md:size-11 coarse:size-11" aria-label={`แก้ไข ${c.name}`} onClick={() => setEditing(c)}><Pencil /><span className="max-md:hidden">แก้ไข</span></Button>
+                <Button variant="outline" size="sm" className="text-danger max-md:size-11 coarse:size-11" disabled={(counts[c.id] ?? 0) > 0} aria-label={`ลบ ${c.name}`} onClick={() => setDeleting(c)}><Trash2 /><span className="max-md:hidden">ลบ</span></Button>
               </span>
             </div>
           ))}
