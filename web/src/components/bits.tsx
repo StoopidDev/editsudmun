@@ -94,7 +94,7 @@ export function FileTile({ file, clipDate, url, onOpen, onDelete }: {
             onClick={(e) => onOpen(e.currentTarget)} className="press hover-tint absolute inset-0 rounded-card focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand" />
         )}
         {onDelete && (
-          <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 z-10 grid place-items-center size-6 rounded-full bg-avatar text-white opacity-70 transition-opacity hover-pointer:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand before:absolute before:-inset-3 before:content-[''] md:before:hidden"><X size={14} aria-hidden /></button>
+          <button aria-label={`ลบ ${file.file_name}`} onClick={onDelete} className="absolute top-1 right-1 z-10 grid place-items-center size-6 rounded-full bg-avatar text-white opacity-70 transition-opacity hover-pointer:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand before:absolute before:-inset-3 before:content-[''] [@media(pointer:fine)]:before:hidden"><X size={14} aria-hidden /></button>
         )}
       </div>
       <span className="block truncate text-xs tabular-nums">{file.file_name}{dur && ` · ${dur}`}</span>

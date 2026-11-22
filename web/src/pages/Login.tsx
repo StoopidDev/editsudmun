@@ -32,7 +32,7 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-surface p-4">
+    <main className="flex min-h-dvh items-center justify-center bg-surface p-4">
       <form onSubmit={submit} className="enter flex w-full max-w-sm flex-col gap-4 rounded-card bg-bg p-8">
         <h1 className="text-center text-xl">Channel's Tool</h1>
         <div className="grid gap-1">
@@ -55,6 +55,6 @@ export function Login() {
         <Button type="submit" loading={act.isPending}>{act.isPending ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</Button>
         <p className="text-center text-xs text-sub">ลืมรหัสผ่าน? ติดต่อเจ้าของช่องเพื่อรีเซ็ต</p>
       </form>
-    </div>
+    </main>
   )
 }

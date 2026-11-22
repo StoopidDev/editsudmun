@@ -17,8 +17,8 @@ export function Search() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* The full sidebar starts at lg, so this input is the only search box below it. */}
-      <Input key={q} className="lg:hidden" aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
+      {/* The results page keeps its own input at every width; the sidebar field opens the palette. */}
+      <Input key={q} aria-label="ค้นหาคลิป" placeholder="ค้นหาคลิป..." defaultValue={q} onKeyDown={(e) => e.key === 'Enter' && setParams({ q: e.currentTarget.value })} />
       {!q && <EmptyState icon={SearchIcon} title="ค้นหาคลิป" hint="พิมพ์ชื่อคลิปหรือคำในสคริปต์ แล้วกด Enter" />}
       {q && <Results key={q} q={q} />}
     </div>

@@ -49,7 +49,7 @@ A user must tell text from a control without hovering (touch has no hover).
 4. **Filter chips** are interactive pills: `rounded-full border border-line`, selected `bg-brand text-white` plus a check icon.
 5. **Badges and status chips** (`CategoryBadge`, `StatusChip`) are not interactive: `rounded-md`, filled, no border, no hover, no press. Do not give a non-interactive element a border, a pointer cursor or hover feedback, and do not make a control look like a badge.
 6. Cards and cells that navigate (clip card, calendar day header, month cell) lift or tint on hover (section 4) and have a focus ring.
-7. Touch targets are at least 44 px on phone widths and on any touch screen: write the pair `max-md:min-h-11 coarse:min-h-11` (`coarse:` is `@media (pointer: coarse)` in `index.css`; an iPad is wider than md but still a finger). The same goes for `h-11`, `min-w-11` and `size-11`.
+7. Touch targets are at least 44 px on phone widths and on any touch screen: write the pair `max-md:min-h-11 coarse:min-h-11` (`coarse:` is `@media (pointer: coarse)` in `index.css`; an iPad is wider than md but still a finger). The same goes for `h-11`, `min-w-11` and `size-11`. The rail and nav items grow to 44 px on coarse pointers (`coarse:h-11`, rail `coarse:p-2`; the sliding thumb steps by `--nav-step`). A small visual control (file-tile delete) keeps its look and extends the hit area with a `before:-inset-3` pseudo-element, removed only for fine pointers (`[@media(pointer:fine)]:before:hidden`).
 
 ## 4. Motion
 
@@ -89,7 +89,7 @@ A view transition freezes the page behind a snapshot, so a control whose own ani
 
 **Square cells.** Home week-strip cells and calendar clip cards are 1:1 (`aspect-square`, `overflow-hidden`, title clamped to 3 lines), as in the Figma frames. Never let content make a square taller than it is wide.
 
-**Search is a command palette.** Ctrl/Cmd+K and the sidebar search button open `CommandPalette` (top-anchored dialog like the Tailwind docs search): shortcuts when empty, live clip results (debounced 200 ms) with snippet and date, ↑↓ Enter Esc, combobox ARIA. `/search` stays as the full results page ("ดูผลทั้งหมด"). The sidebar field is a button that looks like a field, not an input.
+**Search is a command palette.** Ctrl/Cmd+K and the sidebar search button open `CommandPalette` (top-anchored dialog like the Tailwind docs search): shortcuts when empty, live clip results (debounced 200 ms) with snippet and date, ↑↓ Enter Esc, combobox ARIA. `/search` stays as the full results page ("ดูผลทั้งหมด"). The `/search` page keeps its own input at every width. The sidebar field is a button that looks like a field, not an input.
 
 **Confirmations.** Log out and change password ask first (`ConfirmDialog` with `tone="neutral"`, brand button). Deleting keeps the default red `tone`; deleting a clip asks first too, and still shows the เลิกทำ toast afterwards. Toasts (`ThemedToaster`) use the app font, `bg-toast`, `border-line`, `rounded-card` and a brand action button. Do not use `window.confirm`.
 
@@ -121,9 +121,11 @@ Typography: tabular numbers on any changing or columned figure (`tabular-nums`);
 
 **Icons match the content.** An empty state or action uses an icon of the thing it is about: no clips = `Clapperboard`, no tasks = `CheckCircle2`, no recent edits = `Clock`, no creators = `UserRound`, no categories = `Tags`, no search results = `SearchX`. Never a calendar icon for clips.
 
+**First load.** `Splash` (`components/Splash.tsx`) is the route `hydrateFallbackElement` and the `RequireAuth` pending state: a static shell with the real header and sidebar geometry, no text, no spinner. Anything that reserves space for async content (the `งานของฉัน` skeleton on Home) uses a `Skeleton` of about the final height so the page does not jump. `main.tsx` starts the session request before the router renders, and `vite.config.ts` preloads the first route's chunks from the HTML.
+
 ## 6. Accessibility
 
-Every interactive element has a visible focus style (the `Button` ring, or `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand`). Icon-only controls have `aria-label`. Toggles use `aria-pressed`; groups have a label. Inputs keep a visible label or `aria-label`. Errors are inline text with `text-danger`, never `alert()`.
+Every interactive element has a visible focus style (the `Button` ring, or `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand`). Icon-only controls have `aria-label`. An accessible name must start with the visible text (WCAG 2.5.3): add detail after it, never replace it (`จ 16 (จันทร์ 16 พ.ย. 2026)`). Every page has one `<main>`. Toggles use `aria-pressed`; groups have a label. Inputs keep a visible label or `aria-label`. Errors are inline text with `text-danger`, never `alert()`.
 
 ## 7. Before you finish a frontend change
 

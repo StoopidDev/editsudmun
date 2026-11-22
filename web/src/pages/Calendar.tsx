@@ -103,9 +103,10 @@ function MobileDay(p: { days: Date[]; selected: Date; loading: boolean; failed: 
           const sel = iso === selIso
           const hasClips = p.forDay(iso).length > 0
           return (
-            <button key={d.getDay()} type="button" aria-pressed={sel} aria-label={fullDate(d)} onClick={() => p.onPick(iso)}
+            <button key={d.getDay()} type="button" aria-pressed={sel} aria-label={`${SHORT_DAYS[(d.getDay() + 6) % 7]} ${d.getDate()} (${fullDate(d)})`} onClick={() => p.onPick(iso)}
               className={`cell-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand flex h-15.5 min-w-0 flex-col items-center justify-center gap-0.5 rounded-card ${sel ? 'bg-brand text-white' : 'bg-surface'} ${iso === today && !sel ? 'ring-1 ring-brand' : ''}`}>
-              <span className="text-xs">{SHORT_DAYS[(d.getDay() + 6) % 7]}</span>
+              {/* The space is not drawn (flex column) but makes the text "จ 16", matching the start of the aria-label. */}
+              <span className="text-xs">{SHORT_DAYS[(d.getDay() + 6) % 7]}</span>{' '}
               <b className="text-base tabular-nums">{d.getDate()}</b>
               <span className={`size-1.25 rounded-full ${hasClips ? (sel ? 'bg-white' : 'bg-brand') : ''}`} />
             </button>

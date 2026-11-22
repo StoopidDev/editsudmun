@@ -40,6 +40,8 @@ export function Home() {
         {owner && <Button nativeButton={false} render={<Link viewTransition to={`/clips/new?date=${today}`} />} className="max-md:min-h-11 coarse:min-h-11"><Plus />เพิ่มคลิป</Button>}
       </div>
 
+      {/* Reserve the section's height until the list arrives, so the page below does not jump. */}
+      {attention.isPending && <Skeleton className="h-36" />}
       {attention.data && !attention.isError && (
         <section className="enter flex flex-col gap-2" style={{ '--i': 0 } as CSSProperties}>
           <h2 className="text-lg font-bold tabular-nums">งานของฉัน ({todo.length})</h2>

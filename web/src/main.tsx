@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router-dom'
 // Anuphan covers all Thai and Latin; its subsets download only when their glyphs appear (unicode-range, font-display swap).
 import '@fontsource-variable/anuphan'
+import { meQuery } from './api/queries-auth'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ThemedToaster } from './components/ThemedToaster'
 import { queryClient } from './lib/queryClient'
@@ -20,6 +21,9 @@ window.addEventListener('vite:preloadError', (e) => {
   } catch { /* storage blocked: still reload once per page */ }
   location.reload()
 })
+
+// Start the session and profile request now, in parallel with the lazy route chunks; otherwise it only starts after they arrive.
+void queryClient.prefetchQuery(meQuery)
 
 createRoot(document.getElementById('root')!).render(
   <QueryClientProvider client={queryClient}>
